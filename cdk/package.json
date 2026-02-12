@@ -1,0 +1,23 @@
+{
+  "name": "industry-portal-cdk",
+  "version": "0.1.0",
+  "description": "Industry Portal CDK Infrastructure",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "cdk": "cdk",
+    "deploy": "cdk deploy --all",
+    "destroy": "cdk destroy --all",
+    "synth": "cdk synth",
+    "diff": "cdk diff"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "^2.120.0",
+    "constructs": "^10.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.6",
+    "typescript": "^5.2.2",
+    "aws-cdk": "^2.120.0"
+  }
+}

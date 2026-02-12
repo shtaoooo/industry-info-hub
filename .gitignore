@@ -45,3 +45,11 @@ coverage/
 .kiro/
 connect_ec2.cfg
 Industry_definition.csv
+
+# CDK
+cdk/cdk.out/
+cdk/*.js
+cdk/*.d.ts
+cdk/bin/*.js
+cdk/lib/*.js
+cdk/cdk.context.json
