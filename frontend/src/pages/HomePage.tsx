@@ -207,7 +207,7 @@ const HomePage: React.FC = () => {
       </Header>
 
       <Content style={{ padding: '60px 0' }}>
-        <div style={{ maxWidth: 980, margin: '0 auto', padding: '0 22px' }}>
+        <div style={{ maxWidth: '100%', margin: '0 auto', padding: '0 60px' }}>
           <div style={{ marginBottom: 60, textAlign: 'center' }}>
             <Title level={1} style={{ 
               marginBottom: 12, 
