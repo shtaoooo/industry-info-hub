@@ -344,26 +344,26 @@ export class IndustryPortalStack extends cdk.Stack {
     addRoute('/public/solutions/{id}/customer-cases', apigatewayv2.HttpMethod.GET, publicBrowsingFn);
     addRoute('/public/documents/{id}/download', apigatewayv2.HttpMethod.GET, documentDownloadFn);
 
-    // CloudFront OAI for S3
-    const oai = new cloudfront.OriginAccessIdentity(this, 'OAI', {
-      comment: 'OAI for Industry Portal Documents',
-    });
+    // CloudFront OAI for S3 (commented out - not using CloudFront for now)
+    // const oai = new cloudfront.OriginAccessIdentity(this, 'OAI', {
+    //   comment: 'OAI for Industry Portal Documents',
+    // });
 
-    documentsBucket.grantRead(oai);
+    // documentsBucket.grantRead(oai);
 
-    // CloudFront Distribution for Documents
-    const distribution = new cloudfront.Distribution(this, 'Distribution', {
-      comment: 'Industry Portal Documents CDN',
-      defaultBehavior: {
-        origin: new origins.S3Origin(documentsBucket, { originAccessIdentity: oai }),
-        viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-        allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD_OPTIONS,
-        cachedMethods: cloudfront.CachedMethods.CACHE_GET_HEAD_OPTIONS,
-        compress: true,
-        cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
-      },
-      priceClass: cloudfront.PriceClass.PRICE_CLASS_100,
-    });
+    // // CloudFront Distribution for Documents
+    // const distribution = new cloudfront.Distribution(this, 'Distribution', {
+    //   comment: 'Industry Portal Documents CDN',
+    //   defaultBehavior: {
+    //     origin: new origins.S3Origin(documentsBucket, { originAccessIdentity: oai }),
+    //     viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+    //     allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD_OPTIONS,
+    //     cachedMethods: cloudfront.CachedMethods.CACHE_GET_HEAD_OPTIONS,
+    //     compress: true,
+    //     cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
+    //   },
+    //   priceClass: cloudfront.PriceClass.PRICE_CLASS_100,
+    // });
 
     // Outputs
     new cdk.CfnOutput(this, 'ApiEndpoint', {
@@ -391,9 +391,9 @@ export class IndustryPortalStack extends cdk.Stack {
       description: 'S3 Bucket for Documents',
     });
 
-    new cdk.CfnOutput(this, 'CloudFrontDocumentsDomain', {
-      value: distribution.distributionDomainName,
-      description: 'CloudFront Distribution Domain Name for Documents',
-    });
+    // new cdk.CfnOutput(this, 'CloudFrontDocumentsDomain', {
+    //   value: distribution.distributionDomainName,
+    //   description: 'CloudFront Distribution Domain Name for Documents',
+    // });
   }
 }
