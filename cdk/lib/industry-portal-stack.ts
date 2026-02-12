@@ -256,6 +256,7 @@ export class IndustryPortalStack extends cdk.Stack {
           apigatewayv2.CorsHttpMethod.GET,
           apigatewayv2.CorsHttpMethod.POST,
           apigatewayv2.CorsHttpMethod.PUT,
+          apigatewayv2.CorsHttpMethod.PATCH,
           apigatewayv2.CorsHttpMethod.DELETE,
           apigatewayv2.CorsHttpMethod.OPTIONS,
         ],
