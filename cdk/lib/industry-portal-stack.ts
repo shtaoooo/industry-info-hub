@@ -10,6 +10,7 @@ import * as authorizers from 'aws-cdk-lib/aws-apigatewayv2-authorizers';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import * as amplify from 'aws-cdk-lib/aws-amplify';
 import * as path from 'path';
 
 export class IndustryPortalStack extends cdk.Stack {
@@ -365,6 +366,42 @@ export class IndustryPortalStack extends cdk.Stack {
     //   priceClass: cloudfront.PriceClass.PRICE_CLASS_100,
     // });
 
+    // Amplify Hosting for Frontend (manual GitHub connection via console)
+    const amplifyApp = new amplify.CfnApp(this, 'AmplifyApp', {
+      name: 'IndustryPortal',
+      buildSpec: `version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - cd frontend
+        - npm ci
+    build:
+      commands:
+        - npm run build
+  artifacts:
+    baseDirectory: frontend/dist
+    files:
+      - '**/*'
+  cache:
+    paths:
+      - frontend/node_modules/**/*`,
+      environmentVariables: [
+        { name: 'VITE_AWS_REGION', value: this.region },
+        { name: 'VITE_USER_POOL_ID', value: userPool.userPoolId },
+        { name: 'VITE_USER_POOL_CLIENT_ID', value: userPoolClient.userPoolClientId },
+        { name: 'VITE_IDENTITY_POOL_ID', value: identityPool.ref },
+        { name: 'VITE_API_ENDPOINT', value: httpApi.apiEndpoint },
+        { name: 'VITE_S3_BUCKET', value: documentsBucket.bucketName },
+      ],
+      iamServiceRole: new iam.Role(this, 'AmplifyRole', {
+        assumedBy: new iam.ServicePrincipal('amplify.amazonaws.com'),
+        managedPolicies: [
+          iam.ManagedPolicy.fromAwsManagedPolicyName('AdministratorAccess-Amplify'),
+        ],
+      }).roleArn,
+    });
+
     // Outputs
     new cdk.CfnOutput(this, 'ApiEndpoint', {
       value: httpApi.apiEndpoint,
@@ -395,5 +432,10 @@ export class IndustryPortalStack extends cdk.Stack {
     //   value: distribution.distributionDomainName,
     //   description: 'CloudFront Distribution Domain Name for Documents',
     // });
+
+    new cdk.CfnOutput(this, 'AmplifyAppId', {
+      value: amplifyApp.attrAppId,
+      description: 'Amplify App ID (connect GitHub in console)',
+    });
   }
 }
