@@ -394,10 +394,13 @@ export async function getCustomerCasesForSolution(event: APIGatewayProxyEvent): 
  * Lambda handler - routes requests to appropriate function
  */
 export async function handler(event: any): Promise<APIGatewayProxyResult> {
-  const method = event.httpMethod || (event.requestContext?.http?.method)
-  const path = event.resource || event.rawPath || event.path
-
-  console.log('Method:', method, 'Path:', path)
+  const method = event.httpMethod || event.requestContext?.http?.method || event.requestContext?.httpMethod
+  const path = event.rawPath || event.path || event.resource
+  
+  console.log('Full Event:', JSON.stringify(event, null, 2))
+  console.log('Method:', method)
+  console.log('Path:', path)
+  console.log('RouteKey:', event.routeKey)
 
   try {
     // GET /public/industries
