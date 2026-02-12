@@ -15,6 +15,48 @@ const { Title, Text } = Typography
 // 行业图片映射 - 使用本地图片
 const getFallbackImage = (industryName: string): string => {
   const imageMap: { [key: string]: string } = {
+    // English names (from DynamoDB)
+    'Healthcare': '/images/industries/healthcare.jpg',
+    'Financial Services': '/images/industries/finance.jpg',
+    'Manufacturing': '/images/industries/manufacturing.jpg',
+    'Retail & Wholesale': '/images/industries/retail.jpg',
+    'Retail': '/images/industries/retail.jpg',
+    'Education': '/images/industries/education.jpg',
+    'Transportation & Logistics': '/images/industries/logistics.jpg',
+    'Transportation': '/images/industries/logistics.jpg',
+    'Logistics': '/images/industries/logistics.jpg',
+    'Energy - Power & Utilities': '/images/industries/energy.jpg',
+    'Energy - Oil & Gas': '/images/industries/energy.jpg',
+    'Energy': '/images/industries/energy.jpg',
+    'Telecommunications': '/images/industries/telecom.jpg',
+    'Engineering, Construction & Real Estate': '/images/industries/construction.jpg',
+    'Construction': '/images/industries/construction.jpg',
+    'Real Estate': '/images/industries/realestate.jpg',
+    'Automotive': '/images/industries/automotive.jpg',
+    'Agriculture': '/images/industries/agriculture.jpg',
+    'Travel': '/images/industries/tourism.jpg',
+    'Hospitality': '/images/industries/tourism.jpg',
+    'Media & Entertainment': '/images/industries/media.jpg',
+    'Media': '/images/industries/media.jpg',
+    'Software & Internet': '/images/industries/technology.jpg',
+    'Hi Tech, Electronics & Semiconductor': '/images/industries/technology.jpg',
+    'Technology': '/images/industries/technology.jpg',
+    'General Public Services': '/images/industries/government.jpg',
+    'Justice & Public Safety': '/images/industries/government.jpg',
+    'Social Services': '/images/industries/government.jpg',
+    'Government': '/images/industries/government.jpg',
+    'Aerospace & Satellite': '/images/industries/aerospace.jpg',
+    'Defense & Intelligence': '/images/industries/aerospace.jpg',
+    'Aerospace': '/images/industries/aerospace.jpg',
+    'Professional Services': '/images/industries/professional.jpg',
+    'Advertising & Marketing': '/images/industries/media.jpg',
+    'Consumer Packaged Goods': '/images/industries/food.jpg',
+    'Life Sciences': '/images/industries/healthcare.jpg',
+    'Games': '/images/industries/media.jpg',
+    'Mining & Minerals': '/images/industries/chemical.jpg',
+    'Environmental Protection': '/images/industries/energy.jpg',
+    
+    // Chinese names (for compatibility)
     '金融': '/images/industries/finance.jpg',
     '制造': '/images/industries/manufacturing.jpg',
     '零售': '/images/industries/retail.jpg',
@@ -39,14 +81,19 @@ const getFallbackImage = (industryName: string): string => {
     '服装': '/images/industries/textile.jpg',
   }
   
-  // 尝试匹配行业名称中的关键词
+  // Try exact match first
+  if (imageMap[industryName]) {
+    return imageMap[industryName]
+  }
+  
+  // Try partial match
   for (const [key, value] of Object.entries(imageMap)) {
-    if (industryName.includes(key)) {
+    if (industryName.includes(key) || key.includes(industryName)) {
       return value
     }
   }
   
-  // 默认图片
+  // Default image
   return '/images/industries/default.jpg'
 }
 
