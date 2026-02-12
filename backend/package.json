@@ -2,7 +2,6 @@
   "name": "industry-portal-backend",
   "version": "0.1.0",
   "description": "Industry Portal Backend Lambda Functions",
-  "type": "module",
   "scripts": {
     "build": "tsc",
     "test": "vitest --run",
