@@ -14,6 +14,9 @@ import UseCaseManagement from './pages/specialist/UseCaseManagement'
 import MappingManagement from './pages/specialist/MappingManagement'
 import CustomerCaseManagement from './pages/specialist/CustomerCaseManagement'
 import SolutionDetail from './pages/public/SolutionDetail'
+import IndustryDetail from './pages/public/IndustryDetail'
+import SubIndustryDetail from './pages/public/SubIndustryDetail'
+import UseCaseDetail from './pages/public/UseCaseDetail'
 import AdminLayout from './components/AdminLayout'
 
 function App() {
@@ -103,6 +106,9 @@ function App() {
               }
             />
             <Route path="/public/solutions/:id" element={<SolutionDetail />} />
+            <Route path="/public/industries/:id" element={<IndustryDetail />} />
+            <Route path="/public/sub-industries/:id" element={<SubIndustryDetail />} />
+            <Route path="/public/use-cases/:id" element={<UseCaseDetail />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </AuthProvider>
