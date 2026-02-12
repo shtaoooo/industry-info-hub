@@ -151,8 +151,12 @@ export class IndustryPortalStack extends cdk.Stack {
       }],
     });
 
-    // Lambda functions will include dependencies directly
-    // No separate layer needed - simpler deployment
+    // Lambda Layer for shared dependencies (node_modules only)
+    const dependenciesLayer = new lambda.LayerVersion(this, 'DependenciesLayer', {
+      code: lambda.Code.fromAsset(path.join(__dirname, '../../backend/node_modules')),
+      compatibleRuntimes: [lambda.Runtime.NODEJS_18_X],
+      description: 'Shared node_modules for Industry Portal Lambda functions',
+    });
 
     // Common Lambda environment variables
     const commonEnv = {
@@ -174,7 +178,10 @@ export class IndustryPortalStack extends cdk.Stack {
         functionName: `IndustryPortal-${name}`,
         runtime: lambda.Runtime.NODEJS_18_X,
         handler: `dist/functions/${handler}.handler`,
-        code: lambda.Code.fromAsset(path.join(__dirname, '../../backend')),
+        code: lambda.Code.fromAsset(path.join(__dirname, '../../backend'), {
+          exclude: ['node_modules', 'src', '*.ts', 'tsconfig.json', 'vitest.config.ts'],
+        }),
+        layers: [dependenciesLayer],
         environment: commonEnv,
         timeout: cdk.Duration.seconds(timeout),
         memorySize: memory,
