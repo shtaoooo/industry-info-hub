@@ -97,7 +97,7 @@ export class IndustryPortalStack extends cdk.Stack {
 
     // S3 Bucket for Documents
     const documentsBucket = new s3.Bucket(this, 'DocumentsBucket', {
-      bucketName: `industry-portal-docs-east2-${this.account}`,
+      bucketName: `industry-portal-docs-v2-${this.account}`,
       encryption: s3.BucketEncryption.S3_MANAGED,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       cors: [{
