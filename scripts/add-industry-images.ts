@@ -19,85 +19,72 @@ const INDUSTRIES_TABLE = 'IndustryPortal-Industries'
 // Local industry images paths
 // These images are stored in frontend/public/images/industries/
 const industryImages: { [key: string]: string } = {
-  // 金融服务 - 股票交易大厅/金融数据
+  // English names (from DynamoDB)
+  'Healthcare': '/images/industries/healthcare.jpg',
+  'Financial Services': '/images/industries/finance.jpg',
+  'Manufacturing': '/images/industries/manufacturing.jpg',
+  'Retail & Wholesale': '/images/industries/retail.jpg',
+  'Education': '/images/industries/education.jpg',
+  'Transportation & Logistics': '/images/industries/logistics.jpg',
+  'Energy - Power & Utilities': '/images/industries/energy.jpg',
+  'Energy - Oil & Gas': '/images/industries/energy.jpg',
+  'Telecommunications': '/images/industries/telecom.jpg',
+  'Engineering, Construction & Real Estate': '/images/industries/construction.jpg',
+  'Automotive': '/images/industries/automotive.jpg',
+  'Agriculture': '/images/industries/agriculture.jpg',
+  'Travel': '/images/industries/tourism.jpg',
+  'Hospitality': '/images/industries/tourism.jpg',
+  'Media & Entertainment': '/images/industries/media.jpg',
+  'Software & Internet': '/images/industries/technology.jpg',
+  'Hi Tech, Electronics & Semiconductor': '/images/industries/technology.jpg',
+  'General Public Services': '/images/industries/government.jpg',
+  'Justice & Public Safety': '/images/industries/government.jpg',
+  'Social Services': '/images/industries/government.jpg',
+  'Aerospace & Satellite': '/images/industries/aerospace.jpg',
+  'Defense & Intelligence': '/images/industries/aerospace.jpg',
+  'Professional Services': '/images/industries/professional.jpg',
+  'Advertising & Marketing': '/images/industries/media.jpg',
+  'Consumer Packaged Goods': '/images/industries/food.jpg',
+  'Life Sciences': '/images/industries/healthcare.jpg',
+  'Games': '/images/industries/media.jpg',
+  'Mining & Minerals': '/images/industries/chemical.jpg',
+  'Environmental Protection': '/images/industries/energy.jpg',
+  
+  // Chinese names (for fallback compatibility)
   '金融服务': '/images/industries/finance.jpg',
   '金融': '/images/industries/finance.jpg',
-  
-  // 制造业 - 现代化工厂生产线
   '制造业': '/images/industries/manufacturing.jpg',
   '制造': '/images/industries/manufacturing.jpg',
-  
-  // 零售 - 现代购物中心
   '零售': '/images/industries/retail.jpg',
-  
-  // 医疗健康 - 医疗科技/医生
   '医疗健康': '/images/industries/healthcare.jpg',
   '医疗': '/images/industries/healthcare.jpg',
-  
-  // 教育 - 现代教室/学习
   '教育': '/images/industries/education.jpg',
-  
-  // 物流运输 - 集装箱港口/物流中心
   '物流运输': '/images/industries/logistics.jpg',
   '物流': '/images/industries/logistics.jpg',
-  
-  // 能源 - 太阳能板/风力发电
   '能源': '/images/industries/energy.jpg',
-  
-  // 电信 - 通信塔/5G网络
   '电信': '/images/industries/telecom.jpg',
-  
-  // 房地产 - 现代建筑/摩天大楼
   '房地产': '/images/industries/realestate.jpg',
-  
-  // 汽车 - 现代汽车生产线
   '汽车': '/images/industries/automotive.jpg',
-  
-  // 农业 - 现代农业科技
   '农业': '/images/industries/agriculture.jpg',
-  
-  // 旅游酒店 - 豪华酒店/度假村
   '旅游酒店': '/images/industries/tourism.jpg',
   '旅游': '/images/industries/tourism.jpg',
-  
-  // 媒体娱乐 - 影视制作/媒体中心
   '媒体娱乐': '/images/industries/media.jpg',
   '媒体': '/images/industries/media.jpg',
-  
-  // 科技 - 数据中心/科技办公室
   '科技': '/images/industries/technology.jpg',
-  
-  // 政府公共服务 - 政府建筑
   '政府公共服务': '/images/industries/government.jpg',
   '政府': '/images/industries/government.jpg',
-  
-  // 保险 - 保护伞/安全概念
   '保险': '/images/industries/insurance.jpg',
-  
-  // 航空航天 - 飞机/航空
   '航空航天': '/images/industries/aerospace.jpg',
   '航空': '/images/industries/aerospace.jpg',
-  
-  // 化工 - 化工厂/实验室
   '化工': '/images/industries/chemical.jpg',
-  
-  // 建筑工程 - 建筑工地/施工
   '建筑工程': '/images/industries/construction.jpg',
   '建筑': '/images/industries/construction.jpg',
-  
-  // 专业服务 - 商务会议/咨询
   '专业服务': '/images/industries/professional.jpg',
   '专业': '/images/industries/professional.jpg',
-  
-  // 电子商务 - 在线购物
   '电子商务': '/images/industries/insurance.jpg',
   '电商': '/images/industries/insurance.jpg',
-  
-  // 食品饮料 - 食品生产
   '食品饮料': '/images/industries/food.jpg',
   '食品': '/images/industries/food.jpg',
-  
-  // 纺织服装 - 服装设计/时尚
   '纺织服装': '/images/industries/textile.jpg',
   '服装': '/images/industries/textile.jpg',
 }
@@ -108,9 +95,9 @@ const DEFAULT_IMAGE = '/images/industries/default.jpg'
 async function getAllIndustries() {
   const command = new ScanCommand({
     TableName: INDUSTRIES_TABLE,
-    FilterExpression: 'begins_with(SK, :sk)',
+    FilterExpression: 'SK = :sk',
     ExpressionAttributeValues: {
-      ':sk': 'INDUSTRY#',
+      ':sk': 'METADATA',
     },
   })
 
@@ -123,7 +110,7 @@ async function updateIndustryImage(industryId: string, industryName: string, ima
     TableName: INDUSTRIES_TABLE,
     Key: {
       PK: `INDUSTRY#${industryId}`,
-      SK: `INDUSTRY#${industryId}`,
+      SK: 'METADATA',
     },
     UpdateExpression: 'SET imageUrl = :imageUrl, updatedAt = :updatedAt',
     ExpressionAttributeValues: {
@@ -137,6 +124,11 @@ async function updateIndustryImage(industryId: string, industryName: string, ima
 }
 
 function getImageForIndustry(industryName: string): string {
+  // Handle undefined or null industry names
+  if (!industryName) {
+    return DEFAULT_IMAGE
+  }
+
   // Try exact match first
   if (industryImages[industryName]) {
     return industryImages[industryName]
@@ -161,10 +153,16 @@ async function main() {
     const industries = await getAllIndustries()
     console.log(`Found ${industries.length} industries\n`)
 
+    // Debug: Print first industry to see structure
+    if (industries.length > 0) {
+      console.log('Sample industry structure:', JSON.stringify(industries[0], null, 2))
+      console.log('\n')
+    }
+
     // Update each industry with an image
     for (const industry of industries) {
       const industryId = industry.id
-      const industryName = industry.name
+      const industryName = industry.name || 'Unknown'
       const imageUrl = getImageForIndustry(industryName)
 
       await updateIndustryImage(industryId, industryName, imageUrl)
