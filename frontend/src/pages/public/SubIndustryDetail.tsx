@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Layout, Typography, Spin, message, Button, Empty, Tag } from 'antd'
-import { ArrowLeftOutlined, ApartmentOutlined, FileTextOutlined } from '@ant-design/icons'
+import { Layout, Typography, Spin, message, Button } from 'antd'
+import { ArrowLeftOutlined, FileTextOutlined } from '@ant-design/icons'
 import { publicService, PublicUseCase } from '../../services/publicService'
 
 const { Content } = Layout
-const { Title, Paragraph } = Typography
+const { Title } = Typography
 
 const SubIndustryDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>()

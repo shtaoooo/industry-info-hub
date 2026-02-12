@@ -1,0 +1,78 @@
+2026-02-12T11:18:16.989Z [INFO]: # Build environment configured with Standard build compute type: 8GiB Memory, 4vCPUs, 128GB Disk Space
+2026-02-12T11:18:17.588Z [INFO]: # Cloning repository: git@github.com:shtaoooo/industry-info-hub.git
+2026-02-12T11:18:18.356Z [INFO]: 
+2026-02-12T11:18:18.356Z [INFO]: Cloning into 'industry-info-hub'...
+2026-02-12T11:18:18.356Z [INFO]: # Switching to commit: 2ed7b012be698a846e2c7f3d7dbf8371f078758f
+2026-02-12T11:18:18.367Z [INFO]: Note: switching to '2ed7b012be698a846e2c7f3d7dbf8371f078758f'.
+                                 You are in 'detached HEAD' state. You can look around, make experimental
+                                 changes and commit them, and you can discard any commits you make in this
+                                 state without impacting any branches by switching back to a branch.
+                                 If you want to create a new branch to retain commits you create, you may
+                                 do so (now or later) by using -c with the switch command. Example:
+                                 git switch -c <new-branch-name>
+                                 Or undo this operation with:
+                                 git switch -
+                                 Turn off this advice by setting config variable advice.detachedHead to false
+                                 HEAD is now at 2ed7b01 为普通用户添加行业浏览功能
+2026-02-12T11:18:18.445Z [INFO]: Successfully cleaned up Git credentials
+2026-02-12T11:18:18.445Z [INFO]: # Checking for Git submodules at: /codebuild/output/src2654084841/src/industry-info-hub/.gitmodules
+2026-02-12T11:18:18.449Z [INFO]: # Retrieving environment cache...
+2026-02-12T11:18:18.509Z [INFO]: # Retrieved environment cache
+2026-02-12T11:18:18.510Z [INFO]: ---- Setting Up SSM Secrets ----
+2026-02-12T11:18:18.510Z [INFO]: SSM params {"Path":"/amplify/dvlzz7r606v3p/main/","WithDecryption":true}
+2026-02-12T11:18:18.952Z [INFO]: # No package override configuration found.
+2026-02-12T11:18:18.955Z [INFO]: # Retrieving cache...
+2026-02-12T11:18:21.907Z [INFO]: # Extracting cache...
+2026-02-12T11:18:30.126Z [INFO]: # Extraction completed
+2026-02-12T11:18:30.234Z [INFO]: # Retrieved cache
+2026-02-12T11:18:35.145Z [INFO]: ## Starting Backend Build
+                                 ## Checking for associated backend environment...
+                                 ## No backend environment association found, continuing...
+                                 ## Completed Backend Build
+2026-02-12T11:18:35.149Z [INFO]: {"backendDuration": 0}
+                                 ## Starting Frontend Build
+                                 # Starting phase: preBuild
+                                 # Executing command: node --version
+2026-02-12T11:18:35.151Z [INFO]: v22.18.0
+2026-02-12T11:18:35.151Z [INFO]: # Executing command: npm --version
+2026-02-12T11:18:40.052Z [INFO]: 10.9.3
+2026-02-12T11:18:40.057Z [INFO]: # Executing command: echo "Environment variables:"
+                                 Environment variables:
+2026-02-12T11:18:40.057Z [INFO]: # Executing command: echo "VITE_AWS_REGION=$VITE_AWS_REGION"
+                                 VITE_AWS_REGION=us-east-2
+                                 # Executing command: echo "VITE_USER_POOL_ID=$VITE_USER_POOL_ID"
+                                 VITE_USER_POOL_ID=us-east-2_sjK5EzGC0
+                                 # Executing command: echo "VITE_API_ENDPOINT=$VITE_API_ENDPOINT"
+                                 VITE_API_ENDPOINT=https://vto9lsjvn3.execute-api.us-east-2.amazonaws.com
+                                 # Executing command: cd frontend
+2026-02-12T11:18:40.099Z [INFO]: # Executing command: npm ci
+2026-02-12T11:18:56.152Z [WARNING]: npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+2026-02-12T11:18:56.406Z [WARNING]: npm warn deprecated @humanwhocodes/object-schema@2.0.3: Use @eslint/object-schema instead
+2026-02-12T11:18:56.408Z [WARNING]: npm warn deprecated rimraf@3.0.2: Rimraf versions prior to v4 are no longer supported
+2026-02-12T11:18:56.412Z [WARNING]: npm warn deprecated glob@7.2.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+2026-02-12T11:18:56.448Z [WARNING]: npm warn deprecated @humanwhocodes/config-array@0.13.0: Use @eslint/config-array instead
+2026-02-12T11:18:56.532Z [WARNING]: npm warn deprecated whatwg-encoding@3.1.1: Use @exodus/bytes instead for a more spec-conformant and faster implementation
+2026-02-12T11:18:58.833Z [WARNING]: npm warn deprecated eslint@8.57.1: This version is no longer supported. Please see https://eslint.org/version-support for other options.
+2026-02-12T11:19:00.628Z [INFO]: added 776 packages, and audited 777 packages in 20s
+2026-02-12T11:19:00.632Z [INFO]: 194 packages are looking for funding
+                                 run `npm fund` for details
+2026-02-12T11:19:00.642Z [INFO]: 4 moderate severity vulnerabilities
+                                 To address all issues (including breaking changes), run:
+                                 npm audit fix --force
+                                 Run `npm audit` for details.
+2026-02-12T11:19:00.661Z [INFO]: # Completed phase: preBuild
+                                 # Starting phase: build
+                                 # Executing command: npm run build
+2026-02-12T11:19:00.733Z [INFO]: > industry-portal-frontend@0.1.0 build
+                                 > tsc && vite build
+2026-02-12T11:19:03.294Z [INFO]: src/pages/public/SubIndustryDetail.tsx(3,53): error TS6133: 'Empty' is declared but its value is never read.
+2026-02-12T11:19:03.294Z [INFO]: src/pages/public/SubIndustryDetail.tsx(3,60): error TS6133: 'Tag' is declared but its value is never read.
+                                 src/pages/public/SubIndustryDetail.tsx(4,29): error TS6133: 'ApartmentOutlined' is declared but its value is never read.
+                                 src/pages/public/SubIndustryDetail.tsx(8,16): error TS6133: 'Paragraph' is declared but its value is never read.
+2026-02-12T11:19:03.312Z [ERROR]: !!! Build failed
+2026-02-12T11:19:03.313Z [ERROR]: !!! Error: Command failed with exit code 2
+2026-02-12T11:19:03.313Z [INFO]: # Starting environment caching...
+2026-02-12T11:19:03.313Z [INFO]: # Uploading environment cache artifact...
+2026-02-12T11:19:03.392Z [INFO]: # Uploaded environment cache artifact
+2026-02-12T11:19:03.392Z [INFO]: # Environment caching completed
+

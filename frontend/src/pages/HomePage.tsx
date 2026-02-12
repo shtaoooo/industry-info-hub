@@ -69,32 +69,31 @@ const HomePage: React.FC = () => {
   return (
     <Layout style={{ minHeight: '100vh', background: 'transparent' }}>
       <Header style={{
-        background: 'rgba(255, 255, 255, 0.05)',
-        backdropFilter: 'blur(16px)',
-        WebkitBackdropFilter: 'blur(16px)',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+        background: '#fff',
+        borderBottom: '1px solid #f0e6dc',
         padding: '0 32px',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
         height: 60,
+        boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
       }}>
         <div style={{
           fontSize: 22,
           fontWeight: 700,
-          background: 'linear-gradient(135deg, #667eea, #a78bfa)',
+          background: 'linear-gradient(135deg, #f59e0b, #ef4444)',
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent',
         }}>
           行业信息门户
         </div>
         <Space>
-          <UserOutlined style={{ color: 'rgba(255,255,255,0.65)' }} />
-          <Text style={{ color: 'rgba(255,255,255,0.85)' }}>{user?.email}</Text>
+          <UserOutlined style={{ color: '#92400e' }} />
+          <Text style={{ color: '#78350f' }}>{user?.email}</Text>
           <Tag style={{
-            background: 'rgba(102, 126, 234, 0.2)',
-            color: '#a8b4f8',
-            border: '1px solid rgba(102, 126, 234, 0.3)',
+            background: '#fef3c7',
+            color: '#92400e',
+            border: '1px solid #fde68a',
             borderRadius: 6,
           }}>
             {getRoleLabel(user?.role || '')}
@@ -103,7 +102,7 @@ const HomePage: React.FC = () => {
             type="text"
             icon={<LogoutOutlined />}
             onClick={handleLogout}
-            style={{ color: 'rgba(255,255,255,0.65)' }}
+            style={{ color: '#92400e' }}
           >
             登出
           </Button>
@@ -113,10 +112,10 @@ const HomePage: React.FC = () => {
       <Content style={{ padding: 32 }}>
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
           <div style={{ marginBottom: 40 }}>
-            <Title level={2} style={{ marginBottom: 8 }}>
+            <Title level={2} style={{ marginBottom: 8, color: '#78350f' }}>
               欢迎回来，{user?.email}
             </Title>
-            <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 16 }}>
+            <Text style={{ color: '#92400e', fontSize: 16 }}>
               {user?.role === 'admin' && '您拥有系统管理员权限，可以管理所有功能模块。'}
               {user?.role === 'specialist' && '您可以管理负责行业的用例、解决方案和客户案例。'}
               {user?.role === 'user' && '您可以浏览行业信息并下载相关文档。'}
@@ -134,32 +133,32 @@ const HomePage: React.FC = () => {
                   key={card.path}
                   onClick={() => navigate(card.path)}
                   style={{
-                    background: 'rgba(255, 255, 255, 0.06)',
-                    backdropFilter: 'blur(12px)',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    background: '#fff',
+                    border: '1px solid #fed7aa',
                     borderRadius: 16,
                     padding: 24,
                     cursor: 'pointer',
                     transition: 'all 0.3s ease',
+                    boxShadow: '0 2px 8px rgba(251, 146, 60, 0.1)',
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'
-                    e.currentTarget.style.borderColor = 'rgba(102, 126, 234, 0.4)'
+                    e.currentTarget.style.background = '#fffbeb'
+                    e.currentTarget.style.borderColor = '#fb923c'
                     e.currentTarget.style.transform = 'translateY(-4px)'
-                    e.currentTarget.style.boxShadow = '0 12px 40px rgba(102, 126, 234, 0.15)'
+                    e.currentTarget.style.boxShadow = '0 12px 24px rgba(251, 146, 60, 0.2)'
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)'
-                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'
+                    e.currentTarget.style.background = '#fff'
+                    e.currentTarget.style.borderColor = '#fed7aa'
                     e.currentTarget.style.transform = 'translateY(0)'
-                    e.currentTarget.style.boxShadow = 'none'
+                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(251, 146, 60, 0.1)'
                   }}
                 >
-                  <div style={{ color: '#8b9cf7', marginBottom: 12 }}>{card.icon}</div>
-                  <div style={{ fontSize: 16, fontWeight: 600, color: '#fff', marginBottom: 6 }}>
+                  <div style={{ color: '#f59e0b', marginBottom: 12 }}>{card.icon}</div>
+                  <div style={{ fontSize: 16, fontWeight: 600, color: '#78350f', marginBottom: 6 }}>
                     {card.title}
                   </div>
-                  <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)' }}>
+                  <div style={{ fontSize: 13, color: '#92400e' }}>
                     {card.desc}
                   </div>
                 </div>
@@ -177,12 +176,12 @@ const HomePage: React.FC = () => {
                 <div style={{
                   textAlign: 'center',
                   padding: 60,
-                  background: 'rgba(255, 255, 255, 0.04)',
+                  background: '#fef3c7',
                   borderRadius: 16,
-                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  border: '1px solid #fde68a',
                 }}>
-                  <BankOutlined style={{ fontSize: 48, color: 'rgba(255,255,255,0.25)', marginBottom: 16 }} />
-                  <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: 16 }}>
+                  <BankOutlined style={{ fontSize: 48, color: '#d97706', marginBottom: 16 }} />
+                  <div style={{ color: '#92400e', fontSize: 16 }}>
                     暂无可浏览的行业信息
                   </div>
                 </div>
@@ -197,36 +196,36 @@ const HomePage: React.FC = () => {
                       key={industry.id}
                       onClick={() => navigate(`/public/industries/${industry.id}`)}
                       style={{
-                        background: 'rgba(255, 255, 255, 0.06)',
-                        backdropFilter: 'blur(12px)',
-                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        background: '#fff',
+                        border: '1px solid #fed7aa',
                         borderRadius: 16,
                         padding: 24,
                         cursor: 'pointer',
                         transition: 'all 0.3s ease',
+                        boxShadow: '0 2px 8px rgba(251, 146, 60, 0.1)',
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'
-                        e.currentTarget.style.borderColor = 'rgba(102, 126, 234, 0.4)'
+                        e.currentTarget.style.background = '#fffbeb'
+                        e.currentTarget.style.borderColor = '#fb923c'
                         e.currentTarget.style.transform = 'translateY(-4px)'
-                        e.currentTarget.style.boxShadow = '0 12px 40px rgba(102, 126, 234, 0.15)'
+                        e.currentTarget.style.boxShadow = '0 12px 24px rgba(251, 146, 60, 0.2)'
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)'
-                        e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'
+                        e.currentTarget.style.background = '#fff'
+                        e.currentTarget.style.borderColor = '#fed7aa'
                         e.currentTarget.style.transform = 'translateY(0)'
-                        e.currentTarget.style.boxShadow = 'none'
+                        e.currentTarget.style.boxShadow = '0 2px 8px rgba(251, 146, 60, 0.1)'
                       }}
                     >
-                      <div style={{ color: '#8b9cf7', marginBottom: 12 }}>
+                      <div style={{ color: '#f59e0b', marginBottom: 12 }}>
                         <BankOutlined style={{ fontSize: 28 }} />
                       </div>
-                      <div style={{ fontSize: 16, fontWeight: 600, color: '#fff', marginBottom: 8 }}>
+                      <div style={{ fontSize: 16, fontWeight: 600, color: '#78350f', marginBottom: 8 }}>
                         {industry.name}
                       </div>
                       <div style={{
                         fontSize: 13,
-                        color: 'rgba(255,255,255,0.45)',
+                        color: '#92400e',
                         lineHeight: '1.6',
                         display: '-webkit-box',
                         WebkitLineClamp: 3,
