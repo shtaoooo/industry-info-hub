@@ -36,7 +36,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setLoading(true)
       const currentUser = await getCurrentUser()
       const attributes = await fetchUserAttributes()
-      const session = await fetchAuthSession()
+      await fetchAuthSession()
       
       // Extract user information from Cognito
       const userData: User = {

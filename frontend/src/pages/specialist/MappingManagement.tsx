@@ -247,7 +247,7 @@ const MappingManagement: React.FC = () => {
                   onChange={setSelectedUseCase}
                   showSearch
                   filterOption={(input, option) =>
-                    (option?.children as string).toLowerCase().includes(input.toLowerCase())
+                    String(option?.label || option?.children || '').toLowerCase().includes(input.toLowerCase())
                   }
                 >
                   {useCases.map((uc) => (
@@ -295,7 +295,7 @@ const MappingManagement: React.FC = () => {
                   onChange={setSelectedSolution}
                   showSearch
                   filterOption={(input, option) =>
-                    (option?.children as string).toLowerCase().includes(input.toLowerCase())
+                    String(option?.label || option?.children || '').toLowerCase().includes(input.toLowerCase())
                   }
                 >
                   {solutions.map((s) => (
@@ -359,7 +359,7 @@ const MappingManagement: React.FC = () => {
                   placeholder="请选择解决方案"
                   showSearch
                   filterOption={(input, option) =>
-                    (option?.children as string).toLowerCase().includes(input.toLowerCase())
+                    String(option?.label || option?.children || '').toLowerCase().includes(input.toLowerCase())
                   }
                 >
                   {solutions
@@ -382,7 +382,7 @@ const MappingManagement: React.FC = () => {
                   placeholder="请选择用例"
                   showSearch
                   filterOption={(input, option) =>
-                    (option?.children as string).toLowerCase().includes(input.toLowerCase())
+                    String(option?.label || option?.children || '').toLowerCase().includes(input.toLowerCase())
                   }
                 >
                   {useCases

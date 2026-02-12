@@ -10,7 +10,7 @@ const awsconfig = {
       loginWith: {
         email: true,
       },
-      signUpVerificationMethod: 'code',
+      signUpVerificationMethod: 'code' as const,
       userAttributes: {
         email: {
           required: true,
