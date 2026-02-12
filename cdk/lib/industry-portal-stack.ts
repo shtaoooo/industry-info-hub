@@ -171,7 +171,7 @@ export class IndustryPortalStack extends cdk.Stack {
         runtime: lambda.Runtime.NODEJS_18_X,
         handler: `dist/functions/${handler}.handler`,
         code: lambda.Code.fromAsset(path.join(__dirname, '../../backend'), {
-          exclude: ['src', '*.ts', 'tsconfig.json', 'vitest.config.ts'],
+          exclude: ['src', '*.ts', 'tsconfig.json', 'vitest.config.ts', 'node_modules/.bin'],
         }),
         environment: commonEnv,
         timeout: cdk.Duration.seconds(timeout),
