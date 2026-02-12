@@ -1,5 +1,5 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
-import { PutCommand, GetCommand, DeleteCommand, QueryCommand } from '@aws-sdk/lib-dynamodb'
+import { PutCommand, GetCommand, DeleteCommand, QueryCommand, ScanCommand } from '@aws-sdk/lib-dynamodb'
 import { successResponse, errorResponse } from '../utils/response'
 import { getUserFromEvent, requireRole } from '../utils/auth'
 import { docClient, TABLE_NAMES } from '../utils/dynamodb'
@@ -50,7 +50,7 @@ export async function listSubIndustries(event: APIGatewayProxyEvent): Promise<AP
       // Get all sub-industries (scan all industries)
       // This is less efficient but needed for admin overview
       const industries = await docClient.send(
-        new QueryCommand({
+        new ScanCommand({
           TableName: TABLE_NAMES.INDUSTRIES,
           FilterExpression: 'SK = :sk',
           ExpressionAttributeValues: {
@@ -192,7 +192,7 @@ export async function updateSubIndustry(event: APIGatewayProxyEvent): Promise<AP
 
     // Query all industries to find the sub-industry
     const industries = await docClient.send(
-      new QueryCommand({
+      new ScanCommand({
         TableName: TABLE_NAMES.INDUSTRIES,
         FilterExpression: 'SK = :sk',
         ExpressionAttributeValues: {
@@ -285,7 +285,7 @@ export async function deleteSubIndustry(event: APIGatewayProxyEvent): Promise<AP
     let found = false
 
     const industries = await docClient.send(
-      new QueryCommand({
+      new ScanCommand({
         TableName: TABLE_NAMES.INDUSTRIES,
         FilterExpression: 'SK = :sk',
         ExpressionAttributeValues: {
@@ -390,7 +390,7 @@ export async function moveSubIndustry(event: APIGatewayProxyEvent): Promise<APIG
     let oldIndustryId: string = ''
 
     const industries = await docClient.send(
-      new QueryCommand({
+      new ScanCommand({
         TableName: TABLE_NAMES.INDUSTRIES,
         FilterExpression: 'SK = :sk',
         ExpressionAttributeValues: {
