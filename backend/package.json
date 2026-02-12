@@ -1,0 +1,27 @@
+{
+  "name": "industry-portal-backend",
+  "version": "0.1.0",
+  "description": "Industry Portal Backend Lambda Functions",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest --run",
+    "test:watch": "vitest",
+    "deploy": "sam deploy"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.490.0",
+    "@aws-sdk/lib-dynamodb": "^3.490.0",
+    "@aws-sdk/client-s3": "^3.490.0",
+    "@aws-sdk/s3-request-presigner": "^3.490.0",
+    "@aws-sdk/client-cognito-identity-provider": "^3.490.0",
+    "csv-parse": "^5.5.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.6",
+    "@types/aws-lambda": "^8.10.131",
+    "typescript": "^5.2.2",
+    "vitest": "^1.0.4",
+    "fast-check": "^3.15.0"
+  }
+}

@@ -1,0 +1,874 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Industry Portal Backend Infrastructure
+
+Globals:
+  Function:
+    Timeout: 30
+    Runtime: nodejs18.x
+    MemorySize: 1024
+    Environment:
+      Variables:
+        INDUSTRIES_TABLE: !Ref IndustriesTable
+        SUB_INDUSTRIES_TABLE: !Ref SubIndustriesTable
+        USE_CASES_TABLE: !Ref UseCasesTable
+        SOLUTIONS_TABLE: !Ref SolutionsTable
+        MAPPING_TABLE: !Ref UseCaseSolutionMappingTable
+        CUSTOMER_CASES_TABLE: !Ref CustomerCasesTable
+        USERS_TABLE: !Ref UsersTable
+        DOCUMENTS_BUCKET: !Ref DocumentsBucket
+        NODE_OPTIONS: '--enable-source-maps'
+    Tracing: Active
+
+Resources:
+  # DynamoDB Tables
+  IndustriesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: IndustryPortal-Industries
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      SSESpecification:
+        SSEEnabled: true
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+      Tags:
+        - Key: Environment
+          Value: Production
+        - Key: Application
+          Value: IndustryPortal
+
+  SubIndustriesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: IndustryPortal-SubIndustries
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      SSESpecification:
+        SSEEnabled: true
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+      Tags:
+        - Key: Environment
+          Value: Production
+        - Key: Application
+          Value: IndustryPortal
+
+  UseCasesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: IndustryPortal-UseCases
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      SSESpecification:
+        SSEEnabled: true
+
+  SolutionsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: IndustryPortal-Solutions
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      SSESpecification:
+        SSEEnabled: true
+
+  UseCaseSolutionMappingTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: IndustryPortal-UseCaseSolutionMapping
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+        - AttributeName: GSI_PK
+          AttributeType: S
+        - AttributeName: GSI_SK
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: ReverseIndex
+          KeySchema:
+            - AttributeName: GSI_PK
+              KeyType: HASH
+            - AttributeName: GSI_SK
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      SSESpecification:
+        SSEEnabled: true
+
+  CustomerCasesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: IndustryPortal-CustomerCases
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      SSESpecification:
+        SSEEnabled: true
+
+  UsersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: IndustryPortal-Users
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      SSESpecification:
+        SSEEnabled: true
+
+  # S3 Bucket for Documents
+  DocumentsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub 'industry-portal-documents-${AWS::AccountId}'
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders:
+              - '*'
+            AllowedMethods:
+              - GET
+              - PUT
+              - POST
+              - DELETE
+            AllowedOrigins:
+              - '*'
+            MaxAge: 3600
+
+  # Cognito User Pool
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: IndustryPortalUsers
+      UsernameAttributes:
+        - email
+      AutoVerifiedAttributes:
+        - email
+      MfaConfiguration: OPTIONAL
+      EnabledMfas:
+        - SOFTWARE_TOKEN_MFA
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireLowercase: true
+          RequireUppercase: true
+          RequireNumbers: true
+          RequireSymbols: true
+      Schema:
+        - Name: email
+          Required: true
+          Mutable: false
+        - Name: role
+          AttributeDataType: String
+          Mutable: true
+        - Name: assignedIndustries
+          AttributeDataType: String
+          Mutable: true
+
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: IndustryPortalWebClient
+      UserPoolId: !Ref UserPool
+      GenerateSecret: false
+      ExplicitAuthFlows:
+        - ALLOW_USER_PASSWORD_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+        - ALLOW_USER_SRP_AUTH
+      PreventUserExistenceErrors: ENABLED
+
+  IdentityPool:
+    Type: AWS::Cognito::IdentityPool
+    Properties:
+      IdentityPoolName: IndustryPortalIdentityPool
+      AllowUnauthenticatedIdentities: true
+      CognitoIdentityProviders:
+        - ClientId: !Ref UserPoolClient
+          ProviderName: !GetAtt UserPool.ProviderName
+
+  # Lambda Functions
+  IndustryManagementFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: dist/functions/industryManagement.handler
+      CodeUri: .
+      Description: Industry CRUD management for admins
+      Environment:
+        Variables:
+          USER_POOL_ID: !Ref UserPool
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref IndustriesTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref SubIndustriesTable
+      Events:
+        ListIndustries:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: /admin/industries
+            Method: GET
+        CreateIndustry:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: /admin/industries
+            Method: POST
+        UpdateIndustry:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: /admin/industries/{id}
+            Method: PUT
+        DeleteIndustry:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: /admin/industries/{id}
+            Method: DELETE
+        SetVisibility:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: /admin/industries/{id}/visibility
+            Method: PATCH
+
+  CSVImportFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: dist/functions/csvImport.handler
+      CodeUri: .
+      Description: CSV batch import for industries and sub-industries
+      Timeout: 300
+      MemorySize: 2048
+      Environment:
+        Variables:
+          USER_POOL_ID: !Ref UserPool
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref IndustriesTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref SubIndustriesTable
+      Events:
+        ImportCSV:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: /admin/industries/import-csv
+            Method: POST
+
+  SubIndustryManagementFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: dist/functions/subIndustryManagement.handler
+      CodeUri: .
+      Description: Sub-industry CRUD management for admins
+      Environment:
+        Variables:
+          USER_POOL_ID: !Ref UserPool
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref IndustriesTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref SubIndustriesTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UseCasesTable
+      Events:
+        ListAllSubIndustries:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: /admin/sub-industries
+            Method: GET
+        ListSubIndustriesByIndustry:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: /admin/industries/{industryId}/sub-industries
+            Method: GET
+        CreateSubIndustry:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: /admin/sub-industries
+            Method: POST
+        UpdateSubIndustry:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: /admin/sub-industries/{id}
+            Method: PUT
+        DeleteSubIndustry:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: /admin/sub-industries/{id}
+            Method: DELETE
+        MoveSubIndustry:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: /admin/sub-industries/{id}/move
+            Method: PATCH
+
+  SolutionManagementFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: dist/functions/solutionManagement.handler
+      CodeUri: .
+      Description: Solution CRUD management for admins
+      Environment:
+        Variables:
+          USER_POOL_ID: !Ref UserPool
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref SolutionsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref CustomerCasesTable
+        - S3CrudPolicy:
+            BucketName: !Ref DocumentsBucket
+      Events:
+        ListSolutions:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: /admin/solutions
+            Method: GET
+        GetSolution:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: /admin/solutions/{id}
+            Method: GET
+        CreateSolution:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: /admin/solutions
+            Method: POST
+        UpdateSolution:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: /admin/solutions/{id}
+            Method: PUT
+        DeleteSolution:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: /admin/solutions/{id}
+            Method: DELETE
+        UploadMarkdown:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: /admin/solutions/{id}/detail-markdown
+            Method: POST
+        GetMarkdownUrl:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: /admin/solutions/{id}/detail-markdown
+            Method: GET
+
+  UseCaseManagementFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: dist/functions/useCaseManagement.handler
+      CodeUri: .
+      Description: Use case CRUD management for specialists
+      Environment:
+        Variables:
+          USER_POOL_ID: !Ref UserPool
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref IndustriesTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref SubIndustriesTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UseCasesTable
+        - S3CrudPolicy:
+            BucketName: !Ref DocumentsBucket
+      Events:
+        ListUseCases:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: /specialist/use-cases
+            Method: GET
+        CreateUseCase:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: /specialist/use-cases
+            Method: POST
+        UpdateUseCase:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: /specialist/use-cases/{id}
+            Method: PUT
+        DeleteUseCase:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: /specialist/use-cases/{id}
+            Method: DELETE
+        UploadDocument:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: /specialist/use-cases/{id}/documents
+            Method: POST
+        DeleteDocument:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: /specialist/use-cases/{id}/documents/{docId}
+            Method: DELETE
+
+  MappingManagementFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: dist/functions/mappingManagement.handler
+      CodeUri: .
+      Description: Use case and solution mapping management for specialists
+      Environment:
+        Variables:
+          USER_POOL_ID: !Ref UserPool
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref IndustriesTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref SubIndustriesTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UseCasesTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref SolutionsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UseCaseSolutionMappingTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref CustomerCasesTable
+      Events:
+        CreateMapping:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: /specialist/use-cases/{useCaseId}/solutions/{solutionId}
+            Method: POST
+        DeleteMapping:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: /specialist/use-cases/{useCaseId}/solutions/{solutionId}
+            Method: DELETE
+        GetSolutionsForUseCase:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: /specialist/use-cases/{useCaseId}/solutions
+            Method: GET
+        GetUseCasesForSolution:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: /specialist/solutions/{solutionId}/use-cases
+            Method: GET
+
+  CustomerCaseManagementFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: dist/functions/customerCaseManagement.handler
+      CodeUri: .
+      Description: Customer case CRUD management for specialists
+      Environment:
+        Variables:
+          USER_POOL_ID: !Ref UserPool
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref IndustriesTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref SubIndustriesTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UseCasesTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref SolutionsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref CustomerCasesTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UseCaseSolutionMappingTable
+        - S3CrudPolicy:
+            BucketName: !Ref DocumentsBucket
+      Events:
+        ListCustomerCases:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: /specialist/customer-cases
+            Method: GET
+        CreateCustomerCase:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: /specialist/customer-cases
+            Method: POST
+        UpdateCustomerCase:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: /specialist/customer-cases/{id}
+            Method: PUT
+        DeleteCustomerCase:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: /specialist/customer-cases/{id}
+            Method: DELETE
+        UploadDocument:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: /specialist/customer-cases/{id}/documents
+            Method: POST
+
+  PublicBrowsingFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: dist/functions/publicBrowsing.handler
+      CodeUri: .
+      Description: Public browsing for all users
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref IndustriesTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref SubIndustriesTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref UseCasesTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref SolutionsTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref CustomerCasesTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref UseCaseSolutionMappingTable
+        - S3ReadPolicy:
+            BucketName: !Ref DocumentsBucket
+      Events:
+        ListIndustries:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: /public/industries
+            Method: GET
+        GetIndustry:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: /public/industries/{id}
+            Method: GET
+        ListSubIndustries:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: /public/industries/{id}/sub-industries
+            Method: GET
+        ListUseCases:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: /public/sub-industries/{id}/use-cases
+            Method: GET
+        GetUseCase:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: /public/use-cases/{id}
+            Method: GET
+        GetSolutionsForUseCase:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: /public/use-cases/{id}/solutions
+            Method: GET
+        GetSolution:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: /public/solutions/{id}
+            Method: GET
+        GetSolutionMarkdown:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: /public/solutions/{id}/detail-markdown
+            Method: GET
+        GetCustomerCases:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: /public/solutions/{id}/customer-cases
+            Method: GET
+
+  DocumentDownloadFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: dist/functions/documentDownload.handler
+      CodeUri: .
+      Description: Document download with presigned URLs
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Ref DocumentsBucket
+      Events:
+        DownloadDocument:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: /public/documents/{id}/download
+            Method: GET
+
+  UserManagementFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: dist/functions/userManagement.handler
+      CodeUri: .
+      Description: User management for admins
+      Environment:
+        Variables:
+          USER_POOL_ID: !Ref UserPool
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UsersTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - cognito-idp:AdminCreateUser
+                - cognito-idp:AdminDeleteUser
+                - cognito-idp:AdminUpdateUserAttributes
+                - cognito-idp:AdminGetUser
+                - cognito-idp:ListUsers
+              Resource: !GetAtt UserPool.Arn
+      Events:
+        ListUsers:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: /admin/users
+            Method: GET
+        GetUser:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: /admin/users/{userId}
+            Method: GET
+        CreateUser:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: /admin/users
+            Method: POST
+        UpdateUser:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: /admin/users/{userId}
+            Method: PUT
+        DeleteUser:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref ApiGateway
+            Path: /admin/users/{userId}
+            Method: DELETE
+
+  # API Gateway
+  ApiGateway:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: prod
+      CorsConfiguration:
+        AllowOrigins:
+          - '*'
+        AllowHeaders:
+          - '*'
+        AllowMethods:
+          - GET
+          - POST
+          - PUT
+          - DELETE
+          - OPTIONS
+        MaxAge: 600
+      DefaultRouteSettings:
+        ThrottlingBurstLimit: 5000
+        ThrottlingRateLimit: 2000
+      AccessLogSettings:
+        DestinationArn: !GetAtt ApiGatewayLogGroup.Arn
+        Format: '$context.requestId $context.error.message $context.error.messageString'
+
+  # CloudWatch Log Group for API Gateway
+  ApiGatewayLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/apigateway/industry-portal
+      RetentionInDays: 30
+
+  # CloudFront Distribution for S3 Documents
+  CloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        Comment: Industry Portal Documents CDN
+        DefaultCacheBehavior:
+          TargetOriginId: S3Origin
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods:
+            - GET
+            - HEAD
+            - OPTIONS
+          CachedMethods:
+            - GET
+            - HEAD
+          ForwardedValues:
+            QueryString: false
+            Cookies:
+              Forward: none
+          MinTTL: 0
+          DefaultTTL: 86400
+          MaxTTL: 31536000
+          Compress: true
+        Origins:
+          - Id: S3Origin
+            DomainName: !GetAtt DocumentsBucket.RegionalDomainName
+            S3OriginConfig:
+              OriginAccessIdentity: !Sub 'origin-access-identity/cloudfront/${CloudFrontOAI}'
+        PriceClass: PriceClass_100
+        ViewerCertificate:
+          CloudFrontDefaultCertificate: true
+
+  # CloudFront Origin Access Identity
+  CloudFrontOAI:
+    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: OAI for Industry Portal Documents
+
+  # S3 Bucket Policy for CloudFront
+  DocumentsBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref DocumentsBucket
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              CanonicalUser: !GetAtt CloudFrontOAI.S3CanonicalUserId
+            Action: 's3:GetObject'
+            Resource: !Sub '${DocumentsBucket.Arn}/*'
+
+Outputs:
+  ApiEndpoint:
+    Description: API Gateway endpoint URL
+    Value: !Sub 'https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/prod'
+  
+  UserPoolId:
+    Description: Cognito User Pool ID
+    Value: !Ref UserPool
+  
+  UserPoolClientId:
+    Description: Cognito User Pool Client ID
+    Value: !Ref UserPoolClient
+  
+  IdentityPoolId:
+    Description: Cognito Identity Pool ID
+    Value: !Ref IdentityPool
+  
+  DocumentsBucket:
+    Description: S3 Bucket for Documents
+    Value: !Ref DocumentsBucket
+
+  CloudFrontDomain:
+    Description: CloudFront Distribution Domain Name
+    Value: !GetAtt CloudFrontDistribution.DomainName
+
+  CloudFrontDistributionId:
+    Description: CloudFront Distribution ID
+    Value: !Ref CloudFrontDistribution
