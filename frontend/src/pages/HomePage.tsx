@@ -82,7 +82,7 @@ const HomePage: React.FC = () => {
         zIndex: 1000,
       }}>
         <div style={{
-          fontSize: 21px,
+          fontSize: 21,
           fontWeight: 600,
           color: '#1d1d1f',
           letterSpacing: '0.011em',
