@@ -19,7 +19,6 @@ const HomePage: React.FC = () => {
   const [loadingIndustries, setLoadingIndustries] = useState(false)
 
   useEffect(() => {
-    // Load industries for regular users
     if (user?.role === 'user') {
       loadIndustries()
     }
@@ -57,46 +56,52 @@ const HomePage: React.FC = () => {
   }
 
   const adminCards = [
-    { title: '行业管理', icon: <BankOutlined style={{ fontSize: 28 }} />, path: '/admin/industries', desc: '管理行业分类和定义' },
-    { title: '子行业管理', icon: <ApartmentOutlined style={{ fontSize: 28 }} />, path: '/admin/sub-industries', desc: '管理子行业数据' },
-    { title: '解决方案', icon: <BulbOutlined style={{ fontSize: 28 }} />, path: '/admin/solutions', desc: '管理解决方案库' },
-    { title: '用户管理', icon: <TeamOutlined style={{ fontSize: 28 }} />, path: '/admin/users', desc: '管理系统用户' },
-    { title: '用例管理', icon: <FileTextOutlined style={{ fontSize: 28 }} />, path: '/specialist/use-cases', desc: '管理行业用例' },
-    { title: '关联管理', icon: <LinkOutlined style={{ fontSize: 28 }} />, path: '/specialist/mappings', desc: '管理用例与方案关联' },
-    { title: '客户案例', icon: <SolutionOutlined style={{ fontSize: 28 }} />, path: '/specialist/customer-cases', desc: '管理客户成功案例' },
+    { title: '行业管理', icon: <BankOutlined style={{ fontSize: 32 }} />, path: '/admin/industries', desc: '管理行业分类和定义' },
+    { title: '子行业管理', icon: <ApartmentOutlined style={{ fontSize: 32 }} />, path: '/admin/sub-industries', desc: '管理子行业数据' },
+    { title: '解决方案', icon: <BulbOutlined style={{ fontSize: 32 }} />, path: '/admin/solutions', desc: '管理解决方案库' },
+    { title: '用户管理', icon: <TeamOutlined style={{ fontSize: 32 }} />, path: '/admin/users', desc: '管理系统用户' },
+    { title: '用例管理', icon: <FileTextOutlined style={{ fontSize: 32 }} />, path: '/specialist/use-cases', desc: '管理行业用例' },
+    { title: '关联管理', icon: <LinkOutlined style={{ fontSize: 32 }} />, path: '/specialist/mappings', desc: '管理用例与方案关联' },
+    { title: '客户案例', icon: <SolutionOutlined style={{ fontSize: 32 }} />, path: '/specialist/customer-cases', desc: '管理客户成功案例' },
   ]
 
   return (
-    <Layout style={{ minHeight: '100vh', background: 'transparent' }}>
+    <Layout style={{ minHeight: '100vh', background: '#fbfbfd' }}>
       <Header style={{
-        background: 'rgba(255, 255, 255, 0.85)',
-        backdropFilter: 'blur(16px)',
-        WebkitBackdropFilter: 'blur(16px)',
-        borderBottom: '1px solid rgba(16, 185, 129, 0.15)',
-        padding: '0 32px',
+        background: 'rgba(251, 251, 253, 0.8)',
+        backdropFilter: 'saturate(180%) blur(20px)',
+        WebkitBackdropFilter: 'saturate(180%) blur(20px)',
+        borderBottom: '1px solid rgba(0, 0, 0, 0.08)',
+        padding: '0 max(22px, env(safe-area-inset-left))',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        height: 60,
-        boxShadow: '0 2px 8px rgba(16, 185, 129, 0.08)',
+        height: 44,
+        position: 'sticky',
+        top: 0,
+        zIndex: 1000,
       }}>
         <div style={{
-          fontSize: 22,
-          fontWeight: 700,
-          background: 'linear-gradient(135deg, #10b981, #059669)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
+          fontSize: 21px,
+          fontWeight: 600,
+          color: '#1d1d1f',
+          letterSpacing: '0.011em',
         }}>
           行业信息门户
         </div>
-        <Space>
-          <UserOutlined style={{ color: '#047857' }} />
-          <Text style={{ color: '#064e3b' }}>{user?.email}</Text>
+        <Space size={24}>
+          <Space size={12}>
+            <UserOutlined style={{ color: '#6e6e73', fontSize: 16 }} />
+            <Text style={{ color: '#1d1d1f', fontSize: 14 }}>{user?.email}</Text>
+          </Space>
           <Tag style={{
-            background: 'rgba(16, 185, 129, 0.1)',
-            color: '#047857',
-            border: '1px solid rgba(16, 185, 129, 0.25)',
-            borderRadius: 6,
+            background: '#f5f5f7',
+            color: '#1d1d1f',
+            border: 'none',
+            borderRadius: 12,
+            padding: '4px 12px',
+            fontSize: 12,
+            fontWeight: 400,
           }}>
             {getRoleLabel(user?.role || '')}
           </Tag>
@@ -104,64 +109,76 @@ const HomePage: React.FC = () => {
             type="text"
             icon={<LogoutOutlined />}
             onClick={handleLogout}
-            style={{ color: '#047857' }}
+            style={{ 
+              color: '#0071e3',
+              fontSize: 14,
+              padding: '4px 8px',
+              height: 'auto',
+            }}
           >
             登出
           </Button>
         </Space>
       </Header>
 
-      <Content style={{ padding: 32 }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-          <div style={{ marginBottom: 40 }}>
-            <Title level={2} style={{ marginBottom: 8, color: '#064e3b' }}>
-              欢迎回来，{user?.email}
+      <Content style={{ padding: '60px 0' }}>
+        <div style={{ maxWidth: 980, margin: '0 auto', padding: '0 22px' }}>
+          <div style={{ marginBottom: 60, textAlign: 'center' }}>
+            <Title level={1} style={{ 
+              marginBottom: 12, 
+              color: '#1d1d1f',
+              fontSize: 48,
+              fontWeight: 600,
+              lineHeight: 1.08349,
+              letterSpacing: '-0.003em',
+            }}>
+              欢迎回来
             </Title>
-            <Text style={{ color: '#047857', fontSize: 16 }}>
-              {user?.role === 'admin' && '您拥有系统管理员权限，可以管理所有功能模块。'}
-              {user?.role === 'specialist' && '您可以管理负责行业的用例、解决方案和客户案例。'}
-              {user?.role === 'user' && '您可以浏览行业信息并下载相关文档。'}
+            <Text style={{ 
+              color: '#6e6e73', 
+              fontSize: 21,
+              lineHeight: 1.381,
+              fontWeight: 400,
+              letterSpacing: '0.011em',
+            }}>
+              {user?.role === 'admin' && '您拥有系统管理员权限，可以管理所有功能模块'}
+              {user?.role === 'specialist' && '您可以管理负责行业的用例、解决方案和客户案例'}
+              {user?.role === 'user' && '您可以浏览行业信息并下载相关文档'}
             </Text>
           </div>
 
           {hasRole(['admin', 'specialist']) && (
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
-              gap: 20,
+              gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+              gap: 24,
             }}>
               {adminCards.map((card) => (
                 <div
                   key={card.path}
                   onClick={() => navigate(card.path)}
+                  className="apple-card"
                   style={{
-                    background: 'rgba(255, 255, 255, 0.8)',
-                    backdropFilter: 'blur(10px)',
-                    border: '1px solid rgba(16, 185, 129, 0.2)',
-                    borderRadius: 16,
-                    padding: 24,
+                    padding: 32,
                     cursor: 'pointer',
-                    transition: 'all 0.3s ease',
-                    boxShadow: '0 2px 8px rgba(16, 185, 129, 0.08)',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'rgba(236, 253, 245, 0.9)'
-                    e.currentTarget.style.borderColor = '#10b981'
-                    e.currentTarget.style.transform = 'translateY(-4px)'
-                    e.currentTarget.style.boxShadow = '0 12px 24px rgba(16, 185, 129, 0.15)'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.8)'
-                    e.currentTarget.style.borderColor = 'rgba(16, 185, 129, 0.2)'
-                    e.currentTarget.style.transform = 'translateY(0)'
-                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(16, 185, 129, 0.08)'
                   }}
                 >
-                  <div style={{ color: '#10b981', marginBottom: 12 }}>{card.icon}</div>
-                  <div style={{ fontSize: 16, fontWeight: 600, color: '#064e3b', marginBottom: 6 }}>
+                  <div style={{ color: '#0071e3', marginBottom: 16 }}>{card.icon}</div>
+                  <div style={{ 
+                    fontSize: 21, 
+                    fontWeight: 600, 
+                    color: '#1d1d1f', 
+                    marginBottom: 8,
+                    letterSpacing: '0.011em',
+                  }}>
                     {card.title}
                   </div>
-                  <div style={{ fontSize: 13, color: '#047857' }}>
+                  <div style={{ 
+                    fontSize: 17, 
+                    color: '#6e6e73',
+                    lineHeight: 1.47059,
+                    letterSpacing: '-0.022em',
+                  }}>
                     {card.desc}
                   </div>
                 </div>
@@ -172,65 +189,54 @@ const HomePage: React.FC = () => {
           {user?.role === 'user' && (
             <div>
               {loadingIndustries ? (
-                <div style={{ textAlign: 'center', padding: 60 }}>
+                <div style={{ textAlign: 'center', padding: 80 }}>
                   <Spin size="large" />
                 </div>
               ) : industries.length === 0 ? (
                 <div style={{
                   textAlign: 'center',
-                  padding: 60,
-                  background: 'rgba(236, 253, 245, 0.6)',
-                  borderRadius: 16,
-                  border: '1px solid rgba(16, 185, 129, 0.2)',
+                  padding: 80,
+                  background: '#f5f5f7',
+                  borderRadius: 18,
                 }}>
-                  <BankOutlined style={{ fontSize: 48, color: '#10b981', marginBottom: 16 }} />
-                  <div style={{ color: '#047857', fontSize: 16 }}>
+                  <BankOutlined style={{ fontSize: 56, color: '#86868b', marginBottom: 20 }} />
+                  <div style={{ color: '#6e6e73', fontSize: 21 }}>
                     暂无可浏览的行业信息
                   </div>
                 </div>
               ) : (
                 <div style={{
                   display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-                  gap: 20,
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+                  gap: 24,
                 }}>
                   {industries.map((industry) => (
                     <div
                       key={industry.id}
                       onClick={() => navigate(`/public/industries/${industry.id}`)}
+                      className="apple-card"
                       style={{
-                        background: 'rgba(255, 255, 255, 0.8)',
-                        backdropFilter: 'blur(10px)',
-                        border: '1px solid rgba(16, 185, 129, 0.2)',
-                        borderRadius: 16,
-                        padding: 24,
+                        padding: 32,
                         cursor: 'pointer',
-                        transition: 'all 0.3s ease',
-                        boxShadow: '0 2px 8px rgba(16, 185, 129, 0.08)',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = 'rgba(236, 253, 245, 0.9)'
-                        e.currentTarget.style.borderColor = '#10b981'
-                        e.currentTarget.style.transform = 'translateY(-4px)'
-                        e.currentTarget.style.boxShadow = '0 12px 24px rgba(16, 185, 129, 0.15)'
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.8)'
-                        e.currentTarget.style.borderColor = 'rgba(16, 185, 129, 0.2)'
-                        e.currentTarget.style.transform = 'translateY(0)'
-                        e.currentTarget.style.boxShadow = '0 2px 8px rgba(16, 185, 129, 0.08)'
                       }}
                     >
-                      <div style={{ color: '#10b981', marginBottom: 12 }}>
-                        <BankOutlined style={{ fontSize: 28 }} />
+                      <div style={{ color: '#0071e3', marginBottom: 16 }}>
+                        <BankOutlined style={{ fontSize: 32 }} />
                       </div>
-                      <div style={{ fontSize: 16, fontWeight: 600, color: '#064e3b', marginBottom: 8 }}>
+                      <div style={{ 
+                        fontSize: 21, 
+                        fontWeight: 600, 
+                        color: '#1d1d1f', 
+                        marginBottom: 8,
+                        letterSpacing: '0.011em',
+                      }}>
                         {industry.name}
                       </div>
                       <div style={{
-                        fontSize: 13,
-                        color: '#047857',
-                        lineHeight: '1.6',
+                        fontSize: 17,
+                        color: '#6e6e73',
+                        lineHeight: 1.47059,
+                        letterSpacing: '-0.022em',
                         display: '-webkit-box',
                         WebkitLineClamp: 3,
                         WebkitBoxOrient: 'vertical',
