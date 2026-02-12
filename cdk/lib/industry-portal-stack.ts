@@ -9,7 +9,6 @@ import * as integrations from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 import * as authorizers from 'aws-cdk-lib/aws-apigatewayv2-authorizers';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
-import * as s3deploy from 'aws-cdk-lib/aws-s3-deployment';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as path from 'path';
 
@@ -98,7 +97,7 @@ export class IndustryPortalStack extends cdk.Stack {
 
     // S3 Bucket for Documents
     const documentsBucket = new s3.Bucket(this, 'DocumentsBucket', {
-      bucketName: `industry-portal-documents-${this.account}`,
+      bucketName: `industry-portal-docs-east2-${this.account}`,
       encryption: s3.BucketEncryption.S3_MANAGED,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       cors: [{
@@ -366,60 +365,6 @@ export class IndustryPortalStack extends cdk.Stack {
       priceClass: cloudfront.PriceClass.PRICE_CLASS_100,
     });
 
-    // S3 Bucket for Frontend
-    const frontendBucket = new s3.Bucket(this, 'FrontendBucket', {
-      bucketName: `industry-portal-frontend-${this.account}`,
-      websiteIndexDocument: 'index.html',
-      websiteErrorDocument: 'index.html',
-      publicReadAccess: false,
-      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
-      autoDeleteObjects: true,
-    });
-
-    const frontendOai = new cloudfront.OriginAccessIdentity(this, 'FrontendOAI', {
-      comment: 'OAI for Industry Portal Frontend',
-    });
-
-    frontendBucket.grantRead(frontendOai);
-
-    // CloudFront Distribution for Frontend
-    const frontendDistribution = new cloudfront.Distribution(this, 'FrontendDistribution', {
-      comment: 'Industry Portal Frontend',
-      defaultRootObject: 'index.html',
-      defaultBehavior: {
-        origin: new origins.S3Origin(frontendBucket, { originAccessIdentity: frontendOai }),
-        viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-        allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD_OPTIONS,
-        cachedMethods: cloudfront.CachedMethods.CACHE_GET_HEAD_OPTIONS,
-        compress: true,
-        cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
-      },
-      errorResponses: [
-        {
-          httpStatus: 404,
-          responseHttpStatus: 200,
-          responsePagePath: '/index.html',
-          ttl: cdk.Duration.seconds(0),
-        },
-        {
-          httpStatus: 403,
-          responseHttpStatus: 200,
-          responsePagePath: '/index.html',
-          ttl: cdk.Duration.seconds(0),
-        },
-      ],
-      priceClass: cloudfront.PriceClass.PRICE_CLASS_100,
-    });
-
-    // Deploy Frontend
-    new s3deploy.BucketDeployment(this, 'DeployFrontend', {
-      sources: [s3deploy.Source.asset(path.join(__dirname, '../../frontend/dist'))],
-      destinationBucket: frontendBucket,
-      distribution: frontendDistribution,
-      distributionPaths: ['/*'],
-    });
-
     // Outputs
     new cdk.CfnOutput(this, 'ApiEndpoint', {
       value: httpApi.apiEndpoint,
@@ -449,11 +394,6 @@ export class IndustryPortalStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'CloudFrontDocumentsDomain', {
       value: distribution.distributionDomainName,
       description: 'CloudFront Distribution Domain Name for Documents',
-    });
-
-    new cdk.CfnOutput(this, 'FrontendUrl', {
-      value: `https://${frontendDistribution.distributionDomainName}`,
-      description: 'Frontend URL',
     });
   }
 }
