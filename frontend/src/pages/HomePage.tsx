@@ -235,7 +235,7 @@ const HomePage: React.FC = () => {
           {hasRole(['admin', 'specialist']) && (
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+              gridTemplateColumns: 'repeat(3, 1fr)',
               gap: 24,
             }}>
               {adminCards.map((card) => (
@@ -292,7 +292,7 @@ const HomePage: React.FC = () => {
               ) : (
                 <div style={{
                   display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+                  gridTemplateColumns: 'repeat(3, 1fr)',
                   gap: 24,
                 }}>
                   {industries.map((industry) => (
