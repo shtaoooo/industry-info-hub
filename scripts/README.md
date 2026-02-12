@@ -2,6 +2,54 @@
 
 This directory contains utility scripts for managing the Industry Portal.
 
+## Download Industry Images Script
+
+This script downloads high-quality industry images from Unsplash and saves them to the frontend public directory.
+
+### Usage
+
+```bash
+# From the scripts directory
+node download-industry-images.js
+
+# Or using npm
+npm run download-images
+```
+
+### What it does
+
+1. Creates `frontend/public/images/industries/` directory if it doesn't exist
+2. Downloads optimized images (1200px width, 85% quality) for each industry
+3. Saves images with descriptive filenames (e.g., `finance.jpg`, `manufacturing.jpg`)
+4. Skips already downloaded images to avoid re-downloading
+
+### Downloaded Images
+
+The script downloads images for the following industries:
+- finance.jpg - Financial services
+- manufacturing.jpg - Manufacturing
+- retail.jpg - Retail
+- healthcare.jpg - Healthcare
+- education.jpg - Education
+- logistics.jpg - Logistics & Transportation
+- energy.jpg - Energy
+- telecom.jpg - Telecommunications
+- realestate.jpg - Real Estate
+- automotive.jpg - Automotive
+- agriculture.jpg - Agriculture
+- tourism.jpg - Tourism & Hospitality
+- media.jpg - Media & Entertainment
+- technology.jpg - Technology
+- government.jpg - Government & Public Services
+- insurance.jpg - Insurance
+- aerospace.jpg - Aerospace & Aviation
+- chemical.jpg - Chemical
+- construction.jpg - Construction & Engineering
+- professional.jpg - Professional Services
+- food.jpg - Food & Beverage
+- textile.jpg - Textile & Apparel
+- default.jpg - Default fallback image
+
 ## Add Industry Images Script
 
 This script adds high-quality image URLs to all existing industries in DynamoDB.
@@ -38,29 +86,9 @@ npm run add-images
 3. Updates each industry record with the `imageUrl` field
 4. Provides console output showing progress
 
-### Image Mapping
-
-The script includes pre-selected high-quality images for common industries:
-- 金融服务 (Financial Services)
-- 制造业 (Manufacturing)
-- 零售 (Retail)
-- 医疗健康 (Healthcare)
-- 教育 (Education)
-- 物流运输 (Logistics)
-- 能源 (Energy)
-- 电信 (Telecommunications)
-- 房地产 (Real Estate)
-- 汽车 (Automotive)
-- 农业 (Agriculture)
-- 旅游酒店 (Tourism & Hospitality)
-- 媒体娱乐 (Media & Entertainment)
-- 科技 (Technology)
-- And more...
-
-For industries not in the mapping, a default business-themed image is used.
-
 ### Notes
 
-- All images are from Unsplash and are high-quality (1200px width, 85% quality)
-- The script is idempotent - running it multiple times will update the same records
-- Images are served directly from Unsplash CDN (no S3 storage needed)
+- The download script should be run before deploying to ensure images are available locally
+- All images are optimized for web use (1200px width, 85% quality)
+- Images are served from the Amplify deployment (no external CDN dependency)
+- The script is idempotent - running it multiple times will skip existing files

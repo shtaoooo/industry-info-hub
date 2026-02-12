@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "description": "Utility scripts for Industry Portal",
   "scripts": {
-    "add-images": "ts-node add-industry-images.ts"
+    "add-images": "ts-node add-industry-images.ts",
+    "download-images": "node download-industry-images.js"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.0.0",
