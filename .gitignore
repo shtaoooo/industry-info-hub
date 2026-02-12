@@ -44,7 +44,9 @@ coverage/
 # Kiro specs and sensitive files
 .kiro/
 connect_ec2.cfg
+connect_ec2.cfg.example
 Industry_definition.csv
+SECURITY_CHECKLIST.md
 
 # CDK
 cdk/cdk.out/

@@ -5,9 +5,9 @@ echo ========================================
 echo Git 推送并在 EC2 上部署
 echo ========================================
 
-REM Git 配置
-set EC2_HOST=ec2-user@54.227.42.240
-set SSH_KEY=C:/Users/Administrator/.ssh/Global-001.pem
+REM Git 配置 - 请根据实际情况修改
+set EC2_HOST=ec2-user@YOUR_EC2_IP
+set SSH_KEY=C:/path/to/your/key.pem
 set REMOTE_PATH=~/industry-portal
 
 echo.
@@ -36,6 +36,6 @@ echo 部署完成！
 echo ========================================
 echo.
 echo 现在可以测试 API (需要 JWT token):
-echo node test-api.js https://jipxuzbq1f.execute-api.us-east-1.amazonaws.com/prod
+echo node test-api.js YOUR_API_ENDPOINT
 echo.
 pause
