@@ -12,7 +12,6 @@ export default defineConfig({
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
           'aws-vendor': ['aws-amplify'],
           'ui-vendor': ['antd', '@ant-design/icons'],
-          'markdown-vendor': ['react-markdown', 'remark-gfm'],
         },
       },
     },
