@@ -3,6 +3,12 @@ frontend:
   phases:
     preBuild:
       commands:
+        - node --version
+        - npm --version
+        - echo "Environment variables:"
+        - echo "VITE_AWS_REGION=$VITE_AWS_REGION"
+        - echo "VITE_USER_POOL_ID=$VITE_USER_POOL_ID"
+        - echo "VITE_API_ENDPOINT=$VITE_API_ENDPOINT"
         - cd frontend
         - npm ci
     build:
