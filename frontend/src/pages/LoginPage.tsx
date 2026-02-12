@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Form, Input, Button, Card, message, Typography } from 'antd'
 import { UserOutlined, LockOutlined } from '@ant-design/icons'
 import { useAuth } from '../contexts/AuthContext'
@@ -13,15 +13,22 @@ interface LoginFormValues {
 
 const LoginPage: React.FC = () => {
   const [loading, setLoading] = useState(false)
-  const { login } = useAuth()
+  const { login, isAuthenticated } = useAuth()
   const navigate = useNavigate()
+
+  // If already authenticated, redirect to home
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/', { replace: true })
+    }
+  }, [isAuthenticated, navigate])
 
   const onFinish = async (values: LoginFormValues) => {
     setLoading(true)
     try {
       await login(values.email, values.password)
       message.success('登录成功')
-      navigate('/')
+      // navigate is handled by useEffect above when isAuthenticated changes
     } catch (error: any) {
       console.error('Login failed:', error)
       message.error(error.message || '登录失败，请检查用户名和密码')

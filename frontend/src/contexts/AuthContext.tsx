@@ -38,16 +38,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const attributes = await fetchUserAttributes()
       await fetchAuthSession()
       
+      // Parse assignedIndustries safely
+      let assignedIndustries: string[] | undefined
+      try {
+        const raw = attributes['custom:assignedIndustries']
+        if (raw) {
+          assignedIndustries = JSON.parse(raw)
+        }
+      } catch {
+        console.warn('Failed to parse assignedIndustries, ignoring')
+      }
+
       // Extract user information from Cognito
       const userData: User = {
         userId: currentUser.userId,
         email: attributes.email || '',
         role: (attributes['custom:role'] as 'admin' | 'specialist' | 'user') || 'user',
-        assignedIndustries: attributes['custom:assignedIndustries'] 
-          ? JSON.parse(attributes['custom:assignedIndustries']) 
-          : undefined,
+        assignedIndustries,
       }
       
+      console.log('User loaded:', userData.email, 'role:', userData.role)
       setUser(userData)
     } catch (error) {
       console.error('Error loading user:', error)
@@ -63,8 +73,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (email: string, password: string) => {
     try {
-      await signIn({ username: email, password })
-      await loadUser()
+      const result = await signIn({ username: email, password })
+      console.log('SignIn result:', JSON.stringify(result))
+      
+      if (result.nextStep?.signInStep === 'CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED') {
+        throw new Error('需要修改密码，请联系管理员')
+      }
+      
+      if (result.isSignedIn) {
+        await loadUser()
+      } else {
+        throw new Error(`登录未完成，状态: ${result.nextStep?.signInStep}`)
+      }
     } catch (error) {
       console.error('Login error:', error)
       throw error
