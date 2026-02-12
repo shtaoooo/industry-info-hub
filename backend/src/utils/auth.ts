@@ -17,8 +17,11 @@ export interface AuthUser {
  */
 export function getUserFromEvent(event: APIGatewayProxyEvent): AuthUser | null {
   try {
-    const claims = event.requestContext.authorizer?.claims
+    // Support both REST API v1 (authorizer.claims) and HTTP API v2 (authorizer.jwt.claims)
+    const authorizer = event.requestContext.authorizer as any
+    const claims = authorizer?.claims || authorizer?.jwt?.claims
     if (!claims) {
+      console.error('No claims found in authorizer. Authorizer context:', JSON.stringify(authorizer))
       return null
     }
 

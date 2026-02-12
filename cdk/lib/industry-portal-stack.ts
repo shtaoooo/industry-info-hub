@@ -26,7 +26,7 @@ export class IndustryPortalStack extends cdk.Stack {
       pointInTimeRecovery: true,
       encryption: dynamodb.TableEncryption.AWS_MANAGED,
       stream: dynamodb.StreamViewType.NEW_AND_OLD_IMAGES,
-      removalPolicy: cdk.RemovalPolicy.RETAIN,
+      removalPolicy: cdk.RemovalPolicy.DESTROY, // Changed from RETAIN for dev environment
     });
 
     const subIndustriesTable = new dynamodb.Table(this, 'SubIndustriesTable', {
@@ -37,7 +37,7 @@ export class IndustryPortalStack extends cdk.Stack {
       pointInTimeRecovery: true,
       encryption: dynamodb.TableEncryption.AWS_MANAGED,
       stream: dynamodb.StreamViewType.NEW_AND_OLD_IMAGES,
-      removalPolicy: cdk.RemovalPolicy.RETAIN,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
     const useCasesTable = new dynamodb.Table(this, 'UseCasesTable', {
@@ -47,7 +47,7 @@ export class IndustryPortalStack extends cdk.Stack {
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       pointInTimeRecovery: true,
       encryption: dynamodb.TableEncryption.AWS_MANAGED,
-      removalPolicy: cdk.RemovalPolicy.RETAIN,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
     const solutionsTable = new dynamodb.Table(this, 'SolutionsTable', {
@@ -57,7 +57,7 @@ export class IndustryPortalStack extends cdk.Stack {
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       pointInTimeRecovery: true,
       encryption: dynamodb.TableEncryption.AWS_MANAGED,
-      removalPolicy: cdk.RemovalPolicy.RETAIN,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
     const mappingTable = new dynamodb.Table(this, 'MappingTable', {
@@ -67,7 +67,7 @@ export class IndustryPortalStack extends cdk.Stack {
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       pointInTimeRecovery: true,
       encryption: dynamodb.TableEncryption.AWS_MANAGED,
-      removalPolicy: cdk.RemovalPolicy.RETAIN,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
     mappingTable.addGlobalSecondaryIndex({
@@ -83,7 +83,7 @@ export class IndustryPortalStack extends cdk.Stack {
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       pointInTimeRecovery: true,
       encryption: dynamodb.TableEncryption.AWS_MANAGED,
-      removalPolicy: cdk.RemovalPolicy.RETAIN,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
     const usersTable = new dynamodb.Table(this, 'UsersTable', {
@@ -93,7 +93,7 @@ export class IndustryPortalStack extends cdk.Stack {
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       pointInTimeRecovery: true,
       encryption: dynamodb.TableEncryption.AWS_MANAGED,
-      removalPolicy: cdk.RemovalPolicy.RETAIN,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
     // S3 Bucket for Documents
@@ -107,7 +107,7 @@ export class IndustryPortalStack extends cdk.Stack {
         allowedOrigins: ['*'],
         maxAge: 3600,
       }],
-      removalPolicy: cdk.RemovalPolicy.RETAIN,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
     // Cognito User Pool
@@ -128,7 +128,7 @@ export class IndustryPortalStack extends cdk.Stack {
         role: new cognito.StringAttribute({ mutable: true }),
         assignedIndustries: new cognito.StringAttribute({ mutable: true }),
       },
-      removalPolicy: cdk.RemovalPolicy.RETAIN,
+      removalPolicy: cdk.RemovalPolicy.DESTROY, // Changed from RETAIN to DESTROY for dev environment
     });
 
     const userPoolClient = userPool.addClient('WebClient', {
@@ -141,14 +141,15 @@ export class IndustryPortalStack extends cdk.Stack {
       preventUserExistenceErrors: true,
     });
 
-    const identityPool = new cognito.CfnIdentityPool(this, 'IdentityPool', {
-      identityPoolName: 'IndustryPortalIdentityPool',
-      allowUnauthenticatedIdentities: true,
-      cognitoIdentityProviders: [{
-        clientId: userPoolClient.userPoolClientId,
-        providerName: userPool.userPoolProviderName,
-      }],
-    });
+    // Identity Pool (commented out - not needed, frontend uses JWT auth via API Gateway)
+    // const identityPool = new cognito.CfnIdentityPool(this, 'IdentityPool', {
+    //   identityPoolName: 'IndustryPortalIdentityPool',
+    //   allowUnauthenticatedIdentities: true,
+    //   cognitoIdentityProviders: [{
+    //     clientId: userPoolClient.userPoolClientId,
+    //     providerName: userPool.userPoolProviderName,
+    //   }],
+    // });
 
     // Common Lambda environment variables
     const commonEnv = {
@@ -390,7 +391,6 @@ frontend:
         { name: 'VITE_AWS_REGION', value: this.region },
         { name: 'VITE_USER_POOL_ID', value: userPool.userPoolId },
         { name: 'VITE_USER_POOL_CLIENT_ID', value: userPoolClient.userPoolClientId },
-        { name: 'VITE_IDENTITY_POOL_ID', value: identityPool.ref },
         { name: 'VITE_API_ENDPOINT', value: httpApi.apiEndpoint },
         { name: 'VITE_S3_BUCKET', value: documentsBucket.bucketName },
       ],
@@ -418,10 +418,10 @@ frontend:
       description: 'Cognito User Pool Client ID',
     });
 
-    new cdk.CfnOutput(this, 'IdentityPoolId', {
-      value: identityPool.ref,
-      description: 'Cognito Identity Pool ID',
-    });
+    // new cdk.CfnOutput(this, 'IdentityPoolId', {
+    //   value: identityPool.ref,
+    //   description: 'Cognito Identity Pool ID',
+    // });
 
     new cdk.CfnOutput(this, 'DocumentsBucketName', {
       value: documentsBucket.bucketName,
