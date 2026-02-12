@@ -115,7 +115,9 @@ const IndustryManagement: React.FC = () => {
       title: '行业定义',
       dataIndex: 'definition',
       key: 'definition',
-      ellipsis: true,
+      render: (text: string) => (
+        <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{text}</div>
+      ),
     },
     {
       title: '可见性',

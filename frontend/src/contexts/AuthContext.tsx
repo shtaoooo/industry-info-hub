@@ -1,12 +1,14 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
-import { fetchAuthSession, signIn, signOut, getCurrentUser, fetchUserAttributes } from 'aws-amplify/auth'
+import { fetchAuthSession, signIn, signOut, getCurrentUser, fetchUserAttributes, confirmSignIn } from 'aws-amplify/auth'
 import { User } from '../types'
 
 interface AuthContextType {
   user: User | null
   loading: boolean
   isAuthenticated: boolean
+  needsNewPassword: boolean
   login: (email: string, password: string) => Promise<void>
+  confirmNewPassword: (newPassword: string) => Promise<void>
   logout: () => Promise<void>
   hasRole: (role: string | string[]) => boolean
   hasIndustryAccess: (industryId: string) => boolean
@@ -30,6 +32,7 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
+  const [needsNewPassword, setNeedsNewPassword] = useState(false)
 
   const loadUser = async () => {
     try {
@@ -77,7 +80,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('SignIn result:', JSON.stringify(result))
       
       if (result.nextStep?.signInStep === 'CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED') {
-        throw new Error('需要修改密码，请联系管理员')
+        setNeedsNewPassword(true)
+        return
       }
       
       if (result.isSignedIn) {
@@ -87,6 +91,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     } catch (error) {
       console.error('Login error:', error)
+      throw error
+    }
+  }
+
+  const confirmNewPassword = async (newPassword: string) => {
+    try {
+      const result = await confirmSignIn({ challengeResponse: newPassword })
+      console.log('ConfirmSignIn result:', JSON.stringify(result))
+      
+      if (result.isSignedIn) {
+        setNeedsNewPassword(false)
+        await loadUser()
+      } else {
+        throw new Error(`设置密码未完成，状态: ${result.nextStep?.signInStep}`)
+      }
+    } catch (error) {
+      console.error('Confirm new password error:', error)
       throw error
     }
   }
@@ -128,7 +149,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     user,
     loading,
     isAuthenticated: !!user,
+    needsNewPassword,
     login,
+    confirmNewPassword,
     logout,
     hasRole,
     hasIndustryAccess,

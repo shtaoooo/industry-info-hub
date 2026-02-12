@@ -196,7 +196,9 @@ const SubIndustryManagement: React.FC = () => {
       title: '子行业定义',
       dataIndex: 'definition',
       key: 'definition',
-      ellipsis: true,
+      render: (text: string) => (
+        <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{text}</div>
+      ),
     },
     {
       title: '典型全球企业',
