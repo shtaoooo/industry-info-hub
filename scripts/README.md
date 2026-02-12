@@ -52,13 +52,14 @@ The script downloads images for the following industries:
 
 ## Add Industry Images Script
 
-This script adds high-quality image URLs to all existing industries in DynamoDB.
+This script updates all existing industries in DynamoDB with local image paths.
 
 ### Prerequisites
 
 1. AWS credentials configured (via AWS CLI or environment variables)
 2. Access to the DynamoDB table in us-east-2 region
 3. Node.js and npm installed
+4. Images already downloaded to `frontend/public/images/industries/`
 
 ### Installation
 
@@ -82,13 +83,13 @@ npm run add-images
 ### What it does
 
 1. Scans all industries in the DynamoDB table
-2. Matches each industry name to a high-quality Unsplash image
-3. Updates each industry record with the `imageUrl` field
+2. Matches each industry name to a local image path
+3. Updates each industry record with the `imageUrl` field pointing to local images
 4. Provides console output showing progress
 
 ### Notes
 
-- The download script should be run before deploying to ensure images are available locally
-- All images are optimized for web use (1200px width, 85% quality)
-- Images are served from the Amplify deployment (no external CDN dependency)
-- The script is idempotent - running it multiple times will skip existing files
+- The script uses local image paths (e.g., `/images/industries/finance.jpg`)
+- These images are served from the Amplify deployment
+- Run the download script first to ensure images are available locally
+- The script is idempotent - running it multiple times will update the same records

@@ -27,6 +27,7 @@ export async function listVisibleIndustries(event: APIGatewayProxyEvent): Promis
       id: item.id,
       name: item.name,
       definition: item.definition,
+      imageUrl: item.imageUrl,
       createdAt: item.createdAt,
     }))
 
@@ -63,6 +64,7 @@ export async function getIndustryDetails(event: APIGatewayProxyEvent): Promise<A
       id: result.Item.id,
       name: result.Item.name,
       definition: result.Item.definition,
+      imageUrl: result.Item.imageUrl,
       createdAt: result.Item.createdAt,
     }
 
