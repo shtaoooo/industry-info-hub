@@ -1,5 +1,5 @@
 import React from 'react'
-import { Layout, Button, Typography, Card, Space, Tag } from 'antd'
+import { Layout, Button, Typography, Space, Tag } from 'antd'
 import {
   LogoutOutlined, UserOutlined, BankOutlined,
   ApartmentOutlined, BulbOutlined, FileTextOutlined,
