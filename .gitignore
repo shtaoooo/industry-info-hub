@@ -55,3 +55,7 @@ cdk/*.d.ts
 cdk/bin/*.js
 cdk/lib/*.js
 cdk/cdk.context.json
+
+# Deploy scripts
+git-push-and-deploy.bat
+deploy-cdk.bat

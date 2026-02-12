@@ -10,7 +10,6 @@ import * as authorizers from 'aws-cdk-lib/aws-apigatewayv2-authorizers';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as s3deploy from 'aws-cdk-lib/aws-s3-deployment';
-import * as logs from 'aws-cdk-lib/aws-logs';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as path from 'path';
 
@@ -151,13 +150,6 @@ export class IndustryPortalStack extends cdk.Stack {
       }],
     });
 
-    // Lambda Layer for shared dependencies (node_modules only)
-    const dependenciesLayer = new lambda.LayerVersion(this, 'DependenciesLayer', {
-      code: lambda.Code.fromAsset(path.join(__dirname, '../../backend/node_modules')),
-      compatibleRuntimes: [lambda.Runtime.NODEJS_18_X],
-      description: 'Shared node_modules for Industry Portal Lambda functions',
-    });
-
     // Common Lambda environment variables
     const commonEnv = {
       INDUSTRIES_TABLE: industriesTable.tableName,
@@ -179,9 +171,8 @@ export class IndustryPortalStack extends cdk.Stack {
         runtime: lambda.Runtime.NODEJS_18_X,
         handler: `dist/functions/${handler}.handler`,
         code: lambda.Code.fromAsset(path.join(__dirname, '../../backend'), {
-          exclude: ['node_modules', 'src', '*.ts', 'tsconfig.json', 'vitest.config.ts'],
+          exclude: ['src', '*.ts', 'tsconfig.json', 'vitest.config.ts'],
         }),
-        layers: [dependenciesLayer],
         environment: commonEnv,
         timeout: cdk.Duration.seconds(timeout),
         memorySize: memory,

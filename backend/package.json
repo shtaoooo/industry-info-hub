@@ -18,9 +18,7 @@
     "@aws-sdk/client-s3": "^3.490.0",
     "@aws-sdk/s3-request-presigner": "^3.490.0",
     "@aws-sdk/client-cognito-identity-provider": "^3.490.0",
-    "csv-parse": "^5.5.3",
-    "aws-cdk-lib": "^2.120.0",
-    "constructs": "^10.3.0"
+    "csv-parse": "^5.5.3"
   },
   "devDependencies": {
     "@types/node": "^20.10.6",
