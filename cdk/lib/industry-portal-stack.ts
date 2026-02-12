@@ -457,12 +457,12 @@ export class IndustryPortalStack extends cdk.Stack {
       description: 'Cognito Identity Pool ID',
     });
 
-    new cdk.CfnOutput(this, 'DocumentsBucket', {
+    new cdk.CfnOutput(this, 'DocumentsBucketName', {
       value: documentsBucket.bucketName,
       description: 'S3 Bucket for Documents',
     });
 
-    new cdk.CfnOutput(this, 'CloudFrontDomain', {
+    new cdk.CfnOutput(this, 'CloudFrontDocumentsDomain', {
       value: distribution.distributionDomainName,
       description: 'CloudFront Distribution Domain Name for Documents',
     });
