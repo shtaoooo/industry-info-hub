@@ -5,6 +5,7 @@ export interface Industry {
   name: string
   definition: string
   isVisible: boolean
+  imageUrl?: string
   createdAt: string
   updatedAt: string
   createdBy: string

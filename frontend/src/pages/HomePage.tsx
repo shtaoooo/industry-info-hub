@@ -12,23 +12,23 @@ import { publicService, PublicIndustry } from '../services/publicService'
 const { Header, Content } = Layout
 const { Title, Text } = Typography
 
-// 行业图片映射 - 使用高质量的 Unsplash 图片
-const getIndustryImage = (industryName: string): string => {
+// 行业图片映射 - 作为 fallback 使用
+const getFallbackImage = (industryName: string): string => {
   const imageMap: { [key: string]: string } = {
-    '金融': 'https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?w=800&q=80',
-    '制造': 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&q=80',
-    '零售': 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800&q=80',
-    '医疗': 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&q=80',
-    '教育': 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=800&q=80',
-    '物流': 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&q=80',
-    '能源': 'https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?w=800&q=80',
-    '电信': 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&q=80',
-    '房地产': 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&q=80',
-    '汽车': 'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=800&q=80',
-    '农业': 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800&q=80',
-    '旅游': 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800&q=80',
-    '媒体': 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=800&q=80',
-    '科技': 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&q=80',
+    '金融': 'https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?w=1200&q=85',
+    '制造': 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=1200&q=85',
+    '零售': 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1200&q=85',
+    '医疗': 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=1200&q=85',
+    '教育': 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=1200&q=85',
+    '物流': 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=1200&q=85',
+    '能源': 'https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?w=1200&q=85',
+    '电信': 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1200&q=85',
+    '房地产': 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200&q=85',
+    '汽车': 'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=1200&q=85',
+    '农业': 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=1200&q=85',
+    '旅游': 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1200&q=85',
+    '媒体': 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=1200&q=85',
+    '科技': 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1200&q=85',
   }
   
   // 尝试匹配行业名称中的关键词
@@ -39,7 +39,7 @@ const getIndustryImage = (industryName: string): string => {
   }
   
   // 默认图片
-  return 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&q=80'
+  return 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=1200&q=85'
 }
 
 const HomePage: React.FC = () => {
@@ -262,7 +262,7 @@ const HomePage: React.FC = () => {
                         position: 'relative',
                       }}>
                         <img
-                          src={getIndustryImage(industry.name)}
+                          src={industry.imageUrl || getFallbackImage(industry.name)}
                           alt={industry.name}
                           style={{
                             width: '100%',

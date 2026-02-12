@@ -4,6 +4,7 @@ export interface PublicIndustry {
   id: string
   name: string
   definition: string
+  imageUrl?: string
   createdAt: string
 }
 

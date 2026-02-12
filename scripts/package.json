@@ -1,0 +1,17 @@
+{
+  "name": "industry-portal-scripts",
+  "version": "1.0.0",
+  "description": "Utility scripts for Industry Portal",
+  "scripts": {
+    "add-images": "ts-node add-industry-images.ts"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.0.0",
+    "@aws-sdk/lib-dynamodb": "^3.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "ts-node": "^10.9.0",
+    "typescript": "^5.0.0"
+  }
+}
