@@ -43,9 +43,11 @@ const UseCaseDetail: React.FC = () => {
   if (loading) {
     return (
       <Layout style={{ minHeight: '100vh', background: 'transparent' }}>
-        <Content style={{ padding: 32 }}>
-          <div style={{ textAlign: 'center', paddingTop: 100 }}>
-            <Spin size="large" />
+        <Content style={{ padding: '60px 0' }}>
+          <div className="responsive-container">
+            <div style={{ textAlign: 'center', paddingTop: 100 }}>
+              <Spin size="large" />
+            </div>
           </div>
         </Content>
       </Layout>
@@ -55,8 +57,8 @@ const UseCaseDetail: React.FC = () => {
   if (!useCase) {
     return (
       <Layout style={{ minHeight: '100vh', background: 'transparent' }}>
-        <Content style={{ padding: 32 }}>
-          <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+        <Content style={{ padding: '60px 0' }}>
+          <div className="responsive-container">
             <Button
               icon={<ArrowLeftOutlined />}
               onClick={() => navigate(-1)}
@@ -78,8 +80,8 @@ const UseCaseDetail: React.FC = () => {
 
   return (
     <Layout style={{ minHeight: '100vh', background: 'transparent' }}>
-      <Content style={{ padding: 32 }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+      <Content style={{ padding: '60px 0' }}>
+        <div className="responsive-container">
           <Button
             icon={<ArrowLeftOutlined />}
             onClick={() => navigate(-1)}
@@ -146,13 +148,7 @@ const UseCaseDetail: React.FC = () => {
               </div>
             </div>
           ) : (
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
-                gap: 20,
-              }}
-            >
+            <div className="responsive-grid-auto">
               {solutions.map((solution) => (
                 <div
                   key={solution.id}

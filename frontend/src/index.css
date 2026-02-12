@@ -388,3 +388,35 @@ h3, .ant-typography h3 {
   margin: 0 auto;
   padding: 0 24px;
 }
+
+/* Responsive grid layouts */
+.responsive-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.responsive-grid-auto {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+}
+
+/* Responsive container with 10% padding */
+.responsive-container {
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0 10%;
+}
+
+/* Mobile responsive breakpoint */
+@media (max-width: 500px) {
+  .responsive-grid-3,
+  .responsive-grid-auto {
+    grid-template-columns: 1fr;
+  }
+  
+  .responsive-container {
+    padding: 0 5%;
+  }
+}

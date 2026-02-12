@@ -207,7 +207,7 @@ const HomePage: React.FC = () => {
       </Header>
 
       <Content style={{ padding: '60px 0' }}>
-        <div style={{ maxWidth: '100%', margin: '0 auto', padding: '0 60px' }}>
+        <div className="responsive-container">
           <div style={{ marginBottom: 60, textAlign: 'center' }}>
             <Title level={1} style={{ 
               marginBottom: 12, 
@@ -233,11 +233,7 @@ const HomePage: React.FC = () => {
           </div>
 
           {hasRole(['admin', 'specialist']) && (
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(3, 1fr)',
-              gap: 24,
-            }}>
+            <div className="responsive-grid-3">
               {adminCards.map((card) => (
                 <div
                   key={card.path}
@@ -290,11 +286,7 @@ const HomePage: React.FC = () => {
                   </div>
                 </div>
               ) : (
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(3, 1fr)',
-                  gap: 24,
-                }}>
+                <div className="responsive-grid-3">
                   {industries.map((industry) => (
                     <div
                       key={industry.id}
