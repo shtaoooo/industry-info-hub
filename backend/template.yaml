@@ -764,6 +764,15 @@ Resources:
     Type: AWS::Serverless::HttpApi
     Properties:
       StageName: prod
+      Auth:
+        Authorizers:
+          CognitoAuthorizer:
+            IdentitySource: $request.header.Authorization
+            JwtConfiguration:
+              issuer: !Sub 'https://cognito-idp.${AWS::Region}.amazonaws.com/${UserPool}'
+              audience:
+                - !Ref UserPoolClient
+        DefaultAuthorizer: CognitoAuthorizer
       CorsConfiguration:
         AllowOrigins:
           - '*'

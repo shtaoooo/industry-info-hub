@@ -438,9 +438,9 @@ export async function getUseCasesForSolution(event: APIGatewayProxyEvent): Promi
 /**
  * Lambda handler - routes requests to appropriate function
  */
-export async function handler(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
-  const method = event.httpMethod
-  const path = event.resource || event.path
+export async function handler(event: any): Promise<APIGatewayProxyResult> {
+  const method = event.httpMethod || event.requestContext?.http?.method
+  const path = event.resource || event.rawPath || event.path
 
   try {
     // POST /specialist/use-cases/{useCaseId}/solutions/{solutionId}
