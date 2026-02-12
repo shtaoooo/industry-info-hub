@@ -5,9 +5,10 @@ import { successResponse, errorResponse } from '../utils/response'
 import { getUserFromEvent, requireRole } from '../utils/auth'
 import { docClient, TABLE_NAMES } from '../utils/dynamodb'
 import { CSVImportResult, Industry, SubIndustry } from '../types'
+import { randomUUID } from 'crypto'
 
 function generateId(): string {
-  return crypto.randomUUID()
+  return randomUUID()
 }
 
 interface CSVRow {

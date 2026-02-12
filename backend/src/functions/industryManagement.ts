@@ -10,9 +10,10 @@ import {
   createOptimisticLockCondition,
   addVersionToUpdate,
 } from '../utils/consistency'
+import { randomUUID } from 'crypto'
 
 function generateId(): string {
-  return crypto.randomUUID()
+  return randomUUID()
 }
 
 /**

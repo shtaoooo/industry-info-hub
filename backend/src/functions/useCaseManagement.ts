@@ -6,9 +6,10 @@ import { getUserFromEvent, requireRole, hasIndustryAccess } from '../utils/auth'
 import { docClient, TABLE_NAMES } from '../utils/dynamodb'
 import { s3Client, BUCKET_NAME } from '../utils/s3'
 import { UseCase, Document } from '../types'
+import { randomUUID } from 'crypto'
 
 function generateId(): string {
-  return crypto.randomUUID()
+  return randomUUID()
 }
 
 /**
