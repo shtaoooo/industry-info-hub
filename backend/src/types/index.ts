@@ -94,6 +94,7 @@ export interface News {
   summary: string
   content: string
   imageUrl?: string
+  externalUrl?: string
   author: string
   publishedAt: string
   createdAt: string
@@ -107,6 +108,7 @@ export interface Blog {
   summary: string
   content: string
   imageUrl?: string
+  externalUrl?: string
   author: string
   publishedAt: string
   createdAt: string

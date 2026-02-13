@@ -438,6 +438,7 @@ export async function getIndustryNews(event: APIGatewayProxyEvent): Promise<APIG
         title: item.title,
         summary: item.summary,
         imageUrl: item.imageUrl,
+        externalUrl: item.externalUrl,
         author: item.author,
         publishedAt: item.publishedAt,
       }))
@@ -492,6 +493,7 @@ export async function getIndustryBlogs(event: APIGatewayProxyEvent): Promise<API
         title: item.title,
         summary: item.summary,
         imageUrl: item.imageUrl,
+        externalUrl: item.externalUrl,
         author: item.author,
         publishedAt: item.publishedAt,
       }))
@@ -533,6 +535,7 @@ export async function getNewsDetail(event: APIGatewayProxyEvent): Promise<APIGat
       summary: result.Item.summary,
       content: result.Item.content,
       imageUrl: result.Item.imageUrl,
+      externalUrl: result.Item.externalUrl,
       author: result.Item.author,
       publishedAt: result.Item.publishedAt,
     }
@@ -573,6 +576,7 @@ export async function getBlogDetail(event: APIGatewayProxyEvent): Promise<APIGat
       summary: result.Item.summary,
       content: result.Item.content,
       imageUrl: result.Item.imageUrl,
+      externalUrl: result.Item.externalUrl,
       author: result.Item.author,
       publishedAt: result.Item.publishedAt,
     }

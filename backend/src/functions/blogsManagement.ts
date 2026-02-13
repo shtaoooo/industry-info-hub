@@ -48,9 +48,9 @@ async function listBlogs(event: APIGatewayProxyEvent): Promise<APIGatewayProxyRe
 async function createBlog(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   try {
     const body = JSON.parse(event.body || '{}')
-    const { industryId, title, summary, content, imageUrl, author, publishedAt } = body
+    const { industryId, title, summary, content, imageUrl, externalUrl, author, publishedAt } = body
 
-    if (!industryId || !title || !summary || !content || !author) {
+    if (!industryId || !title || !summary || !author) {
       return errorResponse('VALIDATION_ERROR', '缺少必填字段', 400)
     }
 
@@ -76,8 +76,9 @@ async function createBlog(event: APIGatewayProxyEvent): Promise<APIGatewayProxyR
       industryId,
       title,
       summary,
-      content,
+      content: content || '',
       imageUrl: imageUrl || null,
+      externalUrl: externalUrl || null,
       author,
       publishedAt: publishedAt || now,
       createdAt: now,
@@ -110,7 +111,7 @@ async function updateBlog(event: APIGatewayProxyEvent): Promise<APIGatewayProxyR
     }
 
     const body = JSON.parse(event.body || '{}')
-    const { title, summary, content, imageUrl, author, publishedAt } = body
+    const { title, summary, content, imageUrl, externalUrl, author, publishedAt } = body
 
     // Get existing blog
     const existing = await docClient.send(
@@ -129,8 +130,9 @@ async function updateBlog(event: APIGatewayProxyEvent): Promise<APIGatewayProxyR
       ...existing.Item,
       title: title || existing.Item.title,
       summary: summary || existing.Item.summary,
-      content: content || existing.Item.content,
+      content: content !== undefined ? content : existing.Item.content,
       imageUrl: imageUrl !== undefined ? imageUrl : existing.Item.imageUrl,
+      externalUrl: externalUrl !== undefined ? externalUrl : existing.Item.externalUrl,
       author: author || existing.Item.author,
       publishedAt: publishedAt || existing.Item.publishedAt,
       updatedAt: now,

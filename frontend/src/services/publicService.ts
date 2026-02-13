@@ -56,6 +56,7 @@ export interface PublicNews {
   summary: string
   content?: string
   imageUrl?: string
+  externalUrl?: string
   author: string
   publishedAt: string
 }
@@ -67,6 +68,7 @@ export interface PublicBlog {
   summary: string
   content?: string
   imageUrl?: string
+  externalUrl?: string
   author: string
   publishedAt: string
 }

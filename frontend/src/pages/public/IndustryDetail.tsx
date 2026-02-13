@@ -50,21 +50,21 @@ const IndustryDetail: React.FC = () => {
   }
 
   const handleNewsClick = (item: PublicNews) => {
-    // Check if it's an external URL (starts with http:// or https://)
-    if (item.imageUrl && (item.imageUrl.startsWith('http://') || item.imageUrl.startsWith('https://'))) {
-      window.open(item.imageUrl, '_blank', 'noopener,noreferrer')
+    // Check if it has an external URL
+    if (item.externalUrl) {
+      window.open(item.externalUrl, '_blank', 'noopener,noreferrer')
     } else {
-      // Navigate to news detail page
+      // Navigate to news detail page to show markdown content
       navigate(`/public/news/${item.id}`)
     }
   }
 
   const handleBlogClick = (item: PublicBlog) => {
-    // Check if it's an external URL (starts with http:// or https://)
-    if (item.imageUrl && (item.imageUrl.startsWith('http://') || item.imageUrl.startsWith('https://'))) {
-      window.open(item.imageUrl, '_blank', 'noopener,noreferrer')
+    // Check if it has an external URL
+    if (item.externalUrl) {
+      window.open(item.externalUrl, '_blank', 'noopener,noreferrer')
     } else {
-      // Navigate to blog detail page
+      // Navigate to blog detail page to show markdown content
       navigate(`/public/blogs/${item.id}`)
     }
   }
