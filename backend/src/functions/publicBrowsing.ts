@@ -505,6 +505,86 @@ export async function getIndustryBlogs(event: APIGatewayProxyEvent): Promise<API
 }
 
 /**
+ * Get news detail
+ * GET /public/news/{id}
+ */
+export async function getNewsDetail(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+  try {
+    const newsId = event.pathParameters?.id
+    if (!newsId) {
+      return errorResponse('VALIDATION_ERROR', '新闻ID不能为空', 400)
+    }
+
+    const result = await docClient.send(
+      new GetCommand({
+        TableName: TABLE_NAMES.NEWS,
+        Key: { PK: `NEWS#${newsId}`, SK: 'METADATA' },
+      })
+    )
+
+    if (!result.Item) {
+      return errorResponse('NOT_FOUND', '新闻不存在', 404)
+    }
+
+    const news = {
+      id: result.Item.id,
+      industryId: result.Item.industryId,
+      title: result.Item.title,
+      summary: result.Item.summary,
+      content: result.Item.content,
+      imageUrl: result.Item.imageUrl,
+      author: result.Item.author,
+      publishedAt: result.Item.publishedAt,
+    }
+
+    return successResponse(news)
+  } catch (error: any) {
+    console.error('Error getting news detail:', error)
+    return errorResponse('INTERNAL_ERROR', '获取新闻详情失败', 500)
+  }
+}
+
+/**
+ * Get blog detail
+ * GET /public/blogs/{id}
+ */
+export async function getBlogDetail(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+  try {
+    const blogId = event.pathParameters?.id
+    if (!blogId) {
+      return errorResponse('VALIDATION_ERROR', '博客ID不能为空', 400)
+    }
+
+    const result = await docClient.send(
+      new GetCommand({
+        TableName: TABLE_NAMES.BLOGS,
+        Key: { PK: `BLOG#${blogId}`, SK: 'METADATA' },
+      })
+    )
+
+    if (!result.Item) {
+      return errorResponse('NOT_FOUND', '博客不存在', 404)
+    }
+
+    const blog = {
+      id: result.Item.id,
+      industryId: result.Item.industryId,
+      title: result.Item.title,
+      summary: result.Item.summary,
+      content: result.Item.content,
+      imageUrl: result.Item.imageUrl,
+      author: result.Item.author,
+      publishedAt: result.Item.publishedAt,
+    }
+
+    return successResponse(blog)
+  } catch (error: any) {
+    console.error('Error getting blog detail:', error)
+    return errorResponse('INTERNAL_ERROR', '获取博客详情失败', 500)
+  }
+}
+
+/**
  * Lambda handler - routes requests to appropriate function
  */
 export async function handler(event: any): Promise<APIGatewayProxyResult> {
@@ -575,6 +655,16 @@ export async function handler(event: any): Promise<APIGatewayProxyResult> {
     // GET /public/industries/{id}/blogs
     if (method === 'GET' && path.match(/\/public\/industries\/[^/]+\/blogs$/)) {
       return await getIndustryBlogs(event)
+    }
+
+    // GET /public/news/{id}
+    if (method === 'GET' && path.match(/\/public\/news\/[^/]+$/)) {
+      return await getNewsDetail(event)
+    }
+
+    // GET /public/blogs/{id}
+    if (method === 'GET' && path.match(/\/public\/blogs\/[^/]+$/)) {
+      return await getBlogDetail(event)
     }
 
     return errorResponse('NOT_FOUND', '接口不存在', 404)

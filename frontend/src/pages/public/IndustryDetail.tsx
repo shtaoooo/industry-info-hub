@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Layout, Spin, message, Button, Empty } from 'antd'
+import { Layout, Spin, message, Button, Empty, Pagination } from 'antd'
 import { ArrowLeftOutlined, BankOutlined, ApartmentOutlined } from '@ant-design/icons'
 import { publicService, PublicIndustry, PublicSubIndustry, PublicNews, PublicBlog } from '../../services/publicService'
 
 const { Content } = Layout
+
+const NEWS_PER_PAGE = 6
+const BLOGS_PER_PAGE = 5
 
 const IndustryDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>()
@@ -14,6 +17,8 @@ const IndustryDetail: React.FC = () => {
   const [news, setNews] = useState<PublicNews[]>([])
   const [blogs, setBlogs] = useState<PublicBlog[]>([])
   const [loading, setLoading] = useState(true)
+  const [newsPage, setNewsPage] = useState(1)
+  const [blogsPage, setBlogsPage] = useState(1)
 
   useEffect(() => {
     if (id) {
@@ -43,6 +48,29 @@ const IndustryDetail: React.FC = () => {
       setLoading(false)
     }
   }
+
+  const handleNewsClick = (item: PublicNews) => {
+    // Check if it's an external URL (starts with http:// or https://)
+    if (item.imageUrl && (item.imageUrl.startsWith('http://') || item.imageUrl.startsWith('https://'))) {
+      window.open(item.imageUrl, '_blank', 'noopener,noreferrer')
+    } else {
+      // Navigate to news detail page
+      navigate(`/public/news/${item.id}`)
+    }
+  }
+
+  const handleBlogClick = (item: PublicBlog) => {
+    // Check if it's an external URL (starts with http:// or https://)
+    if (item.imageUrl && (item.imageUrl.startsWith('http://') || item.imageUrl.startsWith('https://'))) {
+      window.open(item.imageUrl, '_blank', 'noopener,noreferrer')
+    } else {
+      // Navigate to blog detail page
+      navigate(`/public/blogs/${item.id}`)
+    }
+  }
+
+  const paginatedNews = news.slice((newsPage - 1) * NEWS_PER_PAGE, newsPage * NEWS_PER_PAGE)
+  const paginatedBlogs = blogs.slice((blogsPage - 1) * BLOGS_PER_PAGE, blogsPage * BLOGS_PER_PAGE)
 
   if (loading) {
     return (
@@ -141,7 +169,7 @@ const IndustryDetail: React.FC = () => {
                 margin: 0,
               }}
             >
-              子行业
+              Sub-Industries
             </h3>
           </div>
 
@@ -278,9 +306,10 @@ const IndustryDetail: React.FC = () => {
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 }}>
-                {news.slice(0, 6).map((item) => (
+                {paginatedNews.map((item) => (
                   <div
                     key={item.id}
+                    onClick={() => handleNewsClick(item)}
                     className="apple-card"
                     style={{
                       padding: 0,
@@ -349,6 +378,18 @@ const IndustryDetail: React.FC = () => {
                   </div>
                 ))}
               </div>
+
+              {news.length > NEWS_PER_PAGE && (
+                <div style={{ marginTop: 32, textAlign: 'center' }}>
+                  <Pagination
+                    current={newsPage}
+                    total={news.length}
+                    pageSize={NEWS_PER_PAGE}
+                    onChange={setNewsPage}
+                    showSizeChanger={false}
+                  />
+                </div>
+              )}
             </>
           )}
 
@@ -364,14 +405,15 @@ const IndustryDetail: React.FC = () => {
                     margin: 0,
                   }}
                 >
-                  In the Loop
+                  Blogs
                 </h3>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                {blogs.slice(0, 5).map((item, index) => (
+                {paginatedBlogs.map((item, index) => (
                   <div
                     key={item.id}
+                    onClick={() => handleBlogClick(item)}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -445,6 +487,18 @@ const IndustryDetail: React.FC = () => {
                   </div>
                 ))}
               </div>
+
+              {blogs.length > BLOGS_PER_PAGE && (
+                <div style={{ marginTop: 32, textAlign: 'center' }}>
+                  <Pagination
+                    current={blogsPage}
+                    total={blogs.length}
+                    pageSize={BLOGS_PER_PAGE}
+                    onChange={setBlogsPage}
+                    showSizeChanger={false}
+                  />
+                </div>
+              )}
             </>
           )}
         </div>

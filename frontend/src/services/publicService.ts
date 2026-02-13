@@ -54,6 +54,7 @@ export interface PublicNews {
   industryId: string
   title: string
   summary: string
+  content?: string
   imageUrl?: string
   author: string
   publishedAt: string
@@ -64,6 +65,7 @@ export interface PublicBlog {
   industryId: string
   title: string
   summary: string
+  content?: string
   imageUrl?: string
   author: string
   publishedAt: string
@@ -83,6 +85,11 @@ export const publicService = {
 
   getIndustryBlogs: (industryId: string) =>
     api.get<PublicBlog[]>(`/public/industries/${industryId}/blogs`),
+
+  // News and Blogs
+  getNews: (id: string) => api.get<PublicNews>(`/public/news/${id}`),
+
+  getBlog: (id: string) => api.get<PublicBlog>(`/public/blogs/${id}`),
 
   // Use Cases
   listUseCases: (subIndustryId: string) =>
