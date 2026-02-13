@@ -137,12 +137,12 @@ const IndustryDetail: React.FC = () => {
                   onClick={() => navigate(`/public/sub-industries/${subIndustry.id}`)}
                   className="apple-card"
                   style={{
-                    padding: '20px 24px',
+                    padding: '24px',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'flex-start',
                     gap: 16,
-                    height: 120,
+                    minHeight: 140,
                     overflow: 'hidden',
                   }}
                 >

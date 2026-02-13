@@ -178,22 +178,24 @@ const HomePage: React.FC = () => {
             <UserOutlined style={{ color: '#a1a1a6', fontSize: 16 }} />
             <span style={{ color: '#ffffff', fontSize: 14 }}>{user?.email}</span>
           </Space>
-          <Tag style={{
-            background: 'rgba(255, 255, 255, 0.1)',
-            color: '#f5f5f7',
-            border: 'none',
-            borderRadius: 12,
-            padding: '4px 12px',
-            fontSize: 12,
-            fontWeight: 400,
-          }}>
+          <Tag
+            style={{
+              background: 'rgba(255, 255, 255, 0.15)',
+              color: '#f5f5f7',
+              border: 'none',
+              borderRadius: 12,
+              padding: '4px 12px',
+              fontSize: 12,
+              fontWeight: 400,
+            }}
+          >
             {getRoleLabel(user?.role || '')}
           </Tag>
           <Button
             type="text"
-            icon={<LogoutOutlined />}
+            icon={<LogoutOutlined style={{ color: '#2997ff' }} />}
             onClick={handleLogout}
-            style={{ 
+            style={{
               color: '#2997ff',
               fontSize: 14,
               padding: '4px 8px',

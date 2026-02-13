@@ -162,6 +162,10 @@ p, span, div {
   color: var(--apple-text-primary) !important;
 }
 
+.ant-btn-text:hover {
+  background: rgba(0, 0, 0, 0.04) !important;
+}
+
 .ant-btn-link {
   color: var(--apple-blue) !important;
 }
