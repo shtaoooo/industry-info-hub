@@ -11,7 +11,6 @@ import {
   Popconfirm,
   Typography,
   Card,
-  Tag,
 } from 'antd'
 import { PlusOutlined, EditOutlined, DeleteOutlined, SwapOutlined } from '@ant-design/icons'
 import { SubIndustry, Industry } from '../../types'
@@ -184,11 +183,6 @@ const SubIndustryManagement: React.FC = () => {
     } catch (error: any) {
       message.error(error.message || '删除失败')
     }
-  }
-
-  const getIndustryName = (industryId: string) => {
-    const industry = industries.find((i) => i.id === industryId)
-    return industry?.name || industryId
   }
 
   const columns = [

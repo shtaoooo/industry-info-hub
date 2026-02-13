@@ -187,7 +187,7 @@ export async function handler(event: APIGatewayProxyEvent): Promise<APIGatewayPr
   try {
     // Verify authentication
     const user = getUserFromEvent(event)
-    if (!user || user.role !== 'admin') {
+    if (!user || !['admin', 'specialist'].includes(user.role)) {
       return errorResponse('FORBIDDEN', '权限不足', 403)
     }
 

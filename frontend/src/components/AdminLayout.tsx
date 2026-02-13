@@ -11,6 +11,8 @@ import {
   LinkOutlined,
   SolutionOutlined,
   TeamOutlined,
+  NotificationOutlined,
+  ReadOutlined,
 } from '@ant-design/icons'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
@@ -53,6 +55,8 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     { key: '/specialist/use-cases', icon: <FileTextOutlined />, label: '用例管理', roles: ['admin', 'specialist'] },
     { key: '/specialist/mappings', icon: <LinkOutlined />, label: '关联管理', roles: ['admin', 'specialist'] },
     { key: '/specialist/customer-cases', icon: <SolutionOutlined />, label: '客户案例管理', roles: ['admin', 'specialist'] },
+    { key: '/specialist/news', icon: <NotificationOutlined />, label: '新闻管理', roles: ['admin', 'specialist'] },
+    { key: '/specialist/blogs', icon: <ReadOutlined />, label: '博客管理', roles: ['admin', 'specialist'] },
   ]
 
   // 根据用户角色过滤菜单项

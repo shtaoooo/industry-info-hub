@@ -4,6 +4,7 @@ import {
   LogoutOutlined, UserOutlined, BankOutlined,
   ApartmentOutlined, BulbOutlined, FileTextOutlined,
   LinkOutlined, SolutionOutlined, TeamOutlined,
+  NotificationOutlined, ReadOutlined,
 } from '@ant-design/icons'
 import { useAuth } from '../contexts/AuthContext'
 import { useNavigate } from 'react-router-dom'
@@ -149,6 +150,8 @@ const HomePage: React.FC = () => {
     { title: '用例管理', icon: <FileTextOutlined style={{ fontSize: 32 }} />, path: '/specialist/use-cases', desc: '管理行业用例' },
     { title: '关联管理', icon: <LinkOutlined style={{ fontSize: 32 }} />, path: '/specialist/mappings', desc: '管理用例与方案关联' },
     { title: '客户案例', icon: <SolutionOutlined style={{ fontSize: 32 }} />, path: '/specialist/customer-cases', desc: '管理客户成功案例' },
+    { title: '新闻管理', icon: <NotificationOutlined style={{ fontSize: 32 }} />, path: '/specialist/news', desc: '管理行业新闻资讯' },
+    { title: '博客管理', icon: <ReadOutlined style={{ fontSize: 32 }} />, path: '/specialist/blogs', desc: '管理行业博客文章' },
   ]
 
   return (

@@ -13,6 +13,7 @@ import UserManagement from './pages/admin/UserManagement'
 import UseCaseManagement from './pages/specialist/UseCaseManagement'
 import MappingManagement from './pages/specialist/MappingManagement'
 import CustomerCaseManagement from './pages/specialist/CustomerCaseManagement'
+import NewsManagement from './pages/specialist/NewsManagement'
 import SolutionDetail from './pages/public/SolutionDetail'
 import IndustryDetail from './pages/public/IndustryDetail'
 import SubIndustryDetail from './pages/public/SubIndustryDetail'
@@ -103,6 +104,16 @@ function App() {
                 <ProtectedRoute requiredRole={['admin', 'specialist']}>
                   <AdminLayout>
                     <CustomerCaseManagement />
+                  </AdminLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/specialist/news"
+              element={
+                <ProtectedRoute requiredRole={['admin', 'specialist']}>
+                  <AdminLayout>
+                    <NewsManagement />
                   </AdminLayout>
                 </ProtectedRoute>
               }

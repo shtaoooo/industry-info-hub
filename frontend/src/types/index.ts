@@ -84,3 +84,31 @@ export interface CSVImportResult {
   errorCount: number
   errors: string[]
 }
+
+export interface News {
+  id: string
+  industryId: string
+  title: string
+  summary: string
+  content: string
+  imageUrl?: string
+  externalUrl?: string
+  author: string
+  publishedAt: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface Blog {
+  id: string
+  industryId: string
+  title: string
+  summary: string
+  content: string
+  imageUrl?: string
+  externalUrl?: string
+  author: string
+  publishedAt: string
+  createdAt: string
+  updatedAt: string
+}
