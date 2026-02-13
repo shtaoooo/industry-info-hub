@@ -1,5 +1,5 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
-import { PutCommand, GetCommand, DeleteCommand, QueryCommand } from '@aws-sdk/lib-dynamodb'
+import { PutCommand, GetCommand, DeleteCommand, QueryCommand, ScanCommand } from '@aws-sdk/lib-dynamodb'
 import { PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
 import { successResponse, errorResponse } from '../utils/response'
 import { getUserFromEvent, requireRole } from '../utils/auth'
@@ -21,7 +21,7 @@ async function checkUseCaseAccess(user: any, useCaseId: string): Promise<boolean
   }
 
   const industries = await docClient.send(
-    new QueryCommand({
+    new ScanCommand({
       TableName: TABLE_NAMES.INDUSTRIES,
       FilterExpression: 'SK = :sk',
       ExpressionAttributeValues: {
@@ -75,7 +75,7 @@ export async function listCustomerCases(event: APIGatewayProxyEvent): Promise<AP
 
     // Get all solutions
     const solutions = await docClient.send(
-      new QueryCommand({
+      new ScanCommand({
         TableName: TABLE_NAMES.SOLUTIONS,
         FilterExpression: 'SK = :sk',
         ExpressionAttributeValues: {
@@ -235,7 +235,7 @@ export async function updateCustomerCase(event: APIGatewayProxyEvent): Promise<A
     let existingSolutionId: string = ''
 
     const solutions = await docClient.send(
-      new QueryCommand({
+      new ScanCommand({
         TableName: TABLE_NAMES.SOLUTIONS,
         FilterExpression: 'SK = :sk',
         ExpressionAttributeValues: {
@@ -339,7 +339,7 @@ export async function deleteCustomerCase(event: APIGatewayProxyEvent): Promise<A
     let existingSolutionId: string = ''
 
     const solutions = await docClient.send(
-      new QueryCommand({
+      new ScanCommand({
         TableName: TABLE_NAMES.SOLUTIONS,
         FilterExpression: 'SK = :sk',
         ExpressionAttributeValues: {
@@ -430,7 +430,7 @@ export async function uploadDocument(event: APIGatewayProxyEvent): Promise<APIGa
     let existingSolutionId: string = ''
 
     const solutions = await docClient.send(
-      new QueryCommand({
+      new ScanCommand({
         TableName: TABLE_NAMES.SOLUTIONS,
         FilterExpression: 'SK = :sk',
         ExpressionAttributeValues: {

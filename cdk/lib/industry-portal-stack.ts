@@ -240,6 +240,10 @@ export class IndustryPortalStack extends cdk.Stack {
     useCasesTable.grantReadWriteData(subIndustryManagementFn);
     solutionsTable.grantReadWriteData(solutionManagementFn);
     customerCasesTable.grantReadWriteData(solutionManagementFn);
+    // Solution management needs to read sub-industries, use cases, and mappings for specialist filtering
+    subIndustriesTable.grantReadData(solutionManagementFn);
+    useCasesTable.grantReadData(solutionManagementFn);
+    mappingTable.grantReadData(solutionManagementFn);
     industriesTable.grantReadWriteData(useCaseManagementFn);
     subIndustriesTable.grantReadWriteData(useCaseManagementFn);
     useCasesTable.grantReadWriteData(useCaseManagementFn);

@@ -1,5 +1,5 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
-import { PutCommand, GetCommand, DeleteCommand, QueryCommand } from '@aws-sdk/lib-dynamodb'
+import { PutCommand, GetCommand, DeleteCommand, QueryCommand, ScanCommand } from '@aws-sdk/lib-dynamodb'
 import { PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
 import { successResponse, errorResponse } from '../utils/response'
 import { getUserFromEvent, requireRole, hasIndustryAccess } from '../utils/auth'
@@ -23,7 +23,7 @@ async function checkSubIndustryAccess(user: any, subIndustryId: string): Promise
 
   // Find the sub-industry to get its industry
   const industries = await docClient.send(
-    new QueryCommand({
+    new ScanCommand({
       TableName: TABLE_NAMES.INDUSTRIES,
       FilterExpression: 'SK = :sk',
       ExpressionAttributeValues: {
@@ -68,9 +68,9 @@ export async function listUseCases(event: APIGatewayProxyEvent): Promise<APIGate
       // Admin can see all use cases
       // Scan all sub-industries
       const industries = await docClient.send(
-        new QueryCommand({
-          TableName: TABLE_NAMES.INDUSTRIES,
-          FilterExpression: 'SK = :sk',
+        new ScanCommand({
+      TableName: TABLE_NAMES.INDUSTRIES,
+      FilterExpression: 'SK = :sk',
           ExpressionAttributeValues: {
             ':sk': 'METADATA',
           },
@@ -252,9 +252,9 @@ export async function updateUseCase(event: APIGatewayProxyEvent): Promise<APIGat
     let existingSubIndustryId: string = ''
 
     const industries = await docClient.send(
-      new QueryCommand({
-        TableName: TABLE_NAMES.INDUSTRIES,
-        FilterExpression: 'SK = :sk',
+      new ScanCommand({
+      TableName: TABLE_NAMES.INDUSTRIES,
+      FilterExpression: 'SK = :sk',
         ExpressionAttributeValues: {
           ':sk': 'METADATA',
         },
@@ -367,9 +367,9 @@ export async function deleteUseCase(event: APIGatewayProxyEvent): Promise<APIGat
     let existingSubIndustryId: string = ''
 
     const industries = await docClient.send(
-      new QueryCommand({
-        TableName: TABLE_NAMES.INDUSTRIES,
-        FilterExpression: 'SK = :sk',
+      new ScanCommand({
+      TableName: TABLE_NAMES.INDUSTRIES,
+      FilterExpression: 'SK = :sk',
         ExpressionAttributeValues: {
           ':sk': 'METADATA',
         },
@@ -475,9 +475,9 @@ export async function uploadDocument(event: APIGatewayProxyEvent): Promise<APIGa
     let existingSubIndustryId: string = ''
 
     const industries = await docClient.send(
-      new QueryCommand({
-        TableName: TABLE_NAMES.INDUSTRIES,
-        FilterExpression: 'SK = :sk',
+      new ScanCommand({
+      TableName: TABLE_NAMES.INDUSTRIES,
+      FilterExpression: 'SK = :sk',
         ExpressionAttributeValues: {
           ':sk': 'METADATA',
         },
@@ -606,9 +606,9 @@ export async function deleteDocument(event: APIGatewayProxyEvent): Promise<APIGa
     let existingSubIndustryId: string = ''
 
     const industries = await docClient.send(
-      new QueryCommand({
-        TableName: TABLE_NAMES.INDUSTRIES,
-        FilterExpression: 'SK = :sk',
+      new ScanCommand({
+      TableName: TABLE_NAMES.INDUSTRIES,
+      FilterExpression: 'SK = :sk',
         ExpressionAttributeValues: {
           ':sk': 'METADATA',
         },

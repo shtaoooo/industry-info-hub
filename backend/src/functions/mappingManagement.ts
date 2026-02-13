@@ -1,5 +1,5 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
-import { PutCommand, DeleteCommand, QueryCommand, GetCommand } from '@aws-sdk/lib-dynamodb'
+import { PutCommand, DeleteCommand, QueryCommand, GetCommand, ScanCommand } from '@aws-sdk/lib-dynamodb'
 import { successResponse, errorResponse } from '../utils/response'
 import { getUserFromEvent, requireRole } from '../utils/auth'
 import { docClient, TABLE_NAMES } from '../utils/dynamodb'
@@ -16,7 +16,7 @@ async function checkUseCaseAccess(user: any, useCaseId: string): Promise<boolean
 
   // Find the use case to get its industry
   const industries = await docClient.send(
-    new QueryCommand({
+    new ScanCommand({
       TableName: TABLE_NAMES.INDUSTRIES,
       FilterExpression: 'SK = :sk',
       ExpressionAttributeValues: {
@@ -83,7 +83,7 @@ export async function createMapping(event: APIGatewayProxyEvent): Promise<APIGat
     // Check if use case exists
     let useCaseExists = false
     const industries = await docClient.send(
-      new QueryCommand({
+      new ScanCommand({
         TableName: TABLE_NAMES.INDUSTRIES,
         FilterExpression: 'SK = :sk',
         ExpressionAttributeValues: {
@@ -370,7 +370,7 @@ export async function getUseCasesForSolution(event: APIGatewayProxyEvent): Promi
 
       // Find the use case
       const industries = await docClient.send(
-        new QueryCommand({
+        new ScanCommand({
           TableName: TABLE_NAMES.INDUSTRIES,
           FilterExpression: 'SK = :sk',
           ExpressionAttributeValues: {
