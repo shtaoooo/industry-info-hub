@@ -479,3 +479,59 @@ h1, h2, h3, h4, h5, h6,
 .error-details ul {
   color: var(--text-secondary) !important;
 }
+
+/* ===== Responsive Container ===== */
+.responsive-container {
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+  padding-left: 10%;
+  padding-right: 10%;
+}
+
+@media (max-width: 500px) {
+  .responsive-container {
+    padding-left: 5%;
+    padding-right: 5%;
+  }
+}
+
+/* ===== Responsive Grid - 3 Columns Fixed ===== */
+.responsive-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+@media (max-width: 500px) {
+  .responsive-grid-3 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===== Responsive Grid - Auto ===== */
+.responsive-grid-auto {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+}
+
+@media (max-width: 500px) {
+  .responsive-grid-auto {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===== Apple Style Card ===== */
+.apple-card {
+  background: #ffffff;
+  border-radius: 18px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+
+.apple-card:hover {
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+  transform: translateY(-4px);
+}
