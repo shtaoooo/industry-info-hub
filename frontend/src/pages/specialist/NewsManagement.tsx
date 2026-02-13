@@ -15,58 +15,17 @@ import {
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
 import { News, Industry } from '../../types'
 import { industryService } from '../../services/industryService'
+import { api } from '../../services/api'
 
 const { Title } = Typography
 const { TextArea } = Input
 const { Option } = Select
 
-// 临时的 service 函数，后续需要创建独立的 service 文件
 const newsService = {
-  async list(): Promise<News[]> {
-    const response = await fetch('/api/admin/news', {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-      },
-    })
-    if (!response.ok) throw new Error('Failed to fetch news')
-    return response.json()
-  },
-
-  async create(data: Partial<News>): Promise<News> {
-    const response = await fetch('/api/admin/news', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-      },
-      body: JSON.stringify(data),
-    })
-    if (!response.ok) throw new Error('Failed to create news')
-    return response.json()
-  },
-
-  async update(id: string, data: Partial<News>): Promise<News> {
-    const response = await fetch(`/api/admin/news/${id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-      },
-      body: JSON.stringify(data),
-    })
-    if (!response.ok) throw new Error('Failed to update news')
-    return response.json()
-  },
-
-  async delete(id: string): Promise<void> {
-    const response = await fetch(`/api/admin/news/${id}`, {
-      method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-      },
-    })
-    if (!response.ok) throw new Error('Failed to delete news')
-  },
+  list: () => api.get<News[]>('/admin/news'),
+  create: (data: Partial<News>) => api.post<News>('/admin/news', data),
+  update: (id: string, data: Partial<News>) => api.put<News>(`/admin/news/${id}`, data),
+  delete: (id: string) => api.delete<void>(`/admin/news/${id}`),
 }
 
 const NewsManagement: React.FC = () => {

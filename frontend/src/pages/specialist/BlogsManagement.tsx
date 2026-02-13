@@ -15,57 +15,17 @@ import {
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
 import { Blog, Industry } from '../../types'
 import { industryService } from '../../services/industryService'
+import { api } from '../../services/api'
 
 const { Title } = Typography
 const { TextArea } = Input
 const { Option } = Select
 
 const blogsService = {
-  async list(): Promise<Blog[]> {
-    const response = await fetch('/api/admin/blogs', {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-      },
-    })
-    if (!response.ok) throw new Error('Failed to fetch blogs')
-    return response.json()
-  },
-
-  async create(data: Partial<Blog>): Promise<Blog> {
-    const response = await fetch('/api/admin/blogs', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-      },
-      body: JSON.stringify(data),
-    })
-    if (!response.ok) throw new Error('Failed to create blog')
-    return response.json()
-  },
-
-  async update(id: string, data: Partial<Blog>): Promise<Blog> {
-    const response = await fetch(`/api/admin/blogs/${id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-      },
-      body: JSON.stringify(data),
-    })
-    if (!response.ok) throw new Error('Failed to update blog')
-    return response.json()
-  },
-
-  async delete(id: string): Promise<void> {
-    const response = await fetch(`/api/admin/blogs/${id}`, {
-      method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-      },
-    })
-    if (!response.ok) throw new Error('Failed to delete blog')
-  },
+  list: () => api.get<Blog[]>('/admin/blogs'),
+  create: (data: Partial<Blog>) => api.post<Blog>('/admin/blogs', data),
+  update: (id: string, data: Partial<Blog>) => api.put<Blog>(`/admin/blogs/${id}`, data),
+  delete: (id: string) => api.delete<void>(`/admin/blogs/${id}`),
 }
 
 
