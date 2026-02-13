@@ -42,7 +42,7 @@ const SolutionDetail: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="responsive-container" style={{ paddingTop: '60px', paddingBottom: '60px' }}>
+      <div className="responsive-container" style={{ paddingTop: '60px', paddingBottom: '60px', minHeight: '100vh', background: '#fbfbfd' }}>
         <div style={{ textAlign: 'center', paddingTop: 100 }}>
           <Spin size="large" />
         </div>
@@ -52,7 +52,7 @@ const SolutionDetail: React.FC = () => {
 
   if (!solution) {
     return (
-      <div className="responsive-container" style={{ paddingTop: '60px', paddingBottom: '60px' }}>
+      <div className="responsive-container" style={{ paddingTop: '60px', paddingBottom: '60px', minHeight: '100vh', background: '#fbfbfd' }}>
         <Card>
           <p>解决方案不存在</p>
           <Button onClick={() => navigate(-1)}>返回</Button>
@@ -62,7 +62,7 @@ const SolutionDetail: React.FC = () => {
   }
 
   return (
-    <div className="responsive-container" style={{ paddingTop: '60px', paddingBottom: '60px' }}>
+    <div className="responsive-container" style={{ paddingTop: '60px', paddingBottom: '60px', minHeight: '100vh', background: '#fbfbfd' }}>
       <Space direction="vertical" style={{ width: '100%' }} size="large">
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(-1)}>
           返回

@@ -36,7 +36,7 @@ const SubIndustryDetail: React.FC = () => {
 
   if (loading) {
     return (
-      <Layout style={{ minHeight: '100vh', background: 'transparent' }}>
+      <Layout style={{ minHeight: '100vh', background: '#fbfbfd' }}>
         <Content style={{ padding: '60px 0' }}>
           <div className="responsive-container">
             <div style={{ textAlign: 'center', paddingTop: 100 }}>
@@ -49,7 +49,7 @@ const SubIndustryDetail: React.FC = () => {
   }
 
   return (
-    <Layout style={{ minHeight: '100vh', background: 'transparent' }}>
+    <Layout style={{ minHeight: '100vh', background: '#fbfbfd' }}>
       <Content style={{ padding: '60px 0' }}>
         <div className="responsive-container">
           <Button
@@ -57,17 +57,14 @@ const SubIndustryDetail: React.FC = () => {
             onClick={() => navigate(-1)}
             style={{
               marginBottom: 24,
-              background: 'rgba(255, 255, 255, 0.06)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              color: '#fff',
             }}
           >
             返回
           </Button>
 
           <div style={{ marginBottom: 16 }}>
-            <Title level={3} style={{ color: '#fff', display: 'flex', alignItems: 'center' }}>
-              <FileTextOutlined style={{ marginRight: 12, color: '#8b9cf7' }} />
+            <Title level={3} style={{ color: '#1d1d1f', display: 'flex', alignItems: 'center' }}>
+              <FileTextOutlined style={{ marginRight: 12, color: '#0071e3' }} />
               行业用例
             </Title>
           </div>
@@ -77,13 +74,12 @@ const SubIndustryDetail: React.FC = () => {
               style={{
                 textAlign: 'center',
                 padding: 60,
-                background: 'rgba(255, 255, 255, 0.04)',
-                borderRadius: 16,
-                border: '1px solid rgba(255, 255, 255, 0.08)',
+                background: '#f5f5f7',
+                borderRadius: 18,
               }}
             >
-              <FileTextOutlined style={{ fontSize: 48, color: 'rgba(255,255,255,0.25)', marginBottom: 16 }} />
-              <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: 16 }}>
+              <FileTextOutlined style={{ fontSize: 48, color: '#86868b', marginBottom: 16 }} />
+              <div style={{ color: '#6e6e73', fontSize: 16 }}>
                 该子行业暂无用例信息
               </div>
             </div>
@@ -93,35 +89,19 @@ const SubIndustryDetail: React.FC = () => {
                 <div
                   key={useCase.id}
                   onClick={() => navigate(`/public/use-cases/${useCase.id}`)}
+                  className="apple-card"
                   style={{
-                    background: 'rgba(255, 255, 255, 0.06)',
-                    backdropFilter: 'blur(12px)',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                    borderRadius: 16,
                     padding: 24,
                     cursor: 'pointer',
-                    transition: 'all 0.3s ease',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'
-                    e.currentTarget.style.borderColor = 'rgba(102, 126, 234, 0.4)'
-                    e.currentTarget.style.transform = 'translateY(-4px)'
-                    e.currentTarget.style.boxShadow = '0 12px 40px rgba(102, 126, 234, 0.15)'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)'
-                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'
-                    e.currentTarget.style.transform = 'translateY(0)'
-                    e.currentTarget.style.boxShadow = 'none'
                   }}
                 >
-                  <div style={{ fontSize: 16, fontWeight: 600, color: '#fff', marginBottom: 12 }}>
+                  <div style={{ fontSize: 17, fontWeight: 600, color: '#1d1d1f', marginBottom: 12 }}>
                     {useCase.name}
                   </div>
                   <div
                     style={{
-                      fontSize: 13,
-                      color: 'rgba(255,255,255,0.45)',
+                      fontSize: 15,
+                      color: '#6e6e73',
                       lineHeight: '1.6',
                       display: '-webkit-box',
                       WebkitLineClamp: 4,

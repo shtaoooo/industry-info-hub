@@ -41,7 +41,7 @@ const IndustryDetail: React.FC = () => {
 
   if (loading) {
     return (
-      <Layout style={{ minHeight: '100vh', background: 'transparent' }}>
+      <Layout style={{ minHeight: '100vh', background: '#fbfbfd' }}>
         <Content style={{ padding: '60px 0' }}>
           <div className="responsive-container">
             <div style={{ textAlign: 'center', paddingTop: 100 }}>
@@ -55,7 +55,7 @@ const IndustryDetail: React.FC = () => {
 
   if (!industry) {
     return (
-      <Layout style={{ minHeight: '100vh', background: 'transparent' }}>
+      <Layout style={{ minHeight: '100vh', background: '#fbfbfd' }}>
         <Content style={{ padding: '60px 0' }}>
           <div className="responsive-container">
             <Button
@@ -78,7 +78,7 @@ const IndustryDetail: React.FC = () => {
   }
 
   return (
-    <Layout style={{ minHeight: '100vh', background: 'transparent' }}>
+    <Layout style={{ minHeight: '100vh', background: '#fbfbfd' }}>
       <Content style={{ padding: '60px 0' }}>
         <div className="responsive-container">
           <Button
@@ -86,38 +86,32 @@ const IndustryDetail: React.FC = () => {
             onClick={() => navigate('/')}
             style={{
               marginBottom: 24,
-              background: 'rgba(255, 255, 255, 0.06)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              color: '#fff',
             }}
           >
             返回首页
           </Button>
 
           <div
+            className="apple-card"
             style={{
-              background: 'rgba(255, 255, 255, 0.06)',
-              backdropFilter: 'blur(12px)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              borderRadius: 16,
               padding: 32,
               marginBottom: 32,
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
-              <BankOutlined style={{ fontSize: 32, color: '#8b9cf7', marginRight: 16 }} />
-              <Title level={2} style={{ margin: 0, color: '#fff' }}>
+              <BankOutlined style={{ fontSize: 32, color: '#0071e3', marginRight: 16 }} />
+              <Title level={2} style={{ margin: 0, color: '#1d1d1f' }}>
                 {industry.name}
               </Title>
             </div>
-            <Paragraph style={{ color: 'rgba(255,255,255,0.65)', fontSize: 16, lineHeight: 1.8 }}>
+            <Paragraph style={{ color: '#6e6e73', fontSize: 16, lineHeight: 1.8 }}>
               {industry.definition}
             </Paragraph>
           </div>
 
           <div style={{ marginBottom: 16 }}>
-            <Title level={3} style={{ color: '#fff', display: 'flex', alignItems: 'center' }}>
-              <ApartmentOutlined style={{ marginRight: 12, color: '#8b9cf7' }} />
+            <Title level={3} style={{ color: '#1d1d1f', display: 'flex', alignItems: 'center' }}>
+              <ApartmentOutlined style={{ marginRight: 12, color: '#0071e3' }} />
               子行业
             </Title>
           </div>
@@ -127,13 +121,12 @@ const IndustryDetail: React.FC = () => {
               style={{
                 textAlign: 'center',
                 padding: 60,
-                background: 'rgba(255, 255, 255, 0.04)',
-                borderRadius: 16,
-                border: '1px solid rgba(255, 255, 255, 0.08)',
+                background: '#f5f5f7',
+                borderRadius: 18,
               }}
             >
-              <ApartmentOutlined style={{ fontSize: 48, color: 'rgba(255,255,255,0.25)', marginBottom: 16 }} />
-              <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: 16 }}>
+              <ApartmentOutlined style={{ fontSize: 48, color: '#86868b', marginBottom: 16 }} />
+              <div style={{ color: '#6e6e73', fontSize: 16 }}>
                 该行业暂无子行业信息
               </div>
             </div>
@@ -143,35 +136,19 @@ const IndustryDetail: React.FC = () => {
                 <div
                   key={subIndustry.id}
                   onClick={() => navigate(`/public/sub-industries/${subIndustry.id}`)}
+                  className="apple-card"
                   style={{
-                    background: 'rgba(255, 255, 255, 0.06)',
-                    backdropFilter: 'blur(12px)',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                    borderRadius: 16,
                     padding: 24,
                     cursor: 'pointer',
-                    transition: 'all 0.3s ease',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'
-                    e.currentTarget.style.borderColor = 'rgba(102, 126, 234, 0.4)'
-                    e.currentTarget.style.transform = 'translateY(-4px)'
-                    e.currentTarget.style.boxShadow = '0 12px 40px rgba(102, 126, 234, 0.15)'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)'
-                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'
-                    e.currentTarget.style.transform = 'translateY(0)'
-                    e.currentTarget.style.boxShadow = 'none'
                   }}
                 >
-                  <div style={{ fontSize: 16, fontWeight: 600, color: '#fff', marginBottom: 12 }}>
+                  <div style={{ fontSize: 17, fontWeight: 600, color: '#1d1d1f', marginBottom: 12 }}>
                     {subIndustry.name}
                   </div>
                   <div
                     style={{
-                      fontSize: 13,
-                      color: 'rgba(255,255,255,0.45)',
+                      fontSize: 15,
+                      color: '#6e6e73',
                       lineHeight: '1.6',
                       marginBottom: 16,
                       display: '-webkit-box',
@@ -184,7 +161,7 @@ const IndustryDetail: React.FC = () => {
                   </div>
                   {(subIndustry.typicalGlobalCompanies?.length > 0 ||
                     subIndustry.typicalChineseCompanies?.length > 0) && (
-                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>
+                    <div style={{ fontSize: 13, color: '#86868b' }}>
                       {subIndustry.typicalGlobalCompanies?.length > 0 && (
                         <div style={{ marginBottom: 4 }}>
                           全球企业: {subIndustry.typicalGlobalCompanies.slice(0, 3).join(', ')}
