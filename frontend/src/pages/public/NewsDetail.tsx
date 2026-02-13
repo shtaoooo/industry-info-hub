@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { Layout, Spin, message, Button } from 'antd'
 import { ArrowLeftOutlined } from '@ant-design/icons'
 import { publicService } from '../../services/publicService'
-import MarkdownViewer from '../../components/MarkdownViewer'
+import { MarkdownViewer } from '../../components/MarkdownViewer'
 
 const { Content } = Layout
 
@@ -12,7 +12,7 @@ interface NewsDetail {
   industryId: string
   title: string
   summary: string
-  content: string
+  content?: string
   imageUrl?: string
   author: string
   publishedAt: string
@@ -145,9 +145,11 @@ const NewsDetail: React.FC = () => {
               <div style={{ fontSize: 14, color: '#86868b' }}>By {news.author}</div>
             </div>
 
-            <div className="apple-card" style={{ padding: 40, marginTop: 32 }}>
-              <MarkdownViewer content={news.content} />
-            </div>
+            {news.content && (
+              <div className="apple-card" style={{ padding: 40, marginTop: 32 }}>
+                <MarkdownViewer content={news.content} />
+              </div>
+            )}
           </article>
         </div>
       </Content>
