@@ -1,5 +1,5 @@
 import React from 'react'
-import { Layout, Menu, Button, Typography, Space, Tag } from 'antd'
+import { Layout, Menu, Button, Space, Tag } from 'antd'
 import {
   BankOutlined,
   LogoutOutlined,
@@ -16,7 +16,6 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 
 const { Header, Sider, Content } = Layout
-const { Text } = Typography
 
 interface AdminLayoutProps {
   children: React.ReactNode
@@ -48,29 +47,24 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   ]
 
   return (
-    <Layout style={{ minHeight: '100vh', background: 'transparent' }}>
+    <Layout style={{ minHeight: '100vh', background: '#fbfbfd' }}>
       <Sider
-        className="glass-sidebar"
         width={220}
         style={{
-          background: 'rgba(15, 12, 41, 0.55)',
-          backdropFilter: 'blur(20px)',
-          WebkitBackdropFilter: 'blur(20px)',
-          borderRight: '1px solid rgba(255, 255, 255, 0.08)',
+          background: '#ffffff',
+          borderRight: '1px solid #d2d2d7',
         }}
       >
         <div style={{
           padding: '20px 16px',
           textAlign: 'center',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+          borderBottom: '1px solid #d2d2d7',
         }}>
           <div style={{
             fontSize: 24,
             fontWeight: 700,
-            background: 'linear-gradient(135deg, #667eea, #a78bfa)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            letterSpacing: 2,
+            color: '#1d1d1f',
+            letterSpacing: 0.5,
           }}>
             管理后台
           </div>
@@ -80,15 +74,17 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
           selectedKeys={[location.pathname]}
           items={menuItems}
           onClick={({ key }) => navigate(key)}
-          style={{ background: 'transparent', border: 'none', marginTop: 8 }}
+          style={{ 
+            background: 'transparent', 
+            border: 'none', 
+            marginTop: 8,
+          }}
         />
       </Sider>
-      <Layout style={{ background: 'transparent' }}>
+      <Layout style={{ background: '#fbfbfd' }}>
         <Header style={{
-          background: 'rgba(255, 255, 255, 0.05)',
-          backdropFilter: 'blur(16px)',
-          WebkitBackdropFilter: 'blur(16px)',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+          background: '#ffffff',
+          borderBottom: '1px solid #d2d2d7',
           padding: '0 24px',
           display: 'flex',
           justifyContent: 'flex-end',
@@ -96,14 +92,16 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
           height: 56,
         }}>
           <Space>
-            <UserOutlined style={{ color: 'rgba(255,255,255,0.65)' }} />
-            <Text style={{ color: 'rgba(255,255,255,0.85)' }}>{user?.email}</Text>
+            <UserOutlined style={{ color: '#86868b', fontSize: 16 }} />
+            <span style={{ color: '#1d1d1f', fontSize: 14 }}>{user?.email}</span>
             <Tag
               style={{
-                background: 'rgba(102, 126, 234, 0.2)',
-                color: '#a8b4f8',
-                border: '1px solid rgba(102, 126, 234, 0.3)',
-                borderRadius: 6,
+                background: '#f5f5f7',
+                color: '#1d1d1f',
+                border: '1px solid #d2d2d7',
+                borderRadius: 12,
+                padding: '4px 12px',
+                fontSize: 12,
               }}
             >
               管理员
@@ -112,7 +110,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
               type="text"
               icon={<LogoutOutlined />}
               onClick={handleLogout}
-              style={{ color: 'rgba(255,255,255,0.65)' }}
+              style={{ color: '#0071e3', fontSize: 14 }}
             >
               登出
             </Button>
