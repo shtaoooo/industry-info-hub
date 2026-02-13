@@ -180,9 +180,9 @@ async function deleteBlog(event: APIGatewayProxyEvent): Promise<APIGatewayProxyR
 /**
  * Lambda handler
  */
-export async function handler(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
-  const method = event.httpMethod
-  const path = event.path || event.resource
+export async function handler(event: any): Promise<APIGatewayProxyResult> {
+  const method = event.httpMethod || event.requestContext?.http?.method
+  const path = event.resource || event.rawPath || event.path
 
   try {
     // Verify authentication
@@ -192,12 +192,12 @@ export async function handler(event: APIGatewayProxyEvent): Promise<APIGatewayPr
     }
 
     // GET /admin/blogs
-    if (method === 'GET' && path === '/admin/blogs') {
+    if (method === 'GET' && (path === '/admin/blogs' || path === '/admin/blogs/')) {
       return await listBlogs(event)
     }
 
     // POST /admin/blogs
-    if (method === 'POST' && path === '/admin/blogs') {
+    if (method === 'POST' && (path === '/admin/blogs' || path === '/admin/blogs/')) {
       return await createBlog(event)
     }
 
