@@ -20,7 +20,7 @@ function generateId(): string {
 export async function listSolutions(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   try {
     const user = getUserFromEvent(event)
-    requireRole(user, 'admin')
+    requireRole(user, ['admin', 'specialist'])
 
     const result = await docClient.send(
       new ScanCommand({
@@ -59,7 +59,7 @@ export async function listSolutions(event: APIGatewayProxyEvent): Promise<APIGat
 export async function getSolution(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   try {
     const user = getUserFromEvent(event)
-    requireRole(user, 'admin')
+    requireRole(user, ['admin', 'specialist'])
 
     const solutionId = event.pathParameters?.id
     if (!solutionId) {
@@ -104,7 +104,7 @@ export async function getSolution(event: APIGatewayProxyEvent): Promise<APIGatew
 export async function createSolution(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   try {
     const user = getUserFromEvent(event)
-    requireRole(user, 'admin')
+    requireRole(user, ['admin', 'specialist'])
 
     const body = JSON.parse(event.body || '{}')
     const { name, description } = body
@@ -160,7 +160,7 @@ export async function createSolution(event: APIGatewayProxyEvent): Promise<APIGa
 export async function updateSolution(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   try {
     const user = getUserFromEvent(event)
-    requireRole(user, 'admin')
+    requireRole(user, ['admin', 'specialist'])
 
     const solutionId = event.pathParameters?.id
     if (!solutionId) {
@@ -231,7 +231,7 @@ export async function updateSolution(event: APIGatewayProxyEvent): Promise<APIGa
 export async function deleteSolution(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   try {
     const user = getUserFromEvent(event)
-    requireRole(user, 'admin')
+    requireRole(user, ['admin', 'specialist'])
 
     const solutionId = event.pathParameters?.id
     if (!solutionId) {
@@ -307,7 +307,7 @@ export async function deleteSolution(event: APIGatewayProxyEvent): Promise<APIGa
 export async function uploadMarkdown(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   try {
     const user = getUserFromEvent(event)
-    requireRole(user, 'admin')
+    requireRole(user, ['admin', 'specialist'])
 
     const solutionId = event.pathParameters?.id
     if (!solutionId) {
@@ -382,7 +382,7 @@ export async function uploadMarkdown(event: APIGatewayProxyEvent): Promise<APIGa
 export async function getMarkdownUrl(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   try {
     const user = getUserFromEvent(event)
-    requireRole(user, 'admin')
+    requireRole(user, ['admin', 'specialist'])
 
     const solutionId = event.pathParameters?.id
     if (!solutionId) {

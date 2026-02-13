@@ -18,7 +18,7 @@ function generateId(): string {
 export async function listSubIndustries(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   try {
     const user = getUserFromEvent(event)
-    requireRole(user, 'admin')
+    requireRole(user, ['admin', 'specialist'])
 
     const industryId = event.pathParameters?.industryId
 

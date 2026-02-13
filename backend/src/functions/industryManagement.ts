@@ -23,7 +23,7 @@ function generateId(): string {
 export async function listIndustries(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   try {
     const user = getUserFromEvent(event)
-    requireRole(user, 'admin')
+    requireRole(user, ['admin', 'specialist'])
 
     const result = await docClient.send(new ScanCommand({
       TableName: TABLE_NAMES.INDUSTRIES,
