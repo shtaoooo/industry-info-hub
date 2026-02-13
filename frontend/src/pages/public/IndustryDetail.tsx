@@ -98,7 +98,20 @@ const IndustryDetail: React.FC = () => {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
-              <BankOutlined style={{ fontSize: 32, color: '#0071e3', marginRight: 16 }} />
+              {industry.icon ? (
+                <img
+                  src={industry.icon}
+                  alt={industry.name}
+                  style={{
+                    width: 32,
+                    height: 32,
+                    marginRight: 16,
+                    objectFit: 'contain',
+                  }}
+                />
+              ) : (
+                <BankOutlined style={{ fontSize: 32, color: '#0071e3', marginRight: 16 }} />
+              )}
               <h2 style={{ margin: 0, color: '#1d1d1f', fontSize: 30, fontWeight: 600 }}>
                 {industry.name}
               </h2>

@@ -6,6 +6,7 @@ export interface PublicIndustry {
   definition: string
   definitionCn?: string
   imageUrl?: string
+  icon?: string
   createdAt: string
 }
 
