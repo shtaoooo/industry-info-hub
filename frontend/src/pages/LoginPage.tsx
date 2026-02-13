@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react'
-import { Form, Input, Button, message, Typography } from 'antd'
+import { Form, Input, Button, message } from 'antd'
 import { UserOutlined, LockOutlined } from '@ant-design/icons'
 import { useAuth } from '../contexts/AuthContext'
 import { useNavigate } from 'react-router-dom'
-
-const { Title } = Typography
 
 interface LoginFormValues {
   email: string
@@ -61,42 +59,44 @@ const LoginPage: React.FC = () => {
 
   const cardStyle: React.CSSProperties = {
     width: 420,
-    background: 'rgba(255, 255, 255, 0.07)',
-    backdropFilter: 'blur(24px)',
-    WebkitBackdropFilter: 'blur(24px)',
-    border: '1px solid rgba(255, 255, 255, 0.15)',
-    borderRadius: 20,
+    background: '#ffffff',
+    border: '1px solid #d2d2d7',
+    borderRadius: 18,
     padding: '48px 36px 36px',
-    boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
+    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.12)',
   }
 
   return (
-    <div style={{
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      minHeight: '100vh',
-      background: 'transparent',
-    }}>
+    <div
+      style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        minHeight: '100vh',
+        background: '#fbfbfd',
+      }}
+    >
       <div style={cardStyle}>
         <div style={{ textAlign: 'center', marginBottom: 36 }}>
-          <div style={{
-            width: 56,
-            height: 56,
-            margin: '0 auto 16px',
-            borderRadius: 16,
-            background: 'linear-gradient(135deg, #667eea, #764ba2)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 8px 24px rgba(102, 126, 234, 0.4)',
-          }}>
+          <div
+            style={{
+              width: 56,
+              height: 56,
+              margin: '0 auto 16px',
+              borderRadius: 16,
+              background: '#0071e3',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 4px 12px rgba(0, 113, 227, 0.3)',
+            }}
+          >
             <LockOutlined style={{ fontSize: 24, color: '#fff' }} />
           </div>
-          <Title level={2} style={{ margin: 0, color: '#fff' }}>
+          <h2 style={{ margin: 0, color: '#1d1d1f', fontSize: 28, fontWeight: 600 }}>
             行业信息门户
-          </Title>
-          <p style={{ color: 'rgba(255,255,255,0.45)', marginTop: 8 }}>
+          </h2>
+          <p style={{ color: '#6e6e73', marginTop: 8, fontSize: 15 }}>
             {needsNewPassword ? '首次登录，请设置新密码' : '请登录您的账户'}
           </p>
         </div>
