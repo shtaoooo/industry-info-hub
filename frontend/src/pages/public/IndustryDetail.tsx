@@ -131,51 +131,39 @@ const IndustryDetail: React.FC = () => {
               </div>
             </div>
           ) : (
-            <div className="responsive-grid-auto">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {subIndustries.map((subIndustry) => (
                 <div
                   key={subIndustry.id}
                   onClick={() => navigate(`/public/sub-industries/${subIndustry.id}`)}
                   className="apple-card"
                   style={{
-                    padding: 24,
+                    padding: '20px 24px',
                     cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 16,
                   }}
                 >
-                  <div style={{ fontSize: 17, fontWeight: 600, color: '#1d1d1f', marginBottom: 12 }}>
+                  <div style={{ width: '20%', fontSize: 15, fontWeight: 600, color: '#1d1d1f' }}>
                     {subIndustry.name}
                   </div>
-                  <div
-                    style={{
-                      fontSize: 15,
-                      color: '#6e6e73',
-                      lineHeight: '1.6',
-                      marginBottom: 16,
-                      display: '-webkit-box',
-                      WebkitLineClamp: 3,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden',
-                    }}
-                  >
-                    {subIndustry.definition}
+                  <div style={{ width: '20%', fontSize: 13, color: '#6e6e73', lineHeight: 1.5 }}>
+                    {subIndustry.definition || '-'}
                   </div>
-                  {(subIndustry.typicalGlobalCompanies?.length > 0 ||
-                    subIndustry.typicalChineseCompanies?.length > 0) && (
-                    <div style={{ fontSize: 13, color: '#86868b' }}>
-                      {subIndustry.typicalGlobalCompanies?.length > 0 && (
-                        <div style={{ marginBottom: 4 }}>
-                          全球企业: {subIndustry.typicalGlobalCompanies.slice(0, 3).join(', ')}
-                          {subIndustry.typicalGlobalCompanies.length > 3 && '...'}
-                        </div>
-                      )}
-                      {subIndustry.typicalChineseCompanies?.length > 0 && (
-                        <div>
-                          中国企业: {subIndustry.typicalChineseCompanies.slice(0, 3).join(', ')}
-                          {subIndustry.typicalChineseCompanies.length > 3 && '...'}
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  <div style={{ width: '20%', fontSize: 13, color: '#6e6e73', lineHeight: 1.5 }}>
+                    {subIndustry.definitionCn || '-'}
+                  </div>
+                  <div style={{ width: '20%', fontSize: 13, color: '#6e6e73', lineHeight: 1.5 }}>
+                    {subIndustry.typicalGlobalCompanies?.length > 0
+                      ? subIndustry.typicalGlobalCompanies.join(', ')
+                      : '-'}
+                  </div>
+                  <div style={{ width: '20%', fontSize: 13, color: '#6e6e73', lineHeight: 1.5 }}>
+                    {subIndustry.typicalChineseCompanies?.length > 0
+                      ? subIndustry.typicalChineseCompanies.join(', ')
+                      : '-'}
+                  </div>
                 </div>
               ))}
             </div>

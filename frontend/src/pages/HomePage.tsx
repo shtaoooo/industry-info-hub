@@ -153,10 +153,10 @@ const HomePage: React.FC = () => {
   return (
     <Layout style={{ minHeight: '100vh', background: '#fbfbfd' }}>
       <Header style={{
-        background: 'rgba(251, 251, 253, 0.8)',
+        background: 'rgba(29, 29, 31, 0.95)',
         backdropFilter: 'saturate(180%) blur(20px)',
         WebkitBackdropFilter: 'saturate(180%) blur(20px)',
-        borderBottom: '1px solid rgba(0, 0, 0, 0.08)',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
         padding: '0 max(22px, env(safe-area-inset-left))',
         display: 'flex',
         justifyContent: 'space-between',
@@ -169,19 +169,19 @@ const HomePage: React.FC = () => {
         <div style={{
           fontSize: 21,
           fontWeight: 600,
-          color: '#1d1d1f',
+          color: '#f5f5f7',
           letterSpacing: '0.011em',
         }}>
           行业信息门户
         </div>
         <Space size={24}>
           <Space size={12}>
-            <UserOutlined style={{ color: '#6e6e73', fontSize: 16 }} />
-            <Text style={{ color: '#1d1d1f', fontSize: 14 }}>{user?.email}</Text>
+            <UserOutlined style={{ color: '#a1a1a6', fontSize: 16 }} />
+            <Text style={{ color: '#f5f5f7', fontSize: 14 }}>{user?.email}</Text>
           </Space>
           <Tag style={{
-            background: '#f5f5f7',
-            color: '#1d1d1f',
+            background: 'rgba(255, 255, 255, 0.1)',
+            color: '#f5f5f7',
             border: 'none',
             borderRadius: 12,
             padding: '4px 12px',
@@ -195,7 +195,7 @@ const HomePage: React.FC = () => {
             icon={<LogoutOutlined />}
             onClick={handleLogout}
             style={{ 
-              color: '#0071e3',
+              color: '#2997ff',
               fontSize: 14,
               padding: '4px 8px',
               height: 'auto',

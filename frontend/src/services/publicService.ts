@@ -4,6 +4,7 @@ export interface PublicIndustry {
   id: string
   name: string
   definition: string
+  definitionCn?: string
   imageUrl?: string
   createdAt: string
 }
@@ -13,6 +14,7 @@ export interface PublicSubIndustry {
   industryId: string
   name: string
   definition: string
+  definitionCn?: string
   typicalGlobalCompanies: string[]
   typicalChineseCompanies: string[]
   createdAt: string
