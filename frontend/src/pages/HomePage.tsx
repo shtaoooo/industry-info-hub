@@ -161,7 +161,7 @@ const HomePage: React.FC = () => {
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        height: 44,
+        height: 66,
         position: 'sticky',
         top: 0,
         zIndex: 1000,
@@ -177,7 +177,7 @@ const HomePage: React.FC = () => {
         <Space size={24}>
           <Space size={12}>
             <UserOutlined style={{ color: '#a1a1a6', fontSize: 16 }} />
-            <Text style={{ color: '#f5f5f7', fontSize: 14 }}>{user?.email}</Text>
+            <Text style={{ color: '#ffffff', fontSize: 14 }}>{user?.email}</Text>
           </Space>
           <Tag style={{
             background: 'rgba(255, 255, 255, 0.1)',

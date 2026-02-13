@@ -113,6 +113,7 @@ export async function listSubIndustries(event: APIGatewayProxyEvent): Promise<AP
       industryId: item.industryId,
       name: item.name,
       definition: item.definition,
+      definitionCn: item.definitionCn,
       typicalGlobalCompanies: item.typicalGlobalCompanies || [],
       typicalChineseCompanies: item.typicalChineseCompanies || [],
       createdAt: item.createdAt,

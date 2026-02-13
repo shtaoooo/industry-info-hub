@@ -141,25 +141,88 @@ const IndustryDetail: React.FC = () => {
                     padding: '20px 24px',
                     cursor: 'pointer',
                     display: 'flex',
-                    alignItems: 'center',
+                    alignItems: 'flex-start',
                     gap: 16,
+                    height: 120,
+                    overflow: 'hidden',
                   }}
                 >
-                  <div style={{ width: '20%', fontSize: 15, fontWeight: 600, color: '#1d1d1f' }}>
+                  <div
+                    style={{
+                      width: '20%',
+                      fontSize: 15,
+                      fontWeight: 600,
+                      color: '#1d1d1f',
+                      display: '-webkit-box',
+                      WebkitLineClamp: 5,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      lineHeight: 1.5,
+                    }}
+                  >
                     {subIndustry.name}
                   </div>
-                  <div style={{ width: '20%', fontSize: 13, color: '#6e6e73', lineHeight: 1.5 }}>
+                  <div
+                    style={{
+                      width: '20%',
+                      fontSize: 13,
+                      color: '#6e6e73',
+                      lineHeight: 1.5,
+                      display: '-webkit-box',
+                      WebkitLineClamp: 5,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
                     {subIndustry.definition || '-'}
                   </div>
-                  <div style={{ width: '20%', fontSize: 13, color: '#6e6e73', lineHeight: 1.5 }}>
+                  <div
+                    style={{
+                      width: '20%',
+                      fontSize: 13,
+                      color: '#6e6e73',
+                      lineHeight: 1.5,
+                      display: '-webkit-box',
+                      WebkitLineClamp: 5,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
                     {subIndustry.definitionCn || '-'}
                   </div>
-                  <div style={{ width: '20%', fontSize: 13, color: '#6e6e73', lineHeight: 1.5 }}>
+                  <div
+                    style={{
+                      width: '20%',
+                      fontSize: 13,
+                      color: '#6e6e73',
+                      lineHeight: 1.5,
+                      display: '-webkit-box',
+                      WebkitLineClamp: 5,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
                     {subIndustry.typicalGlobalCompanies?.length > 0
                       ? subIndustry.typicalGlobalCompanies.join(', ')
                       : '-'}
                   </div>
-                  <div style={{ width: '20%', fontSize: 13, color: '#6e6e73', lineHeight: 1.5 }}>
+                  <div
+                    style={{
+                      width: '20%',
+                      fontSize: 13,
+                      color: '#6e6e73',
+                      lineHeight: 1.5,
+                      display: '-webkit-box',
+                      WebkitLineClamp: 5,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
                     {subIndustry.typicalChineseCompanies?.length > 0
                       ? subIndustry.typicalChineseCompanies.join(', ')
                       : '-'}
