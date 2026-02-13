@@ -47,7 +47,11 @@ const IndustryManagement: React.FC = () => {
 
   const handleEdit = (industry: Industry) => {
     setEditingIndustry(industry)
-    form.setFieldsValue({ name: industry.name, definition: industry.definition })
+    form.setFieldsValue({
+      name: industry.name,
+      definition: industry.definition,
+      definitionCn: industry.definitionCn,
+    })
     setModalVisible(true)
   }
 
@@ -60,6 +64,7 @@ const IndustryManagement: React.FC = () => {
         const updateData: UpdateIndustryRequest = {
           name: values.name,
           definition: values.definition,
+          definitionCn: values.definitionCn,
         }
         await industryService.update(editingIndustry.id, updateData)
         message.success('行业更新成功')
@@ -67,6 +72,7 @@ const IndustryManagement: React.FC = () => {
         const createData: CreateIndustryRequest = {
           name: values.name,
           definition: values.definition,
+          definitionCn: values.definitionCn,
         }
         await industryService.create(createData)
         message.success('行业创建成功')
@@ -112,11 +118,19 @@ const IndustryManagement: React.FC = () => {
       width: 200,
     },
     {
-      title: '行业定义',
+      title: '行业定义（英文）',
       dataIndex: 'definition',
       key: 'definition',
       render: (text: string) => (
         <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{text}</div>
+      ),
+    },
+    {
+      title: '行业定义（中文）',
+      dataIndex: 'definitionCn',
+      key: 'definitionCn',
+      render: (text: string) => (
+        <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{text || '-'}</div>
       ),
     },
     {
@@ -200,6 +214,9 @@ const IndustryManagement: React.FC = () => {
         confirmLoading={submitting}
         okText="保存"
         cancelText="取消"
+        width={1040}
+        style={{ top: 20 }}
+        bodyStyle={{ maxHeight: 'calc(100vh - 200px)', overflowY: 'auto' }}
       >
         <Form form={form} layout="vertical">
           <Form.Item
@@ -211,10 +228,17 @@ const IndustryManagement: React.FC = () => {
           </Form.Item>
           <Form.Item
             name="definition"
-            label="行业定义"
+            label="行业定义（英文）"
             rules={commonValidationRules.description}
           >
-            <TextArea rows={4} placeholder="请输入行业定义" maxLength={500} showCount />
+            <TextArea rows={8} placeholder="请输入行业定义（英文）" maxLength={500} showCount />
+          </Form.Item>
+          <Form.Item
+            name="definitionCn"
+            label="行业定义（中文）"
+            rules={[{ max: 500, message: '行业定义不能超过500个字符' }]}
+          >
+            <TextArea rows={8} placeholder="请输入行业定义（中文）" maxLength={500} showCount />
           </Form.Item>
         </Form>
       </Modal>

@@ -4,11 +4,13 @@ import { Industry } from '../types'
 export interface CreateIndustryRequest {
   name: string
   definition: string
+  definitionCn?: string
 }
 
 export interface UpdateIndustryRequest {
   name?: string
   definition?: string
+  definitionCn?: string
 }
 
 export interface CSVImportResult {

@@ -5,6 +5,7 @@ export interface CreateSubIndustryRequest {
   industryId: string
   name: string
   definition: string
+  definitionCn?: string
   typicalGlobalCompanies?: string[]
   typicalChineseCompanies?: string[]
 }
@@ -12,6 +13,7 @@ export interface CreateSubIndustryRequest {
 export interface UpdateSubIndustryRequest {
   name?: string
   definition?: string
+  definitionCn?: string
   typicalGlobalCompanies?: string[]
   typicalChineseCompanies?: string[]
 }

@@ -28,7 +28,9 @@ const { Option } = Select
 
 const SubIndustryManagement: React.FC = () => {
   const [subIndustries, setSubIndustries] = useState<SubIndustry[]>([])
+  const [filteredSubIndustries, setFilteredSubIndustries] = useState<SubIndustry[]>([])
   const [industries, setIndustries] = useState<Industry[]>([])
+  const [selectedIndustryId, setSelectedIndustryId] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [modalVisible, setModalVisible] = useState(false)
   const [moveModalVisible, setMoveModalVisible] = useState(false)
@@ -64,6 +66,14 @@ const SubIndustryManagement: React.FC = () => {
     fetchIndustries()
   }, [fetchSubIndustries, fetchIndustries])
 
+  useEffect(() => {
+    if (selectedIndustryId) {
+      setFilteredSubIndustries(subIndustries.filter((s) => s.industryId === selectedIndustryId))
+    } else {
+      setFilteredSubIndustries(subIndustries)
+    }
+  }, [selectedIndustryId, subIndustries])
+
   const handleCreate = () => {
     setEditingSubIndustry(null)
     form.resetFields()
@@ -76,6 +86,7 @@ const SubIndustryManagement: React.FC = () => {
       industryId: subIndustry.industryId,
       name: subIndustry.name,
       definition: subIndustry.definition,
+      definitionCn: subIndustry.definitionCn,
       typicalGlobalCompanies: subIndustry.typicalGlobalCompanies?.join(', ') || '',
       typicalChineseCompanies: subIndustry.typicalChineseCompanies?.join(', ') || '',
     })
@@ -112,6 +123,7 @@ const SubIndustryManagement: React.FC = () => {
         const updateData: UpdateSubIndustryRequest = {
           name: values.name,
           definition: values.definition,
+          definitionCn: values.definitionCn,
           typicalGlobalCompanies,
           typicalChineseCompanies,
         }
@@ -122,6 +134,7 @@ const SubIndustryManagement: React.FC = () => {
           industryId: values.industryId,
           name: values.name,
           definition: values.definition,
+          definitionCn: values.definitionCn,
           typicalGlobalCompanies,
           typicalChineseCompanies,
         }
@@ -186,18 +199,19 @@ const SubIndustryManagement: React.FC = () => {
       width: 200,
     },
     {
-      title: '所属行业',
-      dataIndex: 'industryId',
-      key: 'industryId',
-      width: 150,
-      render: (industryId: string) => <Tag color="blue">{getIndustryName(industryId)}</Tag>,
-    },
-    {
-      title: '子行业定义',
+      title: '子行业定义（英文）',
       dataIndex: 'definition',
       key: 'definition',
       render: (text: string) => (
         <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{text}</div>
+      ),
+    },
+    {
+      title: '子行业定义（中文）',
+      dataIndex: 'definitionCn',
+      key: 'definitionCn',
+      render: (text: string) => (
+        <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{text || '-'}</div>
       ),
     },
     {
@@ -261,9 +275,25 @@ const SubIndustryManagement: React.FC = () => {
         </Button>
       </div>
 
+      <div style={{ marginBottom: 16 }}>
+        <Select
+          placeholder="选择行业筛选"
+          style={{ width: 300 }}
+          allowClear
+          value={selectedIndustryId}
+          onChange={setSelectedIndustryId}
+        >
+          {industries.map((industry) => (
+            <Option key={industry.id} value={industry.id}>
+              {industry.name}
+            </Option>
+          ))}
+        </Select>
+      </div>
+
       <Table
         columns={columns}
-        dataSource={subIndustries}
+        dataSource={filteredSubIndustries}
         rowKey="id"
         loading={loading}
         pagination={{ pageSize: 10, showTotal: (total) => `共 ${total} 条` }}
@@ -282,7 +312,9 @@ const SubIndustryManagement: React.FC = () => {
         confirmLoading={submitting}
         okText="保存"
         cancelText="取消"
-        width={600}
+        width={1040}
+        style={{ top: 20 }}
+        bodyStyle={{ maxHeight: 'calc(100vh - 200px)', overflowY: 'auto' }}
       >
         <Form form={form} layout="vertical">
           <Form.Item
@@ -310,13 +342,20 @@ const SubIndustryManagement: React.FC = () => {
           </Form.Item>
           <Form.Item
             name="definition"
-            label="子行业定义"
+            label="子行业定义（英文）"
             rules={[
               { required: true, message: '请输入子行业定义' },
               { max: 500, message: '子行业定义不能超过500个字符' },
             ]}
           >
-            <TextArea rows={4} placeholder="请输入子行业定义" />
+            <TextArea rows={6} placeholder="请输入子行业定义（英文）" />
+          </Form.Item>
+          <Form.Item
+            name="definitionCn"
+            label="子行业定义（中文）"
+            rules={[{ max: 500, message: '子行业定义不能超过500个字符' }]}
+          >
+            <TextArea rows={6} placeholder="请输入子行业定义（中文）" />
           </Form.Item>
           <Form.Item name="typicalGlobalCompanies" label="典型全球企业（用逗号分隔）">
             <Input placeholder="例如：Google, Microsoft, Amazon" />

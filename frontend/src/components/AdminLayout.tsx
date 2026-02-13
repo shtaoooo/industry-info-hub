@@ -35,16 +35,30 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     }
   }
 
-  const menuItems = [
-    { key: '/', icon: <HomeOutlined />, label: '首页' },
-    { key: '/admin/industries', icon: <BankOutlined />, label: '行业管理' },
-    { key: '/admin/sub-industries', icon: <ApartmentOutlined />, label: '子行业管理' },
-    { key: '/admin/solutions', icon: <BulbOutlined />, label: '解决方案管理' },
-    { key: '/admin/users', icon: <TeamOutlined />, label: '用户管理' },
-    { key: '/specialist/use-cases', icon: <FileTextOutlined />, label: '用例管理' },
-    { key: '/specialist/mappings', icon: <LinkOutlined />, label: '关联管理' },
-    { key: '/specialist/customer-cases', icon: <SolutionOutlined />, label: '客户案例管理' },
+  const getRoleLabel = (role: string) => {
+    switch (role) {
+      case 'admin': return '管理员'
+      case 'specialist': return '行业专员'
+      case 'user': return '普通用户'
+      default: return role
+    }
+  }
+
+  const allMenuItems = [
+    { key: '/', icon: <HomeOutlined />, label: '首页', roles: ['admin', 'specialist'] },
+    { key: '/admin/industries', icon: <BankOutlined />, label: '行业管理', roles: ['admin'] },
+    { key: '/admin/sub-industries', icon: <ApartmentOutlined />, label: '子行业管理', roles: ['admin'] },
+    { key: '/admin/solutions', icon: <BulbOutlined />, label: '解决方案管理', roles: ['admin', 'specialist'] },
+    { key: '/admin/users', icon: <TeamOutlined />, label: '用户管理', roles: ['admin'] },
+    { key: '/specialist/use-cases', icon: <FileTextOutlined />, label: '用例管理', roles: ['admin', 'specialist'] },
+    { key: '/specialist/mappings', icon: <LinkOutlined />, label: '关联管理', roles: ['admin', 'specialist'] },
+    { key: '/specialist/customer-cases', icon: <SolutionOutlined />, label: '客户案例管理', roles: ['admin', 'specialist'] },
   ]
+
+  // 根据用户角色过滤菜单项
+  const menuItems = allMenuItems
+    .filter(item => item.roles.includes(user?.role || ''))
+    .map(({ roles, ...item }) => item)
 
   return (
     <Layout style={{ minHeight: '100vh', background: '#fbfbfd' }}>
@@ -104,7 +118,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
                 fontSize: 12,
               }}
             >
-              管理员
+              {getRoleLabel(user?.role || '')}
             </Tag>
             <Button
               type="text"

@@ -238,36 +238,46 @@ const HomePage: React.FC = () => {
 
           {hasRole(['admin', 'specialist']) && (
             <div className="responsive-grid-3">
-              {adminCards.map((card) => (
-                <div
-                  key={card.path}
-                  onClick={() => navigate(card.path)}
-                  className="apple-card"
-                  style={{
-                    padding: 32,
-                    cursor: 'pointer',
-                  }}
-                >
-                  <div style={{ color: '#0071e3', marginBottom: 16 }}>{card.icon}</div>
-                  <div style={{ 
-                    fontSize: 21, 
-                    fontWeight: 600, 
-                    color: '#1d1d1f', 
-                    marginBottom: 8,
-                    letterSpacing: '0.011em',
-                  }}>
-                    {card.title}
+              {adminCards
+                .filter((card) => {
+                  // 管理员可以看到所有卡片
+                  if (user?.role === 'admin') return true
+                  // 行业专员只能看到专员相关的功能和解决方案
+                  if (user?.role === 'specialist') {
+                    return card.path.startsWith('/specialist/') || card.path === '/admin/solutions'
+                  }
+                  return false
+                })
+                .map((card) => (
+                  <div
+                    key={card.path}
+                    onClick={() => navigate(card.path)}
+                    className="apple-card"
+                    style={{
+                      padding: 32,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <div style={{ color: '#0071e3', marginBottom: 16 }}>{card.icon}</div>
+                    <div style={{ 
+                      fontSize: 21, 
+                      fontWeight: 600, 
+                      color: '#1d1d1f', 
+                      marginBottom: 8,
+                      letterSpacing: '0.011em',
+                    }}>
+                      {card.title}
+                    </div>
+                    <div style={{ 
+                      fontSize: 17, 
+                      color: '#6e6e73',
+                      lineHeight: 1.47059,
+                      letterSpacing: '-0.022em',
+                    }}>
+                      {card.desc}
+                    </div>
                   </div>
-                  <div style={{ 
-                    fontSize: 17, 
-                    color: '#6e6e73',
-                    lineHeight: 1.47059,
-                    letterSpacing: '-0.022em',
-                  }}>
-                    {card.desc}
-                  </div>
-                </div>
-              ))}
+                ))}
             </div>
           )}
 

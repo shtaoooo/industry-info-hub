@@ -60,7 +60,7 @@ function App() {
             <Route
               path="/admin/solutions"
               element={
-                <ProtectedRoute requiredRole="admin">
+                <ProtectedRoute requiredRole={['admin', 'specialist']}>
                   <AdminLayout>
                     <SolutionManagement />
                   </AdminLayout>
