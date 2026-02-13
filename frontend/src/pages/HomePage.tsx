@@ -177,7 +177,7 @@ const HomePage: React.FC = () => {
         <Space size={24}>
           <Space size={12}>
             <UserOutlined style={{ color: '#a1a1a6', fontSize: 16 }} />
-            <Text style={{ color: '#ffffff', fontSize: 14 }}>{user?.email}</Text>
+            <span style={{ color: '#ffffff', fontSize: 14 }}>{user?.email}</span>
           </Space>
           <Tag style={{
             background: 'rgba(255, 255, 255, 0.1)',
