@@ -103,27 +103,38 @@ const IndustryDetail: React.FC = () => {
                   src={industry.icon}
                   alt={industry.name}
                   style={{
-                    width: 32,
-                    height: 32,
+                    width: 64,
+                    height: 64,
                     marginRight: 16,
                     objectFit: 'contain',
                   }}
                 />
               ) : (
-                <BankOutlined style={{ fontSize: 32, color: '#0071e3', marginRight: 16 }} />
+                <BankOutlined style={{ fontSize: 64, color: '#0071e3', marginRight: 16 }} />
               )}
               <h2 style={{ margin: 0, color: '#1d1d1f', fontSize: 30, fontWeight: 600 }}>
                 {industry.name}
               </h2>
             </div>
-            <p style={{ color: '#6e6e73', fontSize: 16, lineHeight: 1.8, margin: 0 }}>
+            <p style={{ color: '#6e6e73', fontSize: 16, lineHeight: 1.8, margin: 0, marginBottom: 8 }}>
               {industry.definition}
             </p>
+            {industry.definitionCn && (
+              <p style={{ color: '#6e6e73', fontSize: 16, lineHeight: 1.8, margin: 0 }}>
+                {industry.definitionCn}
+              </p>
+            )}
           </div>
 
           <div style={{ marginBottom: 16 }}>
-            <h3 style={{ color: '#1d1d1f', display: 'flex', alignItems: 'center', fontSize: 24, fontWeight: 600, margin: 0 }}>
-              <ApartmentOutlined style={{ marginRight: 12, color: '#0071e3' }} />
+            <h3
+              style={{
+                color: '#1d1d1f',
+                fontSize: 24,
+                fontWeight: 600,
+                margin: 0,
+              }}
+            >
               子行业
             </h3>
           </div>

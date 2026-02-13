@@ -65,6 +65,7 @@ export async function getIndustryDetails(event: APIGatewayProxyEvent): Promise<A
       id: result.Item.id,
       name: result.Item.name,
       definition: result.Item.definition,
+      definitionCn: result.Item.definitionCn,
       imageUrl: result.Item.imageUrl,
       icon: result.Item.icon,
       createdAt: result.Item.createdAt,
