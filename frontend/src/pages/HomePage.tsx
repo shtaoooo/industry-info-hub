@@ -112,7 +112,9 @@ const HomePage: React.FC = () => {
     setLoadingIndustries(true)
     try {
       const data = await publicService.listIndustries()
-      setIndustries(data)
+      // 按行业名称首字母排序
+      const sortedData = data.sort((a, b) => a.name.localeCompare(b.name))
+      setIndustries(sortedData)
     } catch (error: any) {
       console.error('Failed to load industries:', error)
       message.error('加载行业列表失败')
