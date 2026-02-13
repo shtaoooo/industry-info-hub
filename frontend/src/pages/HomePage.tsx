@@ -184,7 +184,7 @@ const HomePage: React.FC = () => {
             style={{
               background: 'rgba(255, 255, 255, 0.15)',
               color: '#f5f5f7',
-              border: 'none',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
               borderRadius: 12,
               padding: '4px 12px',
               fontSize: 12,
