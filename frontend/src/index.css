@@ -97,17 +97,16 @@ body::after {
 }
 
 /* ===== Typography ===== */
-.ant-typography,
-h1, h2, h3, h4, h5, h6,
-.ant-typography h1,
-.ant-typography h2,
-.ant-typography h3,
-.ant-typography h4,
-.ant-typography h5 {
+/* Only apply white text color in glass-themed contexts (admin pages with dark backgrounds) */
+.glass-card .ant-typography,
+.glass-card h1, .glass-card h2, .glass-card h3, .glass-card h4, .glass-card h5, .glass-card h6,
+.ant-modal-content .ant-typography,
+.ant-modal-content h1, .ant-modal-content h2, .ant-modal-content h3, .ant-modal-content h4, .ant-modal-content h5, .ant-modal-content h6 {
   color: var(--text-on-dark) !important;
 }
 
-.ant-typography.ant-typography-secondary {
+.glass-card .ant-typography.ant-typography-secondary,
+.ant-modal-content .ant-typography.ant-typography-secondary {
   color: var(--text-secondary) !important;
 }
 

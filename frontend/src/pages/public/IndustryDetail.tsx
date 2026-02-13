@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Layout, Typography, Spin, message, Button, Empty } from 'antd'
+import { Layout, Spin, message, Button, Empty } from 'antd'
 import { ArrowLeftOutlined, BankOutlined, ApartmentOutlined } from '@ant-design/icons'
 import { publicService, PublicIndustry, PublicSubIndustry } from '../../services/publicService'
 
 const { Content } = Layout
-const { Title, Paragraph } = Typography
 
 const IndustryDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>()
@@ -100,20 +99,20 @@ const IndustryDetail: React.FC = () => {
           >
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
               <BankOutlined style={{ fontSize: 32, color: '#0071e3', marginRight: 16 }} />
-              <Title level={2} style={{ margin: 0, color: '#1d1d1f' }}>
+              <h2 style={{ margin: 0, color: '#1d1d1f', fontSize: 30, fontWeight: 600 }}>
                 {industry.name}
-              </Title>
+              </h2>
             </div>
-            <Paragraph style={{ color: '#6e6e73', fontSize: 16, lineHeight: 1.8 }}>
+            <p style={{ color: '#6e6e73', fontSize: 16, lineHeight: 1.8, margin: 0 }}>
               {industry.definition}
-            </Paragraph>
+            </p>
           </div>
 
           <div style={{ marginBottom: 16 }}>
-            <Title level={3} style={{ color: '#1d1d1f', display: 'flex', alignItems: 'center' }}>
+            <h3 style={{ color: '#1d1d1f', display: 'flex', alignItems: 'center', fontSize: 24, fontWeight: 600, margin: 0 }}>
               <ApartmentOutlined style={{ marginRight: 12, color: '#0071e3' }} />
               子行业
-            </Title>
+            </h3>
           </div>
 
           {subIndustries.length === 0 ? (

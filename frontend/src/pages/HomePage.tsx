@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Layout, Button, Typography, Space, Tag, Spin, message } from 'antd'
+import { Layout, Button, Space, Tag, Spin, message } from 'antd'
 import {
   LogoutOutlined, UserOutlined, BankOutlined,
   ApartmentOutlined, BulbOutlined, FileTextOutlined,
@@ -10,7 +10,6 @@ import { useNavigate } from 'react-router-dom'
 import { publicService, PublicIndustry } from '../services/publicService'
 
 const { Header, Content } = Layout
-const { Title, Text } = Typography
 
 // 行业图片映射 - 使用本地图片
 const getFallbackImage = (industryName: string): string => {
@@ -209,17 +208,18 @@ const HomePage: React.FC = () => {
       <Content style={{ padding: '60px 0' }}>
         <div className="responsive-container">
           <div style={{ marginBottom: 60, textAlign: 'center' }}>
-            <Title level={1} style={{ 
+            <h1 style={{ 
               marginBottom: 12, 
               color: '#1d1d1f',
               fontSize: 48,
               fontWeight: 600,
               lineHeight: 1.08349,
               letterSpacing: '-0.003em',
+              margin: '0 0 12px 0',
             }}>
               欢迎回来
-            </Title>
-            <Text style={{ 
+            </h1>
+            <div style={{ 
               color: '#6e6e73', 
               fontSize: 21,
               lineHeight: 1.381,
@@ -229,7 +229,7 @@ const HomePage: React.FC = () => {
               {user?.role === 'admin' && '您拥有系统管理员权限，可以管理所有功能模块'}
               {user?.role === 'specialist' && '您可以管理负责行业的用例、解决方案和客户案例'}
               {user?.role === 'user' && '您可以浏览行业信息并下载相关文档'}
-            </Text>
+            </div>
           </div>
 
           {hasRole(['admin', 'specialist']) && (
