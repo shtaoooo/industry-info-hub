@@ -23,6 +23,14 @@ export async function listSubIndustries(event: APIGatewayProxyEvent): Promise<AP
     const industryId = event.pathParameters?.industryId
 
     if (industryId) {
+      // Check if specialist has access to this industry
+      if (user!.role === 'specialist') {
+        const assignedIndustries = user!.assignedIndustries || []
+        if (!assignedIndustries.includes(industryId)) {
+          return successResponse([])
+        }
+      }
+
       // Get sub-industries for a specific industry
       const result = await docClient.send(
         new QueryCommand({
@@ -63,6 +71,14 @@ export async function listSubIndustries(event: APIGatewayProxyEvent): Promise<AP
 
       // For each industry, get its sub-industries
       for (const industry of industries.Items || []) {
+        // Skip industries not assigned to specialist
+        if (user!.role === 'specialist') {
+          const assignedIndustries = user!.assignedIndustries || []
+          if (!assignedIndustries.includes(industry.id)) {
+            continue
+          }
+        }
+
         const result = await docClient.send(
           new QueryCommand({
             TableName: TABLE_NAMES.SUB_INDUSTRIES,

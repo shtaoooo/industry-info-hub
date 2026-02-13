@@ -1,15 +1,15 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
-import { GetCommand, PutCommand, DeleteCommand, QueryCommand, ScanCommand } from '@aws-sdk/lib-dynamodb'
+import { GetCommand, PutCommand, DeleteCommand, ScanCommand } from '@aws-sdk/lib-dynamodb'
 import { randomUUID } from 'crypto'
 import { successResponse, errorResponse } from '../utils/response'
 import { docClient, TABLE_NAMES } from '../utils/dynamodb'
-import { getUserFromEvent } from '../utils/auth'
+import { getUserFromEvent, hasIndustryAccess } from '../utils/auth'
 
 /**
  * List all news
  * GET /admin/news
  */
-async function listNews(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+async function listNews(event: APIGatewayProxyEvent, user: any): Promise<APIGatewayProxyResult> {
   try {
     const result = await docClient.send(
       new ScanCommand({
@@ -21,7 +21,15 @@ async function listNews(event: APIGatewayProxyEvent): Promise<APIGatewayProxyRes
       })
     )
 
-    const news = (result.Items || []).map((item) => ({
+    let items = result.Items || []
+
+    // Specialist can only see news in their assigned industries
+    if (user.role === 'specialist') {
+      const assignedIndustries = user.assignedIndustries || []
+      items = items.filter((item) => assignedIndustries.includes(item.industryId))
+    }
+
+    const news = items.map((item) => ({
       id: item.id,
       industryId: item.industryId,
       title: item.title,
@@ -45,13 +53,18 @@ async function listNews(event: APIGatewayProxyEvent): Promise<APIGatewayProxyRes
  * Create news
  * POST /admin/news
  */
-async function createNews(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+async function createNews(event: APIGatewayProxyEvent, user: any): Promise<APIGatewayProxyResult> {
   try {
     const body = JSON.parse(event.body || '{}')
     const { industryId, title, summary, content, imageUrl, externalUrl, author, publishedAt } = body
 
     if (!industryId || !title || !summary || !author) {
       return errorResponse('VALIDATION_ERROR', '缺少必填字段', 400)
+    }
+
+    // Check industry access for specialist
+    if (!hasIndustryAccess(user, industryId)) {
+      return errorResponse('FORBIDDEN', '您没有权限管理该行业的新闻', 403)
     }
 
     // Verify industry exists
@@ -103,7 +116,7 @@ async function createNews(event: APIGatewayProxyEvent): Promise<APIGatewayProxyR
  * Update news
  * PUT /admin/news/{id}
  */
-async function updateNews(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+async function updateNews(event: APIGatewayProxyEvent, user: any): Promise<APIGatewayProxyResult> {
   try {
     const newsId = event.pathParameters?.id
     if (!newsId) {
@@ -123,6 +136,11 @@ async function updateNews(event: APIGatewayProxyEvent): Promise<APIGatewayProxyR
 
     if (!existing.Item) {
       return errorResponse('NOT_FOUND', '新闻不存在', 404)
+    }
+
+    // Check industry access for specialist
+    if (!hasIndustryAccess(user, existing.Item.industryId)) {
+      return errorResponse('FORBIDDEN', '您没有权限修改该行业的新闻', 403)
     }
 
     const now = new Date().toISOString()
@@ -156,11 +174,28 @@ async function updateNews(event: APIGatewayProxyEvent): Promise<APIGatewayProxyR
  * Delete news
  * DELETE /admin/news/{id}
  */
-async function deleteNews(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+async function deleteNews(event: APIGatewayProxyEvent, user: any): Promise<APIGatewayProxyResult> {
   try {
     const newsId = event.pathParameters?.id
     if (!newsId) {
       return errorResponse('VALIDATION_ERROR', '新闻ID不能为空', 400)
+    }
+
+    // Get existing news to check industry access
+    const existing = await docClient.send(
+      new GetCommand({
+        TableName: TABLE_NAMES.NEWS,
+        Key: { PK: `NEWS#${newsId}`, SK: 'METADATA' },
+      })
+    )
+
+    if (!existing.Item) {
+      return errorResponse('NOT_FOUND', '新闻不存在', 404)
+    }
+
+    // Check industry access for specialist
+    if (!hasIndustryAccess(user, existing.Item.industryId)) {
+      return errorResponse('FORBIDDEN', '您没有权限删除该行业的新闻', 403)
     }
 
     await docClient.send(
@@ -193,22 +228,22 @@ export async function handler(event: any): Promise<APIGatewayProxyResult> {
 
     // GET /admin/news
     if (method === 'GET' && (path === '/admin/news' || path === '/admin/news/')) {
-      return await listNews(event)
+      return await listNews(event, user)
     }
 
     // POST /admin/news
     if (method === 'POST' && (path === '/admin/news' || path === '/admin/news/')) {
-      return await createNews(event)
+      return await createNews(event, user)
     }
 
     // PUT /admin/news/{id}
     if (method === 'PUT' && path.match(/\/admin\/news\/[^/]+$/)) {
-      return await updateNews(event)
+      return await updateNews(event, user)
     }
 
     // DELETE /admin/news/{id}
     if (method === 'DELETE' && path.match(/\/admin\/news\/[^/]+$/)) {
-      return await deleteNews(event)
+      return await deleteNews(event, user)
     }
 
     return errorResponse('NOT_FOUND', '接口不存在', 404)

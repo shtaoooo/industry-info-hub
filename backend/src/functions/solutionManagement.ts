@@ -3,7 +3,7 @@ import { PutCommand, GetCommand, DeleteCommand, ScanCommand, QueryCommand } from
 import { PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { successResponse, errorResponse } from '../utils/response'
-import { getUserFromEvent, requireRole } from '../utils/auth'
+import { getUserFromEvent, requireRole, hasIndustryAccess } from '../utils/auth'
 import { docClient, TABLE_NAMES } from '../utils/dynamodb'
 import { s3Client, BUCKET_NAME } from '../utils/s3'
 import { Solution } from '../types'
@@ -11,6 +11,60 @@ import { randomUUID } from 'crypto'
 
 function generateId(): string {
   return randomUUID()
+}
+
+/**
+ * Get solution IDs that are mapped to use cases in the given industries
+ */
+async function getSolutionIdsForIndustries(assignedIndustries: string[]): Promise<Set<string>> {
+  const solutionIds = new Set<string>()
+
+  for (const industryId of assignedIndustries) {
+    // Get sub-industries for this industry
+    const subIndustries = await docClient.send(
+      new QueryCommand({
+        TableName: TABLE_NAMES.SUB_INDUSTRIES,
+        KeyConditionExpression: 'PK = :pk',
+        ExpressionAttributeValues: {
+          ':pk': `INDUSTRY#${industryId}`,
+        },
+      })
+    )
+
+    for (const subIndustry of subIndustries.Items || []) {
+      // Get use cases for this sub-industry
+      const useCases = await docClient.send(
+        new QueryCommand({
+          TableName: TABLE_NAMES.USE_CASES,
+          KeyConditionExpression: 'PK = :pk',
+          ExpressionAttributeValues: {
+            ':pk': `SUBINDUSTRY#${subIndustry.id}`,
+          },
+        })
+      )
+
+      for (const useCase of useCases.Items || []) {
+        // Get mappings for this use case
+        const mappings = await docClient.send(
+          new QueryCommand({
+            TableName: TABLE_NAMES.MAPPING,
+            KeyConditionExpression: 'PK = :pk',
+            ExpressionAttributeValues: {
+              ':pk': `USECASE#${useCase.id}`,
+            },
+          })
+        )
+
+        for (const mapping of mappings.Items || []) {
+          if (mapping.solutionId) {
+            solutionIds.add(mapping.solutionId)
+          }
+        }
+      }
+    }
+  }
+
+  return solutionIds
 }
 
 /**
@@ -41,6 +95,12 @@ export async function listSolutions(event: APIGatewayProxyEvent): Promise<APIGat
       createdAt: item.createdAt,
       updatedAt: item.updatedAt,
     }))
+
+    // Specialist can only see solutions mapped to use cases in their assigned industries
+    if (user!.role === 'specialist') {
+      const allowedSolutionIds = await getSolutionIdsForIndustries(user!.assignedIndustries || [])
+      return successResponse(solutions.filter(s => allowedSolutionIds.has(s.id)))
+    }
 
     return successResponse(solutions)
   } catch (error: any) {

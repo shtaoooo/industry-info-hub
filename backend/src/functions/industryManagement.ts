@@ -43,6 +43,12 @@ export async function listIndustries(event: APIGatewayProxyEvent): Promise<APIGa
       createdBy: item.createdBy,
     }))
 
+    // Specialist can only see their assigned industries
+    if (user!.role === 'specialist') {
+      const assignedIndustries = user!.assignedIndustries || []
+      return successResponse(industries.filter(i => assignedIndustries.includes(i.id)))
+    }
+
     return successResponse(industries)
   } catch (error: any) {
     if (error.message === 'Insufficient permissions') {

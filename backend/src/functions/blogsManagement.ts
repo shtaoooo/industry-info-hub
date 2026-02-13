@@ -3,13 +3,13 @@ import { GetCommand, PutCommand, DeleteCommand, ScanCommand } from '@aws-sdk/lib
 import { randomUUID } from 'crypto'
 import { successResponse, errorResponse } from '../utils/response'
 import { docClient, TABLE_NAMES } from '../utils/dynamodb'
-import { getUserFromEvent } from '../utils/auth'
+import { getUserFromEvent, hasIndustryAccess } from '../utils/auth'
 
 /**
  * List all blogs
  * GET /admin/blogs
  */
-async function listBlogs(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+async function listBlogs(event: APIGatewayProxyEvent, user: any): Promise<APIGatewayProxyResult> {
   try {
     const result = await docClient.send(
       new ScanCommand({
@@ -21,7 +21,15 @@ async function listBlogs(event: APIGatewayProxyEvent): Promise<APIGatewayProxyRe
       })
     )
 
-    const blogs = (result.Items || []).map((item) => ({
+    let items = result.Items || []
+
+    // Specialist can only see blogs in their assigned industries
+    if (user.role === 'specialist') {
+      const assignedIndustries = user.assignedIndustries || []
+      items = items.filter((item) => assignedIndustries.includes(item.industryId))
+    }
+
+    const blogs = items.map((item) => ({
       id: item.id,
       industryId: item.industryId,
       title: item.title,
@@ -45,13 +53,18 @@ async function listBlogs(event: APIGatewayProxyEvent): Promise<APIGatewayProxyRe
  * Create blog
  * POST /admin/blogs
  */
-async function createBlog(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+async function createBlog(event: APIGatewayProxyEvent, user: any): Promise<APIGatewayProxyResult> {
   try {
     const body = JSON.parse(event.body || '{}')
     const { industryId, title, summary, content, imageUrl, externalUrl, author, publishedAt } = body
 
     if (!industryId || !title || !summary || !author) {
       return errorResponse('VALIDATION_ERROR', '缺少必填字段', 400)
+    }
+
+    // Check industry access for specialist
+    if (!hasIndustryAccess(user, industryId)) {
+      return errorResponse('FORBIDDEN', '您没有权限管理该行业的博客', 403)
     }
 
     // Verify industry exists
@@ -103,7 +116,7 @@ async function createBlog(event: APIGatewayProxyEvent): Promise<APIGatewayProxyR
  * Update blog
  * PUT /admin/blogs/{id}
  */
-async function updateBlog(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+async function updateBlog(event: APIGatewayProxyEvent, user: any): Promise<APIGatewayProxyResult> {
   try {
     const blogId = event.pathParameters?.id
     if (!blogId) {
@@ -123,6 +136,11 @@ async function updateBlog(event: APIGatewayProxyEvent): Promise<APIGatewayProxyR
 
     if (!existing.Item) {
       return errorResponse('NOT_FOUND', '博客不存在', 404)
+    }
+
+    // Check industry access for specialist
+    if (!hasIndustryAccess(user, existing.Item.industryId)) {
+      return errorResponse('FORBIDDEN', '您没有权限修改该行业的博客', 403)
     }
 
     const now = new Date().toISOString()
@@ -156,11 +174,28 @@ async function updateBlog(event: APIGatewayProxyEvent): Promise<APIGatewayProxyR
  * Delete blog
  * DELETE /admin/blogs/{id}
  */
-async function deleteBlog(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+async function deleteBlog(event: APIGatewayProxyEvent, user: any): Promise<APIGatewayProxyResult> {
   try {
     const blogId = event.pathParameters?.id
     if (!blogId) {
       return errorResponse('VALIDATION_ERROR', '博客ID不能为空', 400)
+    }
+
+    // Get existing blog to check industry access
+    const existing = await docClient.send(
+      new GetCommand({
+        TableName: TABLE_NAMES.BLOGS,
+        Key: { PK: `BLOG#${blogId}`, SK: 'METADATA' },
+      })
+    )
+
+    if (!existing.Item) {
+      return errorResponse('NOT_FOUND', '博客不存在', 404)
+    }
+
+    // Check industry access for specialist
+    if (!hasIndustryAccess(user, existing.Item.industryId)) {
+      return errorResponse('FORBIDDEN', '您没有权限删除该行业的博客', 403)
     }
 
     await docClient.send(
@@ -193,22 +228,22 @@ export async function handler(event: any): Promise<APIGatewayProxyResult> {
 
     // GET /admin/blogs
     if (method === 'GET' && (path === '/admin/blogs' || path === '/admin/blogs/')) {
-      return await listBlogs(event)
+      return await listBlogs(event, user)
     }
 
     // POST /admin/blogs
     if (method === 'POST' && (path === '/admin/blogs' || path === '/admin/blogs/')) {
-      return await createBlog(event)
+      return await createBlog(event, user)
     }
 
     // PUT /admin/blogs/{id}
     if (method === 'PUT' && path.match(/\/admin\/blogs\/[^/]+$/)) {
-      return await updateBlog(event)
+      return await updateBlog(event, user)
     }
 
     // DELETE /admin/blogs/{id}
     if (method === 'DELETE' && path.match(/\/admin\/blogs\/[^/]+$/)) {
-      return await deleteBlog(event)
+      return await deleteBlog(event, user)
     }
 
     return errorResponse('NOT_FOUND', '接口不存在', 404)
