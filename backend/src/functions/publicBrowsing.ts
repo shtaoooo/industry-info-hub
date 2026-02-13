@@ -397,6 +397,114 @@ export async function getCustomerCasesForSolution(event: APIGatewayProxyEvent): 
 }
 
 /**
+ * Get news for an industry
+ * GET /public/industries/{id}/news
+ */
+export async function getIndustryNews(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+  try {
+    const industryId = event.pathParameters?.id
+    if (!industryId) {
+      return errorResponse('VALIDATION_ERROR', '行业ID不能为空', 400)
+    }
+
+    // Check if industry is visible
+    const industry = await docClient.send(
+      new GetCommand({
+        TableName: TABLE_NAMES.INDUSTRIES,
+        Key: { PK: `INDUSTRY#${industryId}`, SK: 'METADATA' },
+      })
+    )
+
+    if (!industry.Item || !industry.Item.isVisible) {
+      return errorResponse('NOT_FOUND', '行业不存在或不可见', 404)
+    }
+
+    // Get all news and filter by industryId
+    const result = await docClient.send(
+      new ScanCommand({
+        TableName: TABLE_NAMES.NEWS,
+        FilterExpression: 'SK = :sk AND industryId = :industryId',
+        ExpressionAttributeValues: {
+          ':sk': 'METADATA',
+          ':industryId': industryId,
+        },
+      })
+    )
+
+    const news = (result.Items || [])
+      .map((item) => ({
+        id: item.id,
+        industryId: item.industryId,
+        title: item.title,
+        summary: item.summary,
+        imageUrl: item.imageUrl,
+        author: item.author,
+        publishedAt: item.publishedAt,
+      }))
+      .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
+
+    return successResponse(news)
+  } catch (error: any) {
+    console.error('Error getting industry news:', error)
+    return errorResponse('INTERNAL_ERROR', '获取行业新闻失败', 500)
+  }
+}
+
+/**
+ * Get blogs for an industry
+ * GET /public/industries/{id}/blogs
+ */
+export async function getIndustryBlogs(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+  try {
+    const industryId = event.pathParameters?.id
+    if (!industryId) {
+      return errorResponse('VALIDATION_ERROR', '行业ID不能为空', 400)
+    }
+
+    // Check if industry is visible
+    const industry = await docClient.send(
+      new GetCommand({
+        TableName: TABLE_NAMES.INDUSTRIES,
+        Key: { PK: `INDUSTRY#${industryId}`, SK: 'METADATA' },
+      })
+    )
+
+    if (!industry.Item || !industry.Item.isVisible) {
+      return errorResponse('NOT_FOUND', '行业不存在或不可见', 404)
+    }
+
+    // Get all blogs and filter by industryId
+    const result = await docClient.send(
+      new ScanCommand({
+        TableName: TABLE_NAMES.BLOGS,
+        FilterExpression: 'SK = :sk AND industryId = :industryId',
+        ExpressionAttributeValues: {
+          ':sk': 'METADATA',
+          ':industryId': industryId,
+        },
+      })
+    )
+
+    const blogs = (result.Items || [])
+      .map((item) => ({
+        id: item.id,
+        industryId: item.industryId,
+        title: item.title,
+        summary: item.summary,
+        imageUrl: item.imageUrl,
+        author: item.author,
+        publishedAt: item.publishedAt,
+      }))
+      .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
+
+    return successResponse(blogs)
+  } catch (error: any) {
+    console.error('Error getting industry blogs:', error)
+    return errorResponse('INTERNAL_ERROR', '获取行业博客失败', 500)
+  }
+}
+
+/**
  * Lambda handler - routes requests to appropriate function
  */
 export async function handler(event: any): Promise<APIGatewayProxyResult> {
@@ -457,6 +565,16 @@ export async function handler(event: any): Promise<APIGatewayProxyResult> {
     // GET /public/solutions/{id}/customer-cases
     if (method === 'GET' && path.match(/\/public\/solutions\/[^/]+\/customer-cases$/)) {
       return await getCustomerCasesForSolution(event)
+    }
+
+    // GET /public/industries/{id}/news
+    if (method === 'GET' && path.match(/\/public\/industries\/[^/]+\/news$/)) {
+      return await getIndustryNews(event)
+    }
+
+    // GET /public/industries/{id}/blogs
+    if (method === 'GET' && path.match(/\/public\/industries\/[^/]+\/blogs$/)) {
+      return await getIndustryBlogs(event)
     }
 
     return errorResponse('NOT_FOUND', '接口不存在', 404)

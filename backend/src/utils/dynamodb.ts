@@ -19,4 +19,7 @@ export const TABLE_NAMES = {
   MAPPING: process.env.MAPPING_TABLE || 'IndustryPortal-UseCaseSolutionMapping',
   CUSTOMER_CASES: process.env.CUSTOMER_CASES_TABLE || 'IndustryPortal-CustomerCases',
   USERS: process.env.USERS_TABLE || 'IndustryPortal-Users',
+  NEWS: process.env.NEWS_TABLE || 'IndustryPortal-News',
+  BLOGS: process.env.BLOGS_TABLE || 'IndustryPortal-Blogs',
+  ACCOUNTS: process.env.ACCOUNTS_TABLE || 'IndustryPortal-Accounts',
 }

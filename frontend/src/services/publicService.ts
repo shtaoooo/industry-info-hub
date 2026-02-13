@@ -49,6 +49,26 @@ export interface PublicCustomerCase {
   createdAt: string
 }
 
+export interface PublicNews {
+  id: string
+  industryId: string
+  title: string
+  summary: string
+  imageUrl?: string
+  author: string
+  publishedAt: string
+}
+
+export interface PublicBlog {
+  id: string
+  industryId: string
+  title: string
+  summary: string
+  imageUrl?: string
+  author: string
+  publishedAt: string
+}
+
 export const publicService = {
   // Industries
   listIndustries: () => api.get<PublicIndustry[]>('/public/industries'),
@@ -57,6 +77,12 @@ export const publicService = {
   
   listSubIndustries: (industryId: string) =>
     api.get<PublicSubIndustry[]>(`/public/industries/${industryId}/sub-industries`),
+
+  getIndustryNews: (industryId: string) =>
+    api.get<PublicNews[]>(`/public/industries/${industryId}/news`),
+
+  getIndustryBlogs: (industryId: string) =>
+    api.get<PublicBlog[]>(`/public/industries/${industryId}/blogs`),
 
   // Use Cases
   listUseCases: (subIndustryId: string) =>

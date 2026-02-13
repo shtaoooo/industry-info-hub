@@ -96,6 +96,36 @@ export class IndustryPortalStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
+    const newsTable = new dynamodb.Table(this, 'NewsTable', {
+      tableName: 'IndustryPortal-News',
+      partitionKey: { name: 'PK', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'SK', type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      pointInTimeRecovery: true,
+      encryption: dynamodb.TableEncryption.AWS_MANAGED,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    const blogsTable = new dynamodb.Table(this, 'BlogsTable', {
+      tableName: 'IndustryPortal-Blogs',
+      partitionKey: { name: 'PK', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'SK', type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      pointInTimeRecovery: true,
+      encryption: dynamodb.TableEncryption.AWS_MANAGED,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    const accountsTable = new dynamodb.Table(this, 'AccountsTable', {
+      tableName: 'IndustryPortal-Accounts',
+      partitionKey: { name: 'PK', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'SK', type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      pointInTimeRecovery: true,
+      encryption: dynamodb.TableEncryption.AWS_MANAGED,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
     // S3 Bucket for Documents
     const documentsBucket = new s3.Bucket(this, 'DocumentsBucket', {
       bucketName: `industry-portal-docs-v2-${this.account}`,
@@ -160,6 +190,9 @@ export class IndustryPortalStack extends cdk.Stack {
       MAPPING_TABLE: mappingTable.tableName,
       CUSTOMER_CASES_TABLE: customerCasesTable.tableName,
       USERS_TABLE: usersTable.tableName,
+      NEWS_TABLE: newsTable.tableName,
+      BLOGS_TABLE: blogsTable.tableName,
+      ACCOUNTS_TABLE: accountsTable.tableName,
       DOCUMENTS_BUCKET: documentsBucket.bucketName,
       USER_POOL_ID: userPool.userPoolId,
       NODE_OPTIONS: '--enable-source-maps',
@@ -193,6 +226,9 @@ export class IndustryPortalStack extends cdk.Stack {
     const publicBrowsingFn = createFunction('PublicBrowsing', 'publicBrowsing');
     const documentDownloadFn = createFunction('DocumentDownload', 'documentDownload');
     const userManagementFn = createFunction('UserManagement', 'userManagement');
+    const newsManagementFn = createFunction('NewsManagement', 'newsManagement');
+    const blogsManagementFn = createFunction('BlogsManagement', 'blogsManagement');
+    const accountsManagementFn = createFunction('AccountsManagement', 'accountsManagement');
 
     // Grant DynamoDB permissions
     industriesTable.grantReadWriteData(industryManagementFn);
@@ -225,7 +261,17 @@ export class IndustryPortalStack extends cdk.Stack {
     solutionsTable.grantReadData(publicBrowsingFn);
     customerCasesTable.grantReadData(publicBrowsingFn);
     mappingTable.grantReadData(publicBrowsingFn);
+    newsTable.grantReadData(publicBrowsingFn);
+    blogsTable.grantReadData(publicBrowsingFn);
+    accountsTable.grantReadData(publicBrowsingFn);
     usersTable.grantReadWriteData(userManagementFn);
+    newsTable.grantReadWriteData(newsManagementFn);
+    industriesTable.grantReadData(newsManagementFn);
+    accountsTable.grantReadData(newsManagementFn);
+    blogsTable.grantReadWriteData(blogsManagementFn);
+    industriesTable.grantReadData(blogsManagementFn);
+    accountsTable.grantReadData(blogsManagementFn);
+    accountsTable.grantReadWriteData(accountsManagementFn);
 
     // Grant S3 permissions
     documentsBucket.grantReadWrite(solutionManagementFn);
@@ -339,6 +385,8 @@ export class IndustryPortalStack extends cdk.Stack {
     addRoute('/public/industries', apigatewayv2.HttpMethod.GET, publicBrowsingFn);
     addRoute('/public/industries/{id}', apigatewayv2.HttpMethod.GET, publicBrowsingFn);
     addRoute('/public/industries/{id}/sub-industries', apigatewayv2.HttpMethod.GET, publicBrowsingFn);
+    addRoute('/public/industries/{id}/news', apigatewayv2.HttpMethod.GET, publicBrowsingFn);
+    addRoute('/public/industries/{id}/blogs', apigatewayv2.HttpMethod.GET, publicBrowsingFn);
     addRoute('/public/sub-industries/{id}/use-cases', apigatewayv2.HttpMethod.GET, publicBrowsingFn);
     addRoute('/public/use-cases/{id}', apigatewayv2.HttpMethod.GET, publicBrowsingFn);
     addRoute('/public/use-cases/{id}/solutions', apigatewayv2.HttpMethod.GET, publicBrowsingFn);
@@ -346,6 +394,24 @@ export class IndustryPortalStack extends cdk.Stack {
     addRoute('/public/solutions/{id}/detail-markdown', apigatewayv2.HttpMethod.GET, publicBrowsingFn);
     addRoute('/public/solutions/{id}/customer-cases', apigatewayv2.HttpMethod.GET, publicBrowsingFn);
     addRoute('/public/documents/{id}/download', apigatewayv2.HttpMethod.GET, documentDownloadFn);
+
+    // Admin routes - News Management
+    addRoute('/admin/news', apigatewayv2.HttpMethod.GET, newsManagementFn);
+    addRoute('/admin/news', apigatewayv2.HttpMethod.POST, newsManagementFn);
+    addRoute('/admin/news/{id}', apigatewayv2.HttpMethod.PUT, newsManagementFn);
+    addRoute('/admin/news/{id}', apigatewayv2.HttpMethod.DELETE, newsManagementFn);
+
+    // Admin routes - Blogs Management
+    addRoute('/admin/blogs', apigatewayv2.HttpMethod.GET, blogsManagementFn);
+    addRoute('/admin/blogs', apigatewayv2.HttpMethod.POST, blogsManagementFn);
+    addRoute('/admin/blogs/{id}', apigatewayv2.HttpMethod.PUT, blogsManagementFn);
+    addRoute('/admin/blogs/{id}', apigatewayv2.HttpMethod.DELETE, blogsManagementFn);
+
+    // Admin routes - Accounts Management
+    addRoute('/admin/accounts', apigatewayv2.HttpMethod.GET, accountsManagementFn);
+    addRoute('/admin/accounts', apigatewayv2.HttpMethod.POST, accountsManagementFn);
+    addRoute('/admin/accounts/{id}', apigatewayv2.HttpMethod.PUT, accountsManagementFn);
+    addRoute('/admin/accounts/{id}', apigatewayv2.HttpMethod.DELETE, accountsManagementFn);
 
     // CloudFront OAI for S3 (commented out - not using CloudFront for now)
     // const oai = new cloudfront.OriginAccessIdentity(this, 'OAI', {

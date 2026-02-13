@@ -86,3 +86,40 @@ export interface CSVImportResult {
   errorCount: number
   errors: string[]
 }
+
+export interface News {
+  id: string
+  industryId: string
+  title: string
+  summary: string
+  content: string
+  imageUrl?: string
+  author: string
+  publishedAt: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface Blog {
+  id: string
+  industryId: string
+  title: string
+  summary: string
+  content: string
+  imageUrl?: string
+  author: string
+  publishedAt: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface Account {
+  id: string
+  name: string
+  type: 'customer' | 'partner' | 'vendor'
+  description?: string
+  logoUrl?: string
+  website?: string
+  createdAt: string
+  updatedAt: string
+}
