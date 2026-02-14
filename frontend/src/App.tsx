@@ -21,6 +21,8 @@ import SubIndustryDetail from './pages/public/SubIndustryDetail'
 import UseCaseDetail from './pages/public/UseCaseDetail'
 import NewsDetail from './pages/public/NewsDetail'
 import BlogDetail from './pages/public/BlogDetail'
+import NewsListPage from './pages/public/NewsListPage'
+import BlogsListPage from './pages/public/BlogsListPage'
 import AdminLayout from './components/AdminLayout'
 
 function App() {
@@ -135,6 +137,8 @@ function App() {
             <Route path="/public/use-cases/:id" element={<UseCaseDetail />} />
             <Route path="/public/news/:id" element={<NewsDetail />} />
             <Route path="/public/blogs/:id" element={<BlogDetail />} />
+            <Route path="/public/industries/:id/news" element={<NewsListPage />} />
+            <Route path="/public/industries/:id/blogs" element={<BlogsListPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </AuthProvider>

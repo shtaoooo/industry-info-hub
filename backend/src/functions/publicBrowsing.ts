@@ -419,7 +419,7 @@ export async function getIndustryNews(event: APIGatewayProxyEvent): Promise<APIG
       return errorResponse('NOT_FOUND', '行业不存在或不可见', 404)
     }
 
-    // Query news by industryId using GSI, limit to latest 5 items
+    // Query news by industryId using GSI
     const result = await docClient.send(
       new QueryCommand({
         TableName: TABLE_NAMES.NEWS,
@@ -429,7 +429,6 @@ export async function getIndustryNews(event: APIGatewayProxyEvent): Promise<APIG
           ':industryId': industryId,
         },
         ScanIndexForward: false, // Sort by publishedAt descending
-        Limit: 5, // Only fetch latest 5 news items
       })
     )
 
@@ -474,7 +473,7 @@ export async function getIndustryBlogs(event: APIGatewayProxyEvent): Promise<API
       return errorResponse('NOT_FOUND', '行业不存在或不可见', 404)
     }
 
-    // Query blogs by industryId using GSI, limit to latest 5 items
+    // Query blogs by industryId using GSI
     const result = await docClient.send(
       new QueryCommand({
         TableName: TABLE_NAMES.BLOGS,
@@ -484,7 +483,6 @@ export async function getIndustryBlogs(event: APIGatewayProxyEvent): Promise<API
           ':industryId': industryId,
         },
         ScanIndexForward: false, // Sort by publishedAt descending
-        Limit: 5, // Only fetch latest 5 blog items
       })
     )
 
