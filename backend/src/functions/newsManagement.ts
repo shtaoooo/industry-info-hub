@@ -11,31 +11,22 @@ import { getUserFromEvent, hasIndustryAccess } from '../utils/auth'
  */
 async function listNews(event: APIGatewayProxyEvent, user: any): Promise<APIGatewayProxyResult> {
   try {
-    let items: any[] = []
+    const result = await docClient.send(
+      new ScanCommand({
+        TableName: TABLE_NAMES.NEWS,
+        FilterExpression: 'SK = :sk',
+        ExpressionAttributeValues: {
+          ':sk': 'METADATA',
+        },
+      })
+    )
 
+    let items = result.Items || []
+
+    // Specialist can only see news in their assigned industries
     if (user.role === 'specialist') {
-      // Specialist: query each assigned industry
       const assignedIndustries = user.assignedIndustries || []
-      for (const industryId of assignedIndustries) {
-        const result = await docClient.send(
-          new QueryCommand({
-            TableName: TABLE_NAMES.NEWS,
-            KeyConditionExpression: 'PK = :pk',
-            ExpressionAttributeValues: {
-              ':pk': `INDUSTRY#${industryId}`,
-            },
-          })
-        )
-        items.push(...(result.Items || []))
-      }
-    } else {
-      // Admin: scan all news
-      const result = await docClient.send(
-        new ScanCommand({
-          TableName: TABLE_NAMES.NEWS,
-        })
-      )
-      items = result.Items || []
+      items = items.filter((item) => assignedIndustries.includes(item.industryId))
     }
 
     const news = items.map((item) => ({
