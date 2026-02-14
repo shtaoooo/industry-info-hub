@@ -36,6 +36,7 @@ async function listBlogs(event: APIGatewayProxyEvent, user: any): Promise<APIGat
       summary: item.summary,
       content: item.content,
       imageUrl: item.imageUrl,
+      externalUrl: item.externalUrl,
       author: item.author,
       publishedAt: item.publishedAt,
       createdAt: item.createdAt,

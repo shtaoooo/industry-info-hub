@@ -36,6 +36,7 @@ async function listNews(event: APIGatewayProxyEvent, user: any): Promise<APIGate
       summary: item.summary,
       content: item.content,
       imageUrl: item.imageUrl,
+      externalUrl: item.externalUrl,
       author: item.author,
       publishedAt: item.publishedAt,
       createdAt: item.createdAt,
