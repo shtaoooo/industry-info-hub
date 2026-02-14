@@ -500,3 +500,8 @@ p, span, div {
   border: none !important;
   box-shadow: none !important;
 }
+
+/* ===== Search Input Prefix Spacing ===== */
+.ant-input-affix-wrapper .ant-input-prefix {
+  margin-inline-end: 10px !important;
+}
