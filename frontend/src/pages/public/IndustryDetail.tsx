@@ -434,7 +434,7 @@ const IndustryDetail: React.FC = () => {
                       <div
                         style={{
                           width: 240,
-                          height: 240,
+                          height: 120,
                           borderRadius: 12,
                           background: `url(${item.imageUrl}) center/cover`,
                           marginRight: 24,
