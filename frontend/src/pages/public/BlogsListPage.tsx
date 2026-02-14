@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Layout, Spin, message, Button, Empty, Pagination } from 'antd'
-import { ArrowLeftOutlined } from '@ant-design/icons'
+import { Layout, Spin, message, Button, Empty, Pagination, Input } from 'antd'
+import { ArrowLeftOutlined, SearchOutlined } from '@ant-design/icons'
 import { publicService, PublicIndustry, PublicBlog } from '../../services/publicService'
 
 const { Content } = Layout
@@ -14,6 +14,7 @@ const BlogsListPage: React.FC = () => {
   const [blogs, setBlogs] = useState<PublicBlog[]>([])
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
+  const [searchText, setSearchText] = useState('')
 
   useEffect(() => {
     if (id) loadData()
@@ -45,7 +46,14 @@ const BlogsListPage: React.FC = () => {
     }
   }
 
-  const paginatedBlogs = blogs.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+  const filteredBlogs = searchText.trim()
+    ? blogs.filter((item) => {
+        const keyword = searchText.toLowerCase()
+        return item.title.toLowerCase().includes(keyword) || item.summary.toLowerCase().includes(keyword)
+      })
+    : blogs
+
+  const paginatedBlogs = filteredBlogs.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
   if (loading) {
     return (
@@ -69,8 +77,18 @@ const BlogsListPage: React.FC = () => {
 
           <h2 style={{ color: '#1d1d1f', fontSize: 32, fontWeight: 600, marginBottom: 32 }}>Blogs</h2>
 
-          {blogs.length === 0 ? (
-            <Empty description="暂无博客" />
+          <Input
+            placeholder="搜索博客标题或摘要..."
+            prefix={<SearchOutlined style={{ color: '#86868b' }} />}
+            allowClear
+            value={searchText}
+            onChange={(e) => { setSearchText(e.target.value); setPage(1) }}
+            style={{ marginBottom: 24, maxWidth: 480, borderRadius: 8 }}
+            size="large"
+          />
+
+          {filteredBlogs.length === 0 ? (
+            <Empty description={searchText ? '没有匹配的博客' : '暂无博客'} />
           ) : (
             <>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
@@ -106,9 +124,9 @@ const BlogsListPage: React.FC = () => {
                 ))}
               </div>
 
-              {blogs.length > PAGE_SIZE && (
+              {filteredBlogs.length > PAGE_SIZE && (
                 <div style={{ marginTop: 40, textAlign: 'center' }}>
-                  <Pagination current={page} total={blogs.length} pageSize={PAGE_SIZE} onChange={setPage} showSizeChanger={false} />
+                  <Pagination current={page} total={filteredBlogs.length} pageSize={PAGE_SIZE} onChange={setPage} showSizeChanger={false} />
                 </div>
               )}
             </>
