@@ -18,6 +18,7 @@ export interface PublicSubIndustry {
   definitionCn?: string
   typicalGlobalCompanies: string[]
   typicalChineseCompanies: string[]
+  priority?: number
   createdAt: string
 }
 

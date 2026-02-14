@@ -88,6 +88,7 @@ const SubIndustryManagement: React.FC = () => {
       definitionCn: subIndustry.definitionCn,
       typicalGlobalCompanies: subIndustry.typicalGlobalCompanies?.join(', ') || '',
       typicalChineseCompanies: subIndustry.typicalChineseCompanies?.join(', ') || '',
+      priority: subIndustry.priority,
     })
     setModalVisible(true)
   }
@@ -125,6 +126,7 @@ const SubIndustryManagement: React.FC = () => {
           definitionCn: values.definitionCn,
           typicalGlobalCompanies,
           typicalChineseCompanies,
+          priority: values.priority != null ? Number(values.priority) : undefined,
         }
         await subIndustryService.update(editingSubIndustry.id, updateData)
         message.success('子行业更新成功')
@@ -136,6 +138,7 @@ const SubIndustryManagement: React.FC = () => {
           definitionCn: values.definitionCn,
           typicalGlobalCompanies,
           typicalChineseCompanies,
+          priority: values.priority != null ? Number(values.priority) : undefined,
         }
         await subIndustryService.create(createData)
         message.success('子行业创建成功')
@@ -221,6 +224,13 @@ const SubIndustryManagement: React.FC = () => {
       key: 'typicalChineseCompanies',
       width: 200,
       render: (companies: string[]) => (companies && companies.length > 0 ? companies.join(', ') : '-'),
+    },
+    {
+      title: '优先级',
+      dataIndex: 'priority',
+      key: 'priority',
+      width: 80,
+      render: (val: number) => (val != null ? val : '-'),
     },
     {
       title: '创建时间',
@@ -356,6 +366,9 @@ const SubIndustryManagement: React.FC = () => {
           </Form.Item>
           <Form.Item name="typicalChineseCompanies" label="典型中国企业（用逗号分隔）">
             <Input placeholder="例如：阿里巴巴, 腾讯, 百度" />
+          </Form.Item>
+          <Form.Item name="priority" label="排序优先级（数值越小越靠前）">
+            <Input type="number" placeholder="例如：1, 2, 3（不填则排在最后）" />
           </Form.Item>
         </Form>
       </Modal>

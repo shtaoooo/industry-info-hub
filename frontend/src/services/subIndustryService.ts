@@ -8,6 +8,7 @@ export interface CreateSubIndustryRequest {
   definitionCn?: string
   typicalGlobalCompanies?: string[]
   typicalChineseCompanies?: string[]
+  priority?: number
 }
 
 export interface UpdateSubIndustryRequest {
@@ -16,6 +17,7 @@ export interface UpdateSubIndustryRequest {
   definitionCn?: string
   typicalGlobalCompanies?: string[]
   typicalChineseCompanies?: string[]
+  priority?: number
 }
 
 export interface MoveSubIndustryRequest {

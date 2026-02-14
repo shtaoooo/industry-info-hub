@@ -49,6 +49,7 @@ export async function listSubIndustries(event: APIGatewayProxyEvent): Promise<AP
         definition: item.definition,
         typicalGlobalCompanies: item.typicalGlobalCompanies || [],
         typicalChineseCompanies: item.typicalChineseCompanies || [],
+        priority: item.priority,
         createdAt: item.createdAt,
         updatedAt: item.updatedAt,
       }))
@@ -96,6 +97,7 @@ export async function listSubIndustries(event: APIGatewayProxyEvent): Promise<AP
           definition: item.definition,
           typicalGlobalCompanies: item.typicalGlobalCompanies || [],
           typicalChineseCompanies: item.typicalChineseCompanies || [],
+          priority: item.priority,
           createdAt: item.createdAt,
           updatedAt: item.updatedAt,
         }))
@@ -124,7 +126,7 @@ export async function createSubIndustry(event: APIGatewayProxyEvent): Promise<AP
     requireRole(user, 'admin')
 
     const body = JSON.parse(event.body || '{}')
-    const { industryId, name, definition, typicalGlobalCompanies, typicalChineseCompanies } = body
+    const { industryId, name, definition, typicalGlobalCompanies, typicalChineseCompanies, priority } = body
 
     if (!industryId || typeof industryId !== 'string' || industryId.trim().length === 0) {
       return errorResponse('VALIDATION_ERROR', '行业ID不能为空', 400, { field: 'industryId', constraint: 'required' })
@@ -160,6 +162,7 @@ export async function createSubIndustry(event: APIGatewayProxyEvent): Promise<AP
       definition: definition.trim(),
       typicalGlobalCompanies: Array.isArray(typicalGlobalCompanies) ? typicalGlobalCompanies : [],
       typicalChineseCompanies: Array.isArray(typicalChineseCompanies) ? typicalChineseCompanies : [],
+      priority: typeof priority === 'number' ? priority : undefined,
       createdAt: now,
       updatedAt: now,
     }
@@ -200,7 +203,7 @@ export async function updateSubIndustry(event: APIGatewayProxyEvent): Promise<AP
     }
 
     const body = JSON.parse(event.body || '{}')
-    const { name, definition, typicalGlobalCompanies, typicalChineseCompanies } = body
+    const { name, definition, typicalGlobalCompanies, typicalChineseCompanies, priority } = body
 
     // Find the sub-industry (we need to scan since we don't know the industryId)
     let existingSubIndustry: any = null
@@ -257,6 +260,7 @@ export async function updateSubIndustry(event: APIGatewayProxyEvent): Promise<AP
         typicalGlobalCompanies !== undefined ? typicalGlobalCompanies : existingSubIndustry.typicalGlobalCompanies || [],
       typicalChineseCompanies:
         typicalChineseCompanies !== undefined ? typicalChineseCompanies : existingSubIndustry.typicalChineseCompanies || [],
+      priority: priority !== undefined ? priority : existingSubIndustry.priority,
       createdAt: existingSubIndustry.createdAt,
       updatedAt: now,
     }
