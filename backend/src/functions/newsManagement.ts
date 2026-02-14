@@ -84,8 +84,8 @@ async function createNews(event: APIGatewayProxyEvent, user: any): Promise<APIGa
     const now = new Date().toISOString()
 
     const newsItem = {
-      PK: `INDUSTRY#${industryId}`,
-      SK: `${publishedAt || now}#NEWS#${newsId}`,
+      PK: `NEWS#${newsId}`,
+      SK: 'METADATA',
       id: newsId,
       industryId,
       title,
@@ -127,88 +127,33 @@ async function updateNews(event: APIGatewayProxyEvent, user: any): Promise<APIGa
     const body = JSON.parse(event.body || '{}')
     const { title, summary, content, imageUrl, externalUrl, author, publishedAt } = body
 
-    // Find existing news by scanning (since we don't know the SK)
-    let existing: any = null
-    let existingIndustryId: string = ''
-    let existingSK: string = ''
+    // Get existing news
+    const existing = await docClient.send(
+      new GetCommand({
+        TableName: TABLE_NAMES.NEWS,
+        Key: { PK: `NEWS#${newsId}`, SK: 'METADATA' },
+      })
+    )
 
-    if (user.role === 'specialist') {
-      // Specialist: query each assigned industry
-      const assignedIndustries = user.assignedIndustries || []
-      for (const industryId of assignedIndustries) {
-        const result = await docClient.send(
-          new QueryCommand({
-            TableName: TABLE_NAMES.NEWS,
-            KeyConditionExpression: 'PK = :pk',
-            FilterExpression: 'id = :id',
-            ExpressionAttributeValues: {
-              ':pk': `INDUSTRY#${industryId}`,
-              ':id': newsId,
-            },
-          })
-        )
-        if (result.Items && result.Items.length > 0) {
-          existing = result.Items[0]
-          existingIndustryId = industryId
-          existingSK = existing.SK
-          break
-        }
-      }
-    } else {
-      // Admin: scan all
-      const result = await docClient.send(
-        new ScanCommand({
-          TableName: TABLE_NAMES.NEWS,
-          FilterExpression: 'id = :id',
-          ExpressionAttributeValues: {
-            ':id': newsId,
-          },
-        })
-      )
-      if (result.Items && result.Items.length > 0) {
-        existing = result.Items[0]
-        existingIndustryId = existing.industryId
-        existingSK = existing.SK
-      }
-    }
-
-    if (!existing) {
+    if (!existing.Item) {
       return errorResponse('NOT_FOUND', '新闻不存在', 404)
     }
 
     // Check industry access for specialist
-    if (!hasIndustryAccess(user, existingIndustryId)) {
+    if (!hasIndustryAccess(user, existing.Item.industryId)) {
       return errorResponse('FORBIDDEN', '您没有权限修改该行业的新闻', 403)
     }
 
     const now = new Date().toISOString()
-    const newPublishedAt = publishedAt || existing.publishedAt
-    const newSK = `${newPublishedAt}#NEWS#${newsId}`
-
-    // If publishedAt changed, we need to delete old item and create new one
-    if (newSK !== existingSK) {
-      // Delete old item
-      await docClient.send(
-        new DeleteCommand({
-          TableName: TABLE_NAMES.NEWS,
-          Key: { PK: `INDUSTRY#${existingIndustryId}`, SK: existingSK },
-        })
-      )
-    }
-
     const updatedItem = {
-      PK: `INDUSTRY#${existingIndustryId}`,
-      SK: newSK,
-      id: newsId,
-      industryId: existingIndustryId,
-      title: title || existing.title,
-      summary: summary || existing.summary,
-      content: content !== undefined ? content : existing.content,
-      imageUrl: imageUrl !== undefined ? imageUrl : existing.imageUrl,
-      externalUrl: externalUrl !== undefined ? externalUrl : existing.externalUrl,
-      author: author || existing.author,
-      publishedAt: newPublishedAt,
-      createdAt: existing.createdAt,
+      ...existing.Item,
+      title: title || existing.Item.title,
+      summary: summary || existing.Item.summary,
+      content: content !== undefined ? content : existing.Item.content,
+      imageUrl: imageUrl !== undefined ? imageUrl : existing.Item.imageUrl,
+      externalUrl: externalUrl !== undefined ? externalUrl : existing.Item.externalUrl,
+      author: author || existing.Item.author,
+      publishedAt: publishedAt || existing.Item.publishedAt,
       updatedAt: now,
     }
 
