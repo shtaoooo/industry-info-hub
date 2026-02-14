@@ -481,3 +481,22 @@ p, span, div {
     grid-template-columns: 1fr;
   }
 }
+
+/* ===== Search Input Apple Style ===== */
+.ant-input-affix-wrapper[style*="f5f5f7"] {
+  background: #f5f5f7 !important;
+  border: 2px solid transparent !important;
+}
+
+.ant-input-affix-wrapper[style*="f5f5f7"]:focus,
+.ant-input-affix-wrapper[style*="f5f5f7"].ant-input-affix-wrapper-focused {
+  background: #ffffff !important;
+  border: 2px solid var(--apple-blue) !important;
+  box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.08) !important;
+}
+
+.ant-input-affix-wrapper[style*="f5f5f7"] .ant-input {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}

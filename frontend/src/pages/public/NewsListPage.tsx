@@ -79,11 +79,11 @@ const NewsListPage: React.FC = () => {
 
           <Input
             placeholder="搜索新闻标题或摘要..."
-            prefix={<SearchOutlined style={{ color: '#86868b' }} />}
+            prefix={<SearchOutlined style={{ color: '#86868b', fontSize: 18 }} />}
             allowClear
             value={searchText}
             onChange={(e) => { setSearchText(e.target.value); setPage(1) }}
-            style={{ marginBottom: 24, maxWidth: 480, borderRadius: 8 }}
+            style={{ marginBottom: 32, background: '#f5f5f7', border: 'none', borderRadius: 12, padding: '12px 16px', fontSize: 15 }}
             size="large"
           />
 
