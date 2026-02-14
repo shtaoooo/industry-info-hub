@@ -336,18 +336,11 @@ const IndustryDetail: React.FC = () => {
                     }}
                   >
                     {item.imageUrl && (
-                      <img
-                        src={item.imageUrl}
-                        alt={item.title}
-                        referrerPolicy="no-referrer"
+                      <div
                         style={{
                           width: '100%',
                           height: 200,
-                          objectFit: 'cover',
-                          display: 'block',
-                        }}
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = 'none'
+                          background: `url(${item.imageUrl}) center/cover`,
                         }}
                       />
                     )}
@@ -449,21 +442,14 @@ const IndustryDetail: React.FC = () => {
                     }}
                   >
                     {item.imageUrl && (
-                      <img
-                        src={item.imageUrl}
-                        alt={item.title}
-                        referrerPolicy="no-referrer"
+                      <div
                         style={{
                           width: 240,
                           height: 120,
                           borderRadius: 12,
-                          objectFit: 'cover',
+                          background: `url(${item.imageUrl}) center/cover`,
                           marginRight: 24,
                           flexShrink: 0,
-                          display: 'block',
-                        }}
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = 'none'
                         }}
                       />
                     )}
