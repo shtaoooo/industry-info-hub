@@ -420,17 +420,20 @@ export async function getIndustryNews(event: APIGatewayProxyEvent): Promise<APIG
     }
 
     // Query news by industryId using GSI
-    const result = await docClient.send(
-      new QueryCommand({
-        TableName: TABLE_NAMES.NEWS,
-        IndexName: 'IndustryIndex',
-        KeyConditionExpression: 'industryId = :industryId',
-        ExpressionAttributeValues: {
-          ':industryId': industryId,
-        },
-        ScanIndexForward: false, // Sort by publishedAt descending
-      })
-    )
+    const limitParam = event.queryStringParameters?.limit
+    const queryParams: any = {
+      TableName: TABLE_NAMES.NEWS,
+      IndexName: 'IndustryIndex',
+      KeyConditionExpression: 'industryId = :industryId',
+      ExpressionAttributeValues: {
+        ':industryId': industryId,
+      },
+      ScanIndexForward: false,
+    }
+    if (limitParam) {
+      queryParams.Limit = parseInt(limitParam, 10)
+    }
+    const result = await docClient.send(new QueryCommand(queryParams))
 
     const news = (result.Items || []).map((item) => ({
       id: item.id,
@@ -474,17 +477,20 @@ export async function getIndustryBlogs(event: APIGatewayProxyEvent): Promise<API
     }
 
     // Query blogs by industryId using GSI
-    const result = await docClient.send(
-      new QueryCommand({
-        TableName: TABLE_NAMES.BLOGS,
-        IndexName: 'IndustryIndex',
-        KeyConditionExpression: 'industryId = :industryId',
-        ExpressionAttributeValues: {
-          ':industryId': industryId,
-        },
-        ScanIndexForward: false, // Sort by publishedAt descending
-      })
-    )
+    const limitParam = event.queryStringParameters?.limit
+    const queryParams: any = {
+      TableName: TABLE_NAMES.BLOGS,
+      IndexName: 'IndustryIndex',
+      KeyConditionExpression: 'industryId = :industryId',
+      ExpressionAttributeValues: {
+        ':industryId': industryId,
+      },
+      ScanIndexForward: false,
+    }
+    if (limitParam) {
+      queryParams.Limit = parseInt(limitParam, 10)
+    }
+    const result = await docClient.send(new QueryCommand(queryParams))
 
     const blogs = (result.Items || []).map((item) => ({
       id: item.id,

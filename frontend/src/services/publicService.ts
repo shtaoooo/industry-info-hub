@@ -82,11 +82,11 @@ export const publicService = {
   listSubIndustries: (industryId: string) =>
     api.get<PublicSubIndustry[]>(`/public/industries/${industryId}/sub-industries`),
 
-  getIndustryNews: (industryId: string) =>
-    api.get<PublicNews[]>(`/public/industries/${industryId}/news`),
+  getIndustryNews: (industryId: string, limit?: number) =>
+    api.get<PublicNews[]>(`/public/industries/${industryId}/news${limit ? `?limit=${limit}` : ''}`),
 
-  getIndustryBlogs: (industryId: string) =>
-    api.get<PublicBlog[]>(`/public/industries/${industryId}/blogs`),
+  getIndustryBlogs: (industryId: string, limit?: number) =>
+    api.get<PublicBlog[]>(`/public/industries/${industryId}/blogs${limit ? `?limit=${limit}` : ''}`),
 
   // News and Blogs
   getNews: (id: string) => api.get<PublicNews>(`/public/news/${id}`),

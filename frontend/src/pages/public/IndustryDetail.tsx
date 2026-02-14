@@ -33,8 +33,8 @@ const IndustryDetail: React.FC = () => {
       setIndustry(industryData)
       setSubIndustries(subIndustriesData)
       const [newsData, blogsData] = await Promise.all([
-        publicService.getIndustryNews(id).catch(() => [] as PublicNews[]),
-        publicService.getIndustryBlogs(id).catch(() => [] as PublicBlog[]),
+        publicService.getIndustryNews(id, 5).catch(() => [] as PublicNews[]),
+        publicService.getIndustryBlogs(id, 5).catch(() => [] as PublicBlog[]),
       ])
       setNews(newsData)
       setBlogs(blogsData)
@@ -64,9 +64,10 @@ const IndustryDetail: React.FC = () => {
 
   const scrollNews = (direction: 'left' | 'right') => {
     if (newsScrollRef.current) {
-      const scrollAmount = 340
+      const containerWidth = newsScrollRef.current.clientWidth
+      const cardWidth = (containerWidth - 48) / 3 + 24 // card width + gap
       newsScrollRef.current.scrollBy({
-        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        left: direction === 'left' ? -cardWidth : cardWidth,
         behavior: 'smooth',
       })
     }
@@ -194,8 +195,8 @@ const IndustryDetail: React.FC = () => {
                       cursor: 'pointer',
                       overflow: 'hidden',
                       transition: 'transform 0.3s ease',
-                      minWidth: 320,
-                      maxWidth: 320,
+                      minWidth: 'calc((100% - 48px) / 3)',
+                      maxWidth: 'calc((100% - 48px) / 3)',
                       flexShrink: 0,
                     }}
                     onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-4px)' }}
