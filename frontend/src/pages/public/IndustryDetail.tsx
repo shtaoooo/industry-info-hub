@@ -31,14 +31,25 @@ const IndustryDetail: React.FC = () => {
 
     setLoading(true)
     try {
-      const [industryData, subIndustriesData, newsData, blogsData] = await Promise.all([
+      // Load industry and sub-industries first (critical data)
+      const [industryData, subIndustriesData] = await Promise.all([
         publicService.getIndustry(id),
         publicService.listSubIndustries(id),
-        publicService.getIndustryNews(id),
-        publicService.getIndustryBlogs(id),
       ])
       setIndustry(industryData)
       setSubIndustries(subIndustriesData)
+
+      // Load news and blogs independently (non-critical, may fail if GSI not ready)
+      const [newsData, blogsData] = await Promise.all([
+        publicService.getIndustryNews(id).catch((err) => {
+          console.warn('Failed to load news:', err)
+          return [] as PublicNews[]
+        }),
+        publicService.getIndustryBlogs(id).catch((err) => {
+          console.warn('Failed to load blogs:', err)
+          return [] as PublicBlog[]
+        }),
+      ])
       setNews(newsData)
       setBlogs(blogsData)
     } catch (error: any) {
