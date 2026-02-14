@@ -106,6 +106,12 @@ export class IndustryPortalStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
+    newsTable.addGlobalSecondaryIndex({
+      indexName: 'IndustryIndex',
+      partitionKey: { name: 'industryId', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'publishedAt', type: dynamodb.AttributeType.STRING },
+    });
+
     const blogsTable = new dynamodb.Table(this, 'BlogsTable', {
       tableName: 'IndustryPortal-Blogs',
       partitionKey: { name: 'PK', type: dynamodb.AttributeType.STRING },
@@ -114,6 +120,12 @@ export class IndustryPortalStack extends cdk.Stack {
       pointInTimeRecovery: true,
       encryption: dynamodb.TableEncryption.AWS_MANAGED,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    blogsTable.addGlobalSecondaryIndex({
+      indexName: 'IndustryIndex',
+      partitionKey: { name: 'industryId', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'publishedAt', type: dynamodb.AttributeType.STRING },
     });
 
     const accountsTable = new dynamodb.Table(this, 'AccountsTable', {

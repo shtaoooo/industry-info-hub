@@ -419,30 +419,29 @@ export async function getIndustryNews(event: APIGatewayProxyEvent): Promise<APIG
       return errorResponse('NOT_FOUND', '行业不存在或不可见', 404)
     }
 
-    // Get all news and filter by industryId
+    // Query news by industryId using GSI
     const result = await docClient.send(
-      new ScanCommand({
+      new QueryCommand({
         TableName: TABLE_NAMES.NEWS,
-        FilterExpression: 'SK = :sk AND industryId = :industryId',
+        IndexName: 'IndustryIndex',
+        KeyConditionExpression: 'industryId = :industryId',
         ExpressionAttributeValues: {
-          ':sk': 'METADATA',
           ':industryId': industryId,
         },
+        ScanIndexForward: false, // Sort by publishedAt descending
       })
     )
 
-    const news = (result.Items || [])
-      .map((item) => ({
-        id: item.id,
-        industryId: item.industryId,
-        title: item.title,
-        summary: item.summary,
-        imageUrl: item.imageUrl,
-        externalUrl: item.externalUrl,
-        author: item.author,
-        publishedAt: item.publishedAt,
-      }))
-      .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
+    const news = (result.Items || []).map((item) => ({
+      id: item.id,
+      industryId: item.industryId,
+      title: item.title,
+      summary: item.summary,
+      imageUrl: item.imageUrl,
+      externalUrl: item.externalUrl,
+      author: item.author,
+      publishedAt: item.publishedAt,
+    }))
 
     return successResponse(news)
   } catch (error: any) {
@@ -474,30 +473,29 @@ export async function getIndustryBlogs(event: APIGatewayProxyEvent): Promise<API
       return errorResponse('NOT_FOUND', '行业不存在或不可见', 404)
     }
 
-    // Get all blogs and filter by industryId
+    // Query blogs by industryId using GSI
     const result = await docClient.send(
-      new ScanCommand({
+      new QueryCommand({
         TableName: TABLE_NAMES.BLOGS,
-        FilterExpression: 'SK = :sk AND industryId = :industryId',
+        IndexName: 'IndustryIndex',
+        KeyConditionExpression: 'industryId = :industryId',
         ExpressionAttributeValues: {
-          ':sk': 'METADATA',
           ':industryId': industryId,
         },
+        ScanIndexForward: false, // Sort by publishedAt descending
       })
     )
 
-    const blogs = (result.Items || [])
-      .map((item) => ({
-        id: item.id,
-        industryId: item.industryId,
-        title: item.title,
-        summary: item.summary,
-        imageUrl: item.imageUrl,
-        externalUrl: item.externalUrl,
-        author: item.author,
-        publishedAt: item.publishedAt,
-      }))
-      .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
+    const blogs = (result.Items || []).map((item) => ({
+      id: item.id,
+      industryId: item.industryId,
+      title: item.title,
+      summary: item.summary,
+      imageUrl: item.imageUrl,
+      externalUrl: item.externalUrl,
+      author: item.author,
+      publishedAt: item.publishedAt,
+    }))
 
     return successResponse(blogs)
   } catch (error: any) {
