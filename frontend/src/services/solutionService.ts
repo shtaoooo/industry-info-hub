@@ -4,11 +4,29 @@ import { Solution } from '../types'
 export interface CreateSolutionRequest {
   name: string
   description: string
+  targetCustomers?: string
+  solutionContent?: string
+  solutionSource?: string
+  awsServices?: string
+  whyAws?: string
+  promotionKeyPoints?: string
+  faq?: string
+  keyTerms?: string
+  successCases?: string
 }
 
 export interface UpdateSolutionRequest {
   name?: string
   description?: string
+  targetCustomers?: string
+  solutionContent?: string
+  solutionSource?: string
+  awsServices?: string
+  whyAws?: string
+  promotionKeyPoints?: string
+  faq?: string
+  keyTerms?: string
+  successCases?: string
 }
 
 export interface UploadMarkdownRequest {
