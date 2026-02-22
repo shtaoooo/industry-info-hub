@@ -99,13 +99,14 @@ async function searchCompanyInfo(companyName: string): Promise<string> {
  * Load all industries and sub-industries from DynamoDB
  */
 async function loadIndustryData(): Promise<string> {
-  // Load all industries (regardless of visibility)
+  // Load visible industries only
   const industriesResult = await docClient.send(
     new ScanCommand({
       TableName: TABLE_NAMES.INDUSTRIES,
-      FilterExpression: 'SK = :sk',
+      FilterExpression: 'SK = :sk AND isVisible = :visible',
       ExpressionAttributeValues: {
         ':sk': 'METADATA',
+        ':visible': true,
       },
     })
   )

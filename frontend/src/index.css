@@ -612,3 +612,15 @@ body {
 .ant-input-affix-wrapper .ant-input-prefix {
   margin-inline-end: 10px !important;
 }
+
+/* Copilot chat animation */
+@keyframes copilotSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
