@@ -131,7 +131,7 @@ async function loadIndustryData(): Promise<string> {
     )
 
     for (const sub of subResult.Items || []) {
-      lines.push(`  子行业: ${sub.name}`)
+      lines.push(`  子行业: ${sub.name} (ID: ${sub.id})`)
       if (sub.definition) lines.push(`    定义: ${sub.definition}`)
       if (sub.definitionCn) lines.push(`    中文定义: ${sub.definitionCn}`)
       if (sub.typicalGlobalCompanies?.length > 0) {
@@ -171,9 +171,11 @@ async function classifyCompany(companyName: string, industryData: string, search
 1. 企业名称
 2. 企业简介（基于搜索结果，简要描述该企业的主营业务、产品和服务）
 3. 所属行业（从数据库中匹配）
-4. 所属子行业（如果能匹配到）
+4. 所属子行业（如果能匹配到，使用Markdown链接格式：[子行业名称](/public/sub-industries/子行业ID)，子行业ID从数据库中的"ID:"字段获取）
 5. 分类依据（基于企业实际业务说明为什么归入该行业）
 6. 该行业/子行业中的其他典型企业（如果数据库中有）
+
+重要：在第4项"所属子行业"中，你必须使用Markdown链接格式来输出子行业名称。例如，如果子行业名称是"半导体"，ID是"abc123"，则输出为 [半导体](/public/sub-industries/abc123)。
 
 请用中文回答。
 

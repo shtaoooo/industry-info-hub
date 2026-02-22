@@ -15,6 +15,55 @@ interface Message {
   timestamp: Date
 }
 
+/**
+ * Parse text containing Markdown links [text](url) and return React elements.
+ * Links matching /public/ paths open in a new tab.
+ */
+function renderMessageContent(content: string): React.ReactNode {
+  const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g
+  const parts: React.ReactNode[] = []
+  let lastIndex = 0
+  let match: RegExpExecArray | null
+
+  while ((match = linkRegex.exec(content)) !== null) {
+    // Add text before the link
+    if (match.index > lastIndex) {
+      parts.push(content.slice(lastIndex, match.index))
+    }
+    const linkText = match[1]
+    const linkUrl = match[2]
+    parts.push(
+      <a
+        key={match.index}
+        href={linkUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{
+          color: '#0071e3',
+          textDecoration: 'underline',
+          textUnderlineOffset: 2,
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.color = '#005bb5'
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.color = '#0071e3'
+        }}
+      >
+        {linkText}
+      </a>
+    )
+    lastIndex = match.index + match[0].length
+  }
+
+  // Add remaining text
+  if (lastIndex < content.length) {
+    parts.push(content.slice(lastIndex))
+  }
+
+  return parts.length > 0 ? parts : content
+}
+
 const CopilotChat: React.FC = () => {
   const [open, setOpen] = useState(false)
   const [messages, setMessages] = useState<Message[]>([
@@ -272,7 +321,7 @@ const CopilotChat: React.FC = () => {
                 border: msg.role === 'user' ? 'none' : '1px solid rgba(0, 0, 0, 0.04)',
               }}
             >
-              {msg.content}
+              {msg.role === 'user' ? msg.content : renderMessageContent(msg.content)}
             </div>
           </div>
         ))}
