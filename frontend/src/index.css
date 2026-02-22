@@ -369,6 +369,13 @@ body {
   background: var(--apple-bg) !important;
 }
 
+/* Tags inside dark header - preserve inline styles */
+.header-tag.ant-tag {
+  background: rgba(255, 255, 255, 0.15) !important;
+  color: #f5f5f7 !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
 /* ===== Popconfirm / Popover ===== */
 .ant-popover-inner,
 .ant-popconfirm .ant-popover-inner {
