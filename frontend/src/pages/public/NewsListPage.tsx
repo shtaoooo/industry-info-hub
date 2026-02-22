@@ -70,12 +70,12 @@ const NewsListPage: React.FC = () => {
   return (
     <Layout style={{ minHeight: '100vh', background: '#fbfbfd' }}>
       <Content style={{ padding: '60px 0' }}>
-        <div className="responsive-container">
+        <div className="responsive-container public-detail-content">
           <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(`/public/industries/${id}`)} style={{ marginBottom: 24 }}>
             {industry?.name || '返回'}
           </Button>
 
-          <h2 style={{ color: '#1d1d1f', fontSize: 32, fontWeight: 600, marginBottom: 32 }}>News</h2>
+          <h2 style={{ fontSize: 32, fontWeight: 600, marginBottom: 32 }}>News</h2>
 
           <Input
             placeholder="搜索新闻标题或摘要..."

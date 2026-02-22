@@ -54,8 +54,38 @@ body {
 }
 
 /* ===== Typography ===== */
-/* Apple style typography - default to dark text on light background */
-/* Only apply to light-background content areas, not dark headers */
+/*
+ * Three-level text color hierarchy (Apple style):
+ *   Primary   #1d1d1f  - titles, important text
+ *   Secondary #6e6e73  - descriptions, body text
+ *   Tertiary  #86868b  - timestamps, labels, hints
+ *
+ * These are applied via:
+ *   1. Ant Design ConfigProvider theme tokens (runtime, highest priority)
+ *   2. CSS classes below (for elements outside Ant Design)
+ *   3. Inline styles in components (for specific overrides)
+ *
+ * Dark-background areas (Header) use inline white styles and are NOT affected.
+ */
+
+/* Utility classes for text hierarchy */
+.text-primary {
+  color: var(--apple-text-primary) !important;
+}
+
+.text-secondary {
+  color: var(--apple-text-secondary) !important;
+}
+
+.text-tertiary {
+  color: var(--apple-text-tertiary) !important;
+}
+
+/* Content area typography - only inside ant-layout-content */
+.ant-layout-content {
+  color: var(--apple-text-primary) !important;
+}
+
 .ant-layout-content h1,
 .ant-layout-content h2,
 .ant-layout-content h3,
@@ -65,32 +95,43 @@ body {
   color: var(--apple-text-primary) !important;
 }
 
-.ant-layout-content p,
-.ant-layout-content > div,
-.ant-layout-content .responsive-container div,
-.ant-layout-content .responsive-container span {
-  color: var(--apple-text-primary);
-}
-
-/* Override Ant Design Layout default text color for content areas */
-.ant-layout-content {
+/* Ant Design Typography component */
+.ant-typography {
   color: var(--apple-text-primary) !important;
 }
 
-/* Public detail pages - force dark text on light backgrounds */
-.public-detail-content,
+/* Public detail pages - scoped dark text override */
+/* Use high-specificity selectors to beat Ant Design, but NOT !important on p/div/span
+   so that inline styles (color: '#6e6e73') still work for text hierarchy */
+.public-detail-content {
+  color: var(--apple-text-primary) !important;
+}
+
 .public-detail-content h1,
 .public-detail-content h2,
 .public-detail-content h3,
 .public-detail-content h4,
-.public-detail-content p,
-.public-detail-content div,
-.public-detail-content span {
+.public-detail-content h5,
+.public-detail-content h6 {
   color: var(--apple-text-primary) !important;
+}
+
+/* High specificity but no !important - allows inline color overrides */
+.ant-layout .ant-layout-content .public-detail-content p,
+.ant-layout .ant-layout-content .public-detail-content div,
+.ant-layout .ant-layout-content .public-detail-content span,
+.public-detail-content.responsive-container p,
+.public-detail-content.responsive-container div,
+.public-detail-content.responsive-container span {
+  color: var(--apple-text-primary);
 }
 
 .public-detail-secondary {
   color: var(--apple-text-secondary) !important;
+}
+
+.public-detail-tertiary {
+  color: var(--apple-text-tertiary) !important;
 }
 
 /* ===== Table Apple Style ===== */

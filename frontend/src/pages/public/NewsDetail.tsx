@@ -83,7 +83,7 @@ const NewsDetail: React.FC = () => {
   return (
     <Layout style={{ minHeight: '100vh', background: '#fbfbfd' }}>
       <Content style={{ padding: '60px 0' }}>
-        <div className="responsive-container">
+        <div className="responsive-container public-detail-content">
           <Button
             icon={<ArrowLeftOutlined />}
             onClick={() => navigate(-1)}
@@ -107,9 +107,9 @@ const NewsDetail: React.FC = () => {
 
             <div style={{ marginBottom: 16 }}>
               <div
+                className="public-detail-tertiary"
                 style={{
                   fontSize: 12,
-                  color: '#86868b',
                   marginBottom: 8,
                   textTransform: 'uppercase',
                   letterSpacing: '0.5px',
@@ -125,7 +125,6 @@ const NewsDetail: React.FC = () => {
                 style={{
                   fontSize: 48,
                   fontWeight: 700,
-                  color: '#1d1d1f',
                   margin: '0 0 16px 0',
                   lineHeight: 1.1,
                 }}
@@ -133,16 +132,16 @@ const NewsDetail: React.FC = () => {
                 {news.title}
               </h1>
               <p
+                className="public-detail-secondary"
                 style={{
                   fontSize: 21,
-                  color: '#6e6e73',
                   lineHeight: 1.5,
                   margin: '0 0 8px 0',
                 }}
               >
                 {news.summary}
               </p>
-              <div style={{ fontSize: 14, color: '#86868b' }}>By {news.author}</div>
+              <div className="public-detail-tertiary" style={{ fontSize: 14 }}>By {news.author}</div>
             </div>
 
             {news.content && (

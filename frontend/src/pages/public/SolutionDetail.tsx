@@ -62,7 +62,7 @@ const SolutionDetail: React.FC = () => {
   }
 
   return (
-    <div className="responsive-container" style={{ paddingTop: '60px', paddingBottom: '60px', minHeight: '100vh', background: '#fbfbfd' }}>
+    <div className="responsive-container public-detail-content" style={{ paddingTop: '60px', paddingBottom: '60px', minHeight: '100vh', background: '#fbfbfd' }}>
       <Space direction="vertical" style={{ width: '100%' }} size="large">
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(-1)}>
           返回

@@ -27,7 +27,22 @@ import AdminLayout from './components/AdminLayout'
 
 function App() {
   return (
-    <ConfigProvider locale={zhCN}>
+    <ConfigProvider
+      locale={zhCN}
+      theme={{
+        token: {
+          colorText: '#1d1d1f',
+          colorTextSecondary: '#6e6e73',
+          colorTextTertiary: '#86868b',
+          colorTextQuaternary: '#aeaeb2',
+          colorBgLayout: '#fbfbfd',
+          colorBgContainer: '#ffffff',
+          colorPrimary: '#0071e3',
+          colorBorder: '#d2d2d7',
+          colorBorderSecondary: '#e5e5ea',
+        },
+      }}
+    >
       <Router>
         <AuthProvider>
           <Routes>
