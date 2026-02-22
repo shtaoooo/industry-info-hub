@@ -296,11 +296,7 @@ export class IndustryPortalStack extends cdk.Stack {
     subIndustriesTable.grantReadData(copilotAgentFn);
     copilotAgentFn.addToRolePolicy(new iam.PolicyStatement({
       actions: ['bedrock:InvokeModel'],
-      resources: [
-        'arn:aws:bedrock:*::foundation-model/amazon.nova-premier-v1:0',
-        'arn:aws:bedrock:*::foundation-model/us.amazon.nova-premier-v1:0',
-        `arn:aws:bedrock:*:${this.account}:inference-profile/us.amazon.nova-premier-v1:0`,
-      ],
+      resources: ['*'],
     }));
 
     // Grant S3 permissions
