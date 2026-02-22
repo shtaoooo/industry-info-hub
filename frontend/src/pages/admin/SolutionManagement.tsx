@@ -25,6 +25,8 @@ const SolutionManagement: React.FC = () => {
   const [editingSolution, setEditingSolution] = useState<Solution | null>(null)
   const [selectedSolution, setSelectedSolution] = useState<Solution | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [loadingMarkdown, setLoadingMarkdown] = useState(false)
+  const [markdownFields, setMarkdownFields] = useState<any>(null)
   const [form] = Form.useForm()
 
   const fetchIndustries = useCallback(async () => {
@@ -69,8 +71,26 @@ const SolutionManagement: React.FC = () => {
     setModalVisible(true)
   }
 
-  const handleManageMarkdown = (solution: Solution) => {
+  const handleManageMarkdown = async (solution: Solution) => {
     setSelectedSolution(solution)
+    setMarkdownFields(null)
+    
+    // Load existing markdown content if available
+    if (solution.detailMarkdownUrl) {
+      setLoadingMarkdown(true)
+      try {
+        const response = await solutionService.getMarkdownUrl(solution.id)
+        if (response.fields) {
+          setMarkdownFields(response.fields)
+        }
+      } catch (error: any) {
+        console.error('Failed to load markdown:', error)
+        message.warning('无法加载现有内容，将创建新内容')
+      } finally {
+        setLoadingMarkdown(false)
+      }
+    }
+    
     setMarkdownModalVisible(true)
   }
 
@@ -343,6 +363,7 @@ const SolutionManagement: React.FC = () => {
         onCancel={() => {
           setMarkdownModalVisible(false)
           setSelectedSolution(null)
+          setMarkdownFields(null)
         }}
         footer={[
           <Button
@@ -350,12 +371,20 @@ const SolutionManagement: React.FC = () => {
             onClick={() => {
               setMarkdownModalVisible(false)
               setSelectedSolution(null)
+              setMarkdownFields(null)
             }}
           >
             关闭
           </Button>,
         ]}
-        width={600}
+        width={1040}
+        style={{ top: 20 }}
+        styles={{
+          body: {
+            maxHeight: 'calc(100vh - 200px)',
+            overflowY: 'auto',
+          },
+        }}
       >
         <div>
           {selectedSolution?.detailMarkdownUrl ? (
@@ -365,7 +394,7 @@ const SolutionManagement: React.FC = () => {
               </Text>
               <Divider />
               <Text type="secondary">
-                上传新文件将覆盖现有文件
+                修改后保存将覆盖现有文件
               </Text>
             </>
           ) : (
@@ -373,7 +402,16 @@ const SolutionManagement: React.FC = () => {
               尚未上传详细介绍文件
             </Text>
           )}
-          <SolutionMarkdownEditor onUpload={handleMarkdownUpload} />
+          {loadingMarkdown ? (
+            <div style={{ textAlign: 'center', padding: '20px' }}>
+              <Text>加载现有内容中...</Text>
+            </div>
+          ) : (
+            <SolutionMarkdownEditor 
+              onUpload={handleMarkdownUpload}
+              initialValues={markdownFields}
+            />
+          )}
         </div>
       </Modal>
     </Card>

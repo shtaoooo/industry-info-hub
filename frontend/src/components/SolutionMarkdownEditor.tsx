@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Form, Input, Button, message, Space } from 'antd'
 import { UploadOutlined } from '@ant-design/icons'
 
@@ -17,11 +17,32 @@ interface SolutionMarkdownEditorProps {
     successCases?: string
   }) => Promise<void>
   loading?: boolean
+  initialValues?: {
+    targetCustomers?: string
+    solutionContent?: string
+    solutionSource?: string
+    awsServices?: string
+    whyAws?: string
+    promotionKeyPoints?: string
+    faq?: string
+    keyTerms?: string
+    successCases?: string
+  }
 }
 
-export const SolutionMarkdownEditor: React.FC<SolutionMarkdownEditorProps> = ({ onUpload, loading = false }) => {
+export const SolutionMarkdownEditor: React.FC<SolutionMarkdownEditorProps> = ({ 
+  onUpload, 
+  loading = false,
+  initialValues,
+}) => {
   const [form] = Form.useForm()
   const [uploading, setUploading] = useState(false)
+
+  useEffect(() => {
+    if (initialValues) {
+      form.setFieldsValue(initialValues)
+    }
+  }, [initialValues, form])
 
   const handleUpload = async () => {
     try {
@@ -29,7 +50,6 @@ export const SolutionMarkdownEditor: React.FC<SolutionMarkdownEditorProps> = ({ 
       setUploading(true)
       await onUpload(values)
       message.success('解决方案详细信息上传成功')
-      form.resetFields()
     } catch (error: any) {
       if (error.errorFields) return
       message.error(error.message || '上传失败')

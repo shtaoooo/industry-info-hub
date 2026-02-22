@@ -29,6 +29,18 @@ export interface UploadMarkdownRequest {
 export interface MarkdownUrlResponse {
   url: string
   s3Url: string
+  fields?: {
+    targetCustomers?: string
+    solutionContent?: string
+    solutionSource?: string
+    awsServices?: string
+    whyAws?: string
+    promotionKeyPoints?: string
+    faq?: string
+    keyTerms?: string
+    successCases?: string
+  }
+  markdownContent?: string
 }
 
 export const solutionService = {

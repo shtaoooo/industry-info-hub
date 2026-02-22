@@ -450,6 +450,64 @@ export async function uploadMarkdown(event: APIGatewayProxyEvent): Promise<APIGa
 }
 
 /**
+ * Parse markdown content into structured fields
+ */
+function parseMarkdownFields(markdownContent: string): {
+  targetCustomers?: string
+  solutionContent?: string
+  solutionSource?: string
+  awsServices?: string
+  whyAws?: string
+  promotionKeyPoints?: string
+  faq?: string
+  keyTerms?: string
+  successCases?: string
+} {
+  const fields: any = {}
+  
+  // Define section headers and their corresponding field names
+  const sections = [
+    { header: '## 适用客户群体', field: 'targetCustomers' },
+    { header: '## 方案内容', field: 'solutionContent' },
+    { header: '## 方案来源', field: 'solutionSource' },
+    { header: '## 主要使用的AWS服务', field: 'awsServices' },
+    { header: '## Why AWS', field: 'whyAws' },
+    { header: '## 方案推广关键点', field: 'promotionKeyPoints' },
+    { header: '## 客户常见问题解答', field: 'faq' },
+    { header: '## 关键术语说明', field: 'keyTerms' },
+    { header: '## 成功案例', field: 'successCases' },
+  ]
+  
+  for (let i = 0; i < sections.length; i++) {
+    const currentSection = sections[i]
+    const headerIndex = markdownContent.indexOf(currentSection.header)
+    
+    if (headerIndex !== -1) {
+      // Find the start of content (after the header and newlines)
+      const contentStart = headerIndex + currentSection.header.length
+      
+      // Find the next section header or end of content
+      let contentEnd = markdownContent.length
+      for (let j = i + 1; j < sections.length; j++) {
+        const nextHeaderIndex = markdownContent.indexOf(sections[j].header, contentStart)
+        if (nextHeaderIndex !== -1) {
+          contentEnd = nextHeaderIndex
+          break
+        }
+      }
+      
+      // Extract and trim content
+      const content = markdownContent.substring(contentStart, contentEnd).trim()
+      if (content) {
+        fields[currentSection.field] = content
+      }
+    }
+  }
+  
+  return fields
+}
+
+/**
  * Get markdown detail file URL for a solution
  * GET /admin/solutions/{id}/detail-markdown
  */
@@ -478,8 +536,25 @@ export async function getMarkdownUrl(event: APIGatewayProxyEvent): Promise<APIGa
       return errorResponse('NOT_FOUND', '该解决方案没有详细介绍文件', 404)
     }
 
-    // Generate presigned URL for download
+    // Get markdown content from S3
     const s3Key = `solutions/${solutionId}/detail.md`
+    const s3Response = await s3Client.send(
+      new GetObjectCommand({
+        Bucket: BUCKET_NAME,
+        Key: s3Key,
+      })
+    )
+
+    // Read the content
+    const markdownContent = await s3Response.Body?.transformToString('utf-8')
+    if (!markdownContent) {
+      return errorResponse('INTERNAL_ERROR', '无法读取Markdown文件内容', 500)
+    }
+
+    // Parse markdown into fields
+    const fields = parseMarkdownFields(markdownContent)
+
+    // Generate presigned URL for download
     const presignedUrl = await getSignedUrl(
       s3Client,
       new GetObjectCommand({
@@ -489,7 +564,12 @@ export async function getMarkdownUrl(event: APIGatewayProxyEvent): Promise<APIGa
       { expiresIn: 3600 } // 1 hour
     )
 
-    return successResponse({ url: presignedUrl, s3Url: existing.Item.detailMarkdownUrl })
+    return successResponse({ 
+      url: presignedUrl, 
+      s3Url: existing.Item.detailMarkdownUrl,
+      fields,
+      markdownContent,
+    })
   } catch (error: any) {
     if (error.message === 'Insufficient permissions') {
       return errorResponse('FORBIDDEN', '权限不足', 403)
