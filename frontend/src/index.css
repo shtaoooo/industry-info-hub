@@ -56,11 +56,20 @@ body {
 /* ===== Typography ===== */
 /* Apple style typography - default to dark text on light background */
 h1, h2, h3, h4, h5, h6 {
-  color: var(--apple-text-primary);
+  color: var(--apple-text-primary) !important;
 }
 
 p, span, div {
-  color: var(--apple-text-primary);
+  color: var(--apple-text-primary) !important;
+}
+
+/* Override Ant Design Layout default text color */
+.ant-layout {
+  color: var(--apple-text-primary) !important;
+}
+
+.ant-layout-content {
+  color: var(--apple-text-primary) !important;
 }
 
 /* ===== Table Apple Style ===== */
