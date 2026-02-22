@@ -4,6 +4,7 @@ import { Solution } from '../types'
 export interface CreateSolutionRequest {
   name: string
   description: string
+  industryIds?: string[]
   targetCustomers?: string
   solutionContent?: string
   solutionSource?: string
@@ -18,6 +19,7 @@ export interface CreateSolutionRequest {
 export interface UpdateSolutionRequest {
   name?: string
   description?: string
+  industryIds?: string[]
   targetCustomers?: string
   solutionContent?: string
   solutionSource?: string

@@ -101,14 +101,22 @@ export async function listSolutions(event: APIGatewayProxyEvent): Promise<APIGat
       keyTerms: item.keyTerms,
       successCases: item.successCases,
       documents: item.documents || [],
+      createdBy: item.createdBy || '',
+      industryIds: item.industryIds || [],
       createdAt: item.createdAt,
       updatedAt: item.updatedAt,
     }))
 
-    // Specialist can only see solutions mapped to use cases in their assigned industries
+    // Specialist can only see solutions they created or belong to their assigned industries
     if (user!.role === 'specialist') {
-      const allowedSolutionIds = await getSolutionIdsForIndustries(user!.assignedIndustries || [])
-      return successResponse(solutions.filter(s => allowedSolutionIds.has(s.id)))
+      const userIndustries = user!.assignedIndustries || []
+      return successResponse(
+        solutions.filter(
+          (s) =>
+            s.createdBy === user!.userId ||
+            s.industryIds.some((industryId) => userIndustries.includes(industryId))
+        )
+      )
     }
 
     return successResponse(solutions)
@@ -161,6 +169,8 @@ export async function getSolution(event: APIGatewayProxyEvent): Promise<APIGatew
       keyTerms: result.Item.keyTerms,
       successCases: result.Item.successCases,
       documents: result.Item.documents || [],
+      createdBy: result.Item.createdBy || '',
+      industryIds: result.Item.industryIds || [],
       createdAt: result.Item.createdAt,
       updatedAt: result.Item.updatedAt,
     }
@@ -185,7 +195,7 @@ export async function createSolution(event: APIGatewayProxyEvent): Promise<APIGa
     requireRole(user, ['admin', 'specialist'])
 
     const body = JSON.parse(event.body || '{}')
-    const { name, description, targetCustomers, solutionContent, solutionSource, awsServices, whyAws, promotionKeyPoints, faq, keyTerms, successCases } = body
+    const { name, description, industryIds, targetCustomers, solutionContent, solutionSource, awsServices, whyAws, promotionKeyPoints, faq, keyTerms, successCases } = body
 
     if (!name || typeof name !== 'string' || name.trim().length === 0) {
       return errorResponse('VALIDATION_ERROR', '解决方案名称不能为空', 400, { field: 'name', constraint: 'required' })
@@ -215,6 +225,8 @@ export async function createSolution(event: APIGatewayProxyEvent): Promise<APIGa
       keyTerms: keyTerms || undefined,
       successCases: successCases || undefined,
       documents: [],
+      createdBy: user!.userId,
+      industryIds: Array.isArray(industryIds) ? industryIds : [],
       createdAt: now,
       updatedAt: now,
     }
@@ -266,7 +278,7 @@ export async function updateSolution(event: APIGatewayProxyEvent): Promise<APIGa
     }
 
     const body = JSON.parse(event.body || '{}')
-    const { name, description, targetCustomers, solutionContent, solutionSource, awsServices, whyAws, promotionKeyPoints, faq, keyTerms, successCases } = body
+    const { name, description, industryIds, targetCustomers, solutionContent, solutionSource, awsServices, whyAws, promotionKeyPoints, faq, keyTerms, successCases } = body
 
     if (name !== undefined && (typeof name !== 'string' || name.trim().length === 0)) {
       return errorResponse('VALIDATION_ERROR', '解决方案名称不能为空', 400, { field: 'name', constraint: 'required' })
@@ -295,6 +307,8 @@ export async function updateSolution(event: APIGatewayProxyEvent): Promise<APIGa
       keyTerms: keyTerms !== undefined ? keyTerms : existing.Item.keyTerms,
       successCases: successCases !== undefined ? successCases : existing.Item.successCases,
       documents: existing.Item.documents || [],
+      createdBy: existing.Item.createdBy || '',
+      industryIds: industryIds !== undefined ? (Array.isArray(industryIds) ? industryIds : []) : (existing.Item.industryIds || []),
       createdAt: existing.Item.createdAt,
       updatedAt: now,
     }

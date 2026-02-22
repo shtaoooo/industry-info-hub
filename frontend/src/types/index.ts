@@ -52,6 +52,8 @@ export interface Solution {
   keyTerms?: string
   successCases?: string
   documents: Document[]
+  createdBy: string
+  industryIds: string[]
   createdAt: string
   updatedAt: string
 }

@@ -1,15 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import {
   Table, Button, Modal, Form, Input, Space, message,
-  Popconfirm, Typography, Card, Tag, Divider,
+  Popconfirm, Typography, Card, Tag, Divider, Select,
 } from 'antd'
 import {
   PlusOutlined, EditOutlined, DeleteOutlined, FileMarkdownOutlined,
 } from '@ant-design/icons'
-import { Solution } from '../../types'
+import { Solution, Industry } from '../../types'
 import {
   solutionService, CreateSolutionRequest, UpdateSolutionRequest,
 } from '../../services/solutionService'
+import { industryService } from '../../services/industryService'
 import { MarkdownUploader } from '../../components/MarkdownUploader'
 
 const { Title, Text } = Typography
@@ -17,6 +18,7 @@ const { TextArea } = Input
 
 const SolutionManagement: React.FC = () => {
   const [solutions, setSolutions] = useState<Solution[]>([])
+  const [industries, setIndustries] = useState<Industry[]>([])
   const [loading, setLoading] = useState(false)
   const [modalVisible, setModalVisible] = useState(false)
   const [markdownModalVisible, setMarkdownModalVisible] = useState(false)
@@ -24,6 +26,15 @@ const SolutionManagement: React.FC = () => {
   const [selectedSolution, setSelectedSolution] = useState<Solution | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [form] = Form.useForm()
+
+  const fetchIndustries = useCallback(async () => {
+    try {
+      const data = await industryService.list()
+      setIndustries(data)
+    } catch (error: any) {
+      message.error(error.message || '获取行业列表失败')
+    }
+  }, [])
 
   const fetchSolutions = useCallback(async () => {
     setLoading(true)
@@ -38,8 +49,9 @@ const SolutionManagement: React.FC = () => {
   }, [])
 
   useEffect(() => {
+    fetchIndustries()
     fetchSolutions()
-  }, [fetchSolutions])
+  }, [fetchIndustries, fetchSolutions])
 
   const handleCreate = () => {
     setEditingSolution(null)
@@ -274,6 +286,24 @@ const SolutionManagement: React.FC = () => {
             ]}
           >
             <TextArea rows={3} placeholder="请输入解决方案描述" />
+          </Form.Item>
+          <Form.Item
+            name="industryIds"
+            label="所属行业"
+            tooltip="选择此解决方案所属的行业，行业专员只能看到他们负责行业的解决方案"
+          >
+            <Select
+              mode="multiple"
+              placeholder="请选择所属行业（可多选）"
+              options={industries.map((industry) => ({
+                label: industry.name,
+                value: industry.id,
+              }))}
+              showSearch
+              filterOption={(input, option) =>
+                (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+              }
+            />
           </Form.Item>
           <Form.Item
             name="targetCustomers"
