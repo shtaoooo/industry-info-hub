@@ -6,7 +6,7 @@ import { docClient, TABLE_NAMES } from '../utils/dynamodb'
 import { getUserFromEvent } from '../utils/auth'
 
 const bedrockClient = new BedrockRuntimeClient({
-  region: process.env.AWS_REGION || 'us-east-1',
+  region: 'us-east-2',
 })
 
 /**

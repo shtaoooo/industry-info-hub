@@ -297,6 +297,7 @@ export class IndustryPortalStack extends cdk.Stack {
     copilotAgentFn.addToRolePolicy(new iam.PolicyStatement({
       actions: ['bedrock:InvokeModel'],
       resources: [
+        'arn:aws:bedrock:*::foundation-model/amazon.nova-premier-v1:0',
         'arn:aws:bedrock:*::foundation-model/us.amazon.nova-premier-v1:0',
         `arn:aws:bedrock:*:${this.account}:inference-profile/us.amazon.nova-premier-v1:0`,
       ],
