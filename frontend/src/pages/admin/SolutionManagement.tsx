@@ -141,42 +141,52 @@ const SolutionManagement: React.FC = () => {
   }) => {
     if (!selectedSolution) return
     
-    // Generate markdown content from fields
-    let markdownContent = ''
-    
-    if (data.targetCustomers) {
-      markdownContent += `## 适用客户群体\n\n${data.targetCustomers}\n\n`
+    try {
+      // Generate markdown content from fields
+      let markdownContent = ''
+      
+      if (data.targetCustomers) {
+        markdownContent += `## 适用客户群体\n\n${data.targetCustomers}\n\n`
+      }
+      if (data.solutionContent) {
+        markdownContent += `## 方案内容\n\n${data.solutionContent}\n\n`
+      }
+      if (data.solutionSource) {
+        markdownContent += `## 方案来源\n\n${data.solutionSource}\n\n`
+      }
+      if (data.awsServices) {
+        markdownContent += `## 主要使用的AWS服务\n\n${data.awsServices}\n\n`
+      }
+      if (data.whyAws) {
+        markdownContent += `## Why AWS\n\n${data.whyAws}\n\n`
+      }
+      if (data.promotionKeyPoints) {
+        markdownContent += `## 方案推广关键点\n\n${data.promotionKeyPoints}\n\n`
+      }
+      if (data.faq) {
+        markdownContent += `## 客户常见问题解答\n\n${data.faq}\n\n`
+      }
+      if (data.keyTerms) {
+        markdownContent += `## 关键术语说明\n\n${data.keyTerms}\n\n`
+      }
+      if (data.successCases) {
+        markdownContent += `## 成功案例\n\n${data.successCases}\n\n`
+      }
+      
+      await solutionService.uploadMarkdown(
+        selectedSolution.id,
+        { markdownContent, ...data }
+      )
+      await fetchSolutions()
+      
+      // Close modal and show success message
+      message.success('详细介绍上传成功')
+      setMarkdownModalVisible(false)
+      setSelectedSolution(null)
+      setMarkdownFields(null)
+    } catch (error: any) {
+      message.error(error.message || '上传失败')
     }
-    if (data.solutionContent) {
-      markdownContent += `## 方案内容\n\n${data.solutionContent}\n\n`
-    }
-    if (data.solutionSource) {
-      markdownContent += `## 方案来源\n\n${data.solutionSource}\n\n`
-    }
-    if (data.awsServices) {
-      markdownContent += `## 主要使用的AWS服务\n\n${data.awsServices}\n\n`
-    }
-    if (data.whyAws) {
-      markdownContent += `## Why AWS\n\n${data.whyAws}\n\n`
-    }
-    if (data.promotionKeyPoints) {
-      markdownContent += `## 方案推广关键点\n\n${data.promotionKeyPoints}\n\n`
-    }
-    if (data.faq) {
-      markdownContent += `## 客户常见问题解答\n\n${data.faq}\n\n`
-    }
-    if (data.keyTerms) {
-      markdownContent += `## 关键术语说明\n\n${data.keyTerms}\n\n`
-    }
-    if (data.successCases) {
-      markdownContent += `## 成功案例\n\n${data.successCases}\n\n`
-    }
-    
-    await solutionService.uploadMarkdown(
-      selectedSolution.id,
-      { markdownContent, ...data }
-    )
-    await fetchSolutions()
   }
 
   const handleDelete = async (id: string) => {
