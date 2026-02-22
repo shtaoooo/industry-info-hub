@@ -64,6 +64,7 @@ const SolutionManagement: React.FC = () => {
     form.setFieldsValue({
       name: solution.name,
       description: solution.description,
+      industryIds: solution.industryIds || [],
       targetCustomers: solution.targetCustomers,
       solutionContent: solution.solutionContent,
       solutionSource: solution.solutionSource,
@@ -87,6 +88,7 @@ const SolutionManagement: React.FC = () => {
       const values = await form.validateFields()
       setSubmitting(true)
       const ext = {
+        industryIds: values.industryIds || [],
         targetCustomers: values.targetCustomers || undefined,
         solutionContent: values.solutionContent || undefined,
         solutionSource: values.solutionSource || undefined,
