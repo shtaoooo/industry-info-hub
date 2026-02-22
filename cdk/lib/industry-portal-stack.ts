@@ -241,6 +241,7 @@ export class IndustryPortalStack extends cdk.Stack {
     const newsManagementFn = createFunction('NewsManagement', 'newsManagement');
     const blogsManagementFn = createFunction('BlogsManagement', 'blogsManagement');
     const accountsManagementFn = createFunction('AccountsManagement', 'accountsManagement');
+    const copilotAgentFn = createFunction('CopilotAgent', 'copilotAgent', 60, 1024);
 
     // Grant DynamoDB permissions
     industriesTable.grantReadWriteData(industryManagementFn);
@@ -289,6 +290,14 @@ export class IndustryPortalStack extends cdk.Stack {
     industriesTable.grantReadData(blogsManagementFn);
     accountsTable.grantReadData(blogsManagementFn);
     accountsTable.grantReadWriteData(accountsManagementFn);
+
+    // Copilot Agent permissions
+    industriesTable.grantReadData(copilotAgentFn);
+    subIndustriesTable.grantReadData(copilotAgentFn);
+    copilotAgentFn.addToRolePolicy(new iam.PolicyStatement({
+      actions: ['bedrock:InvokeModel'],
+      resources: ['arn:aws:bedrock:*::foundation-model/us.amazon.nova-premier-v1:0'],
+    }));
 
     // Grant S3 permissions
     documentsBucket.grantReadWrite(solutionManagementFn);
@@ -431,6 +440,9 @@ export class IndustryPortalStack extends cdk.Stack {
     addRoute('/admin/accounts', apigatewayv2.HttpMethod.POST, accountsManagementFn);
     addRoute('/admin/accounts/{id}', apigatewayv2.HttpMethod.PUT, accountsManagementFn);
     addRoute('/admin/accounts/{id}', apigatewayv2.HttpMethod.DELETE, accountsManagementFn);
+
+    // Copilot Agent route
+    addRoute('/public/copilot/chat', apigatewayv2.HttpMethod.POST, copilotAgentFn);
 
     // CloudFront OAI for S3 (commented out - not using CloudFront for now)
     // const oai = new cloudfront.OriginAccessIdentity(this, 'OAI', {

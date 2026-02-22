@@ -9,6 +9,7 @@ import {
 import { useAuth } from '../contexts/AuthContext'
 import { useNavigate } from 'react-router-dom'
 import { publicService, PublicIndustry } from '../services/publicService'
+import CopilotChat from '../components/CopilotChat'
 
 const { Header, Content } = Layout
 
@@ -388,6 +389,8 @@ const HomePage: React.FC = () => {
           )}
         </div>
       </Content>
+
+      {user?.role === 'user' && <CopilotChat />}
     </Layout>
   )
 }
