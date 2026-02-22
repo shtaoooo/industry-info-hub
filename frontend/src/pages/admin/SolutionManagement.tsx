@@ -338,34 +338,6 @@ const SolutionManagement: React.FC = () => {
       </Modal>
 
       <Modal
-          >
-            <TextArea
-              rows={4}
-              placeholder="请输入客户常见问题解答，支持Markdown格式"
-            />
-          </Form.Item>
-          <Form.Item
-            name="keyTerms"
-            label="关键术语说明（支持Markdown）"
-          >
-            <TextArea
-              rows={4}
-              placeholder="请输入关键术语说明，支持Markdown格式"
-            />
-          </Form.Item>
-          <Form.Item
-            name="successCases"
-            label="成功案例（支持Markdown）"
-          >
-            <TextArea
-              rows={4}
-              placeholder="请输入成功案例，支持Markdown格式"
-            />
-          </Form.Item>
-        </Form>
-      </Modal>
-
-      <Modal
         title={`管理详细介绍 - ${selectedSolution?.name}`}
         open={markdownModalVisible}
         onCancel={() => {
