@@ -105,7 +105,7 @@ const IndustryDetail: React.FC = () => {
   return (
     <Layout style={{ minHeight: '100vh', background: '#fbfbfd' }}>
       <Content style={{ padding: '60px 0' }}>
-        <div className="responsive-container">
+        <div className="responsive-container public-detail-content">
           <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/')} style={{ marginBottom: 24 }}>
             返回首页
           </Button>

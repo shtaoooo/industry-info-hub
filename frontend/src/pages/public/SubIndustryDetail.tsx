@@ -51,7 +51,7 @@ const SubIndustryDetail: React.FC = () => {
   return (
     <Layout style={{ minHeight: '100vh', background: '#fbfbfd' }}>
       <Content style={{ padding: '60px 0' }}>
-        <div className="responsive-container">
+        <div className="responsive-container public-detail-content">
           <Button
             icon={<ArrowLeftOutlined />}
             onClick={() => navigate(-1)}
@@ -63,7 +63,7 @@ const SubIndustryDetail: React.FC = () => {
           </Button>
 
           <div style={{ marginBottom: 16 }}>
-            <Title level={3} style={{ color: '#1d1d1f', display: 'flex', alignItems: 'center' }}>
+            <Title level={3} style={{ display: 'flex', alignItems: 'center' }}>
               <FileTextOutlined style={{ marginRight: 12, color: '#0071e3' }} />
               行业用例
             </Title>
@@ -79,7 +79,7 @@ const SubIndustryDetail: React.FC = () => {
               }}
             >
               <FileTextOutlined style={{ fontSize: 48, color: '#86868b', marginBottom: 16 }} />
-              <div style={{ color: '#6e6e73', fontSize: 16 }}>
+              <div className="public-detail-secondary" style={{ fontSize: 16 }}>
                 该子行业暂无用例信息
               </div>
             </div>
@@ -95,13 +95,13 @@ const SubIndustryDetail: React.FC = () => {
                     cursor: 'pointer',
                   }}
                 >
-                  <div style={{ fontSize: 17, fontWeight: 600, color: '#1d1d1f', marginBottom: 12 }}>
+                  <div style={{ fontSize: 17, fontWeight: 600, marginBottom: 12 }}>
                     {useCase.name}
                   </div>
                   <div
+                    className="public-detail-secondary"
                     style={{
                       fontSize: 15,
-                      color: '#6e6e73',
                       lineHeight: '1.6',
                       display: '-webkit-box',
                       WebkitLineClamp: 4,

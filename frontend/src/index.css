@@ -55,21 +55,42 @@ body {
 
 /* ===== Typography ===== */
 /* Apple style typography - default to dark text on light background */
-h1, h2, h3, h4, h5, h6 {
+/* Only apply to light-background content areas, not dark headers */
+.ant-layout-content h1,
+.ant-layout-content h2,
+.ant-layout-content h3,
+.ant-layout-content h4,
+.ant-layout-content h5,
+.ant-layout-content h6 {
   color: var(--apple-text-primary) !important;
 }
 
-p, span, div {
-  color: var(--apple-text-primary) !important;
+.ant-layout-content p,
+.ant-layout-content > div,
+.ant-layout-content .responsive-container div,
+.ant-layout-content .responsive-container span {
+  color: var(--apple-text-primary);
 }
 
-/* Override Ant Design Layout default text color */
-.ant-layout {
-  color: var(--apple-text-primary) !important;
-}
-
+/* Override Ant Design Layout default text color for content areas */
 .ant-layout-content {
   color: var(--apple-text-primary) !important;
+}
+
+/* Public detail pages - force dark text on light backgrounds */
+.public-detail-content,
+.public-detail-content h1,
+.public-detail-content h2,
+.public-detail-content h3,
+.public-detail-content h4,
+.public-detail-content p,
+.public-detail-content div,
+.public-detail-content span {
+  color: var(--apple-text-primary) !important;
+}
+
+.public-detail-secondary {
+  color: var(--apple-text-secondary) !important;
 }
 
 /* ===== Table Apple Style ===== */
