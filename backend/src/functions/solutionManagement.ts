@@ -91,15 +91,6 @@ export async function listSolutions(event: APIGatewayProxyEvent): Promise<APIGat
       name: item.name,
       description: item.description,
       detailMarkdownUrl: item.detailMarkdownUrl,
-      targetCustomers: item.targetCustomers,
-      solutionContent: item.solutionContent,
-      solutionSource: item.solutionSource,
-      awsServices: item.awsServices,
-      whyAws: item.whyAws,
-      promotionKeyPoints: item.promotionKeyPoints,
-      faq: item.faq,
-      keyTerms: item.keyTerms,
-      successCases: item.successCases,
       documents: item.documents || [],
       createdBy: item.createdBy || '',
       industryIds: item.industryIds || [],
@@ -159,15 +150,6 @@ export async function getSolution(event: APIGatewayProxyEvent): Promise<APIGatew
       name: result.Item.name,
       description: result.Item.description,
       detailMarkdownUrl: result.Item.detailMarkdownUrl,
-      targetCustomers: result.Item.targetCustomers,
-      solutionContent: result.Item.solutionContent,
-      solutionSource: result.Item.solutionSource,
-      awsServices: result.Item.awsServices,
-      whyAws: result.Item.whyAws,
-      promotionKeyPoints: result.Item.promotionKeyPoints,
-      faq: result.Item.faq,
-      keyTerms: result.Item.keyTerms,
-      successCases: result.Item.successCases,
       documents: result.Item.documents || [],
       createdBy: result.Item.createdBy || '',
       industryIds: result.Item.industryIds || [],
@@ -195,7 +177,7 @@ export async function createSolution(event: APIGatewayProxyEvent): Promise<APIGa
     requireRole(user, ['admin', 'specialist'])
 
     const body = JSON.parse(event.body || '{}')
-    const { name, description, industryIds, targetCustomers, solutionContent, solutionSource, awsServices, whyAws, promotionKeyPoints, faq, keyTerms, successCases } = body
+    const { name, description, industryIds } = body
 
     if (!name || typeof name !== 'string' || name.trim().length === 0) {
       return errorResponse('VALIDATION_ERROR', '解决方案名称不能为空', 400, { field: 'name', constraint: 'required' })
@@ -215,15 +197,6 @@ export async function createSolution(event: APIGatewayProxyEvent): Promise<APIGa
       id,
       name: name.trim(),
       description: description.trim(),
-      targetCustomers: targetCustomers || undefined,
-      solutionContent: solutionContent || undefined,
-      solutionSource: solutionSource || undefined,
-      awsServices: awsServices || undefined,
-      whyAws: whyAws || undefined,
-      promotionKeyPoints: promotionKeyPoints || undefined,
-      faq: faq || undefined,
-      keyTerms: keyTerms || undefined,
-      successCases: successCases || undefined,
       documents: [],
       createdBy: user!.userId,
       industryIds: Array.isArray(industryIds) ? industryIds : [],
@@ -278,7 +251,7 @@ export async function updateSolution(event: APIGatewayProxyEvent): Promise<APIGa
     }
 
     const body = JSON.parse(event.body || '{}')
-    const { name, description, industryIds, targetCustomers, solutionContent, solutionSource, awsServices, whyAws, promotionKeyPoints, faq, keyTerms, successCases } = body
+    const { name, description, industryIds } = body
 
     if (name !== undefined && (typeof name !== 'string' || name.trim().length === 0)) {
       return errorResponse('VALIDATION_ERROR', '解决方案名称不能为空', 400, { field: 'name', constraint: 'required' })
@@ -297,15 +270,6 @@ export async function updateSolution(event: APIGatewayProxyEvent): Promise<APIGa
       name: name !== undefined ? name.trim() : existing.Item.name,
       description: description !== undefined ? description.trim() : existing.Item.description,
       detailMarkdownUrl: existing.Item.detailMarkdownUrl,
-      targetCustomers: targetCustomers !== undefined ? targetCustomers : existing.Item.targetCustomers,
-      solutionContent: solutionContent !== undefined ? solutionContent : existing.Item.solutionContent,
-      solutionSource: solutionSource !== undefined ? solutionSource : existing.Item.solutionSource,
-      awsServices: awsServices !== undefined ? awsServices : existing.Item.awsServices,
-      whyAws: whyAws !== undefined ? whyAws : existing.Item.whyAws,
-      promotionKeyPoints: promotionKeyPoints !== undefined ? promotionKeyPoints : existing.Item.promotionKeyPoints,
-      faq: faq !== undefined ? faq : existing.Item.faq,
-      keyTerms: keyTerms !== undefined ? keyTerms : existing.Item.keyTerms,
-      successCases: successCases !== undefined ? successCases : existing.Item.successCases,
       documents: existing.Item.documents || [],
       createdBy: existing.Item.createdBy || '',
       industryIds: industryIds !== undefined ? (Array.isArray(industryIds) ? industryIds : []) : (existing.Item.industryIds || []),

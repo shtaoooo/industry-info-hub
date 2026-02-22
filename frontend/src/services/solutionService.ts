@@ -5,21 +5,16 @@ export interface CreateSolutionRequest {
   name: string
   description: string
   industryIds?: string[]
-  targetCustomers?: string
-  solutionContent?: string
-  solutionSource?: string
-  awsServices?: string
-  whyAws?: string
-  promotionKeyPoints?: string
-  faq?: string
-  keyTerms?: string
-  successCases?: string
 }
 
 export interface UpdateSolutionRequest {
   name?: string
   description?: string
   industryIds?: string[]
+}
+
+export interface UploadMarkdownRequest {
+  markdownContent: string
   targetCustomers?: string
   solutionContent?: string
   solutionSource?: string
@@ -29,10 +24,6 @@ export interface UpdateSolutionRequest {
   faq?: string
   keyTerms?: string
   successCases?: string
-}
-
-export interface UploadMarkdownRequest {
-  markdownContent: string
 }
 
 export interface MarkdownUrlResponse {

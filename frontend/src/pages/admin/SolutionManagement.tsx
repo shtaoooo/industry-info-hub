@@ -11,7 +11,7 @@ import {
   solutionService, CreateSolutionRequest, UpdateSolutionRequest,
 } from '../../services/solutionService'
 import { industryService } from '../../services/industryService'
-import { MarkdownUploader } from '../../components/MarkdownUploader'
+import { SolutionMarkdownEditor } from '../../components/SolutionMarkdownEditor'
 
 const { Title, Text } = Typography
 const { TextArea } = Input
@@ -65,15 +65,6 @@ const SolutionManagement: React.FC = () => {
       name: solution.name,
       description: solution.description,
       industryIds: solution.industryIds || [],
-      targetCustomers: solution.targetCustomers,
-      solutionContent: solution.solutionContent,
-      solutionSource: solution.solutionSource,
-      awsServices: solution.awsServices,
-      whyAws: solution.whyAws,
-      promotionKeyPoints: solution.promotionKeyPoints,
-      faq: solution.faq,
-      keyTerms: solution.keyTerms,
-      successCases: solution.successCases,
     })
     setModalVisible(true)
   }
@@ -87,27 +78,20 @@ const SolutionManagement: React.FC = () => {
     try {
       const values = await form.validateFields()
       setSubmitting(true)
-      const ext = {
-        industryIds: values.industryIds || [],
-        targetCustomers: values.targetCustomers || undefined,
-        solutionContent: values.solutionContent || undefined,
-        solutionSource: values.solutionSource || undefined,
-        awsServices: values.awsServices || undefined,
-        whyAws: values.whyAws || undefined,
-        promotionKeyPoints: values.promotionKeyPoints || undefined,
-        faq: values.faq || undefined,
-        keyTerms: values.keyTerms || undefined,
-        successCases: values.successCases || undefined,
-      }
+      
       if (editingSolution) {
         const d: UpdateSolutionRequest = {
-          name: values.name, description: values.description, ...ext,
+          name: values.name,
+          description: values.description,
+          industryIds: values.industryIds || [],
         }
         await solutionService.update(editingSolution.id, d)
         message.success('解决方案更新成功')
       } else {
         const d: CreateSolutionRequest = {
-          name: values.name, description: values.description, ...ext,
+          name: values.name,
+          description: values.description,
+          industryIds: values.industryIds || [],
         }
         await solutionService.create(d)
         message.success('解决方案创建成功')
@@ -124,10 +108,53 @@ const SolutionManagement: React.FC = () => {
     }
   }
 
-  const handleMarkdownUpload = async (content: string) => {
+  const handleMarkdownUpload = async (data: {
+    targetCustomers?: string
+    solutionContent?: string
+    solutionSource?: string
+    awsServices?: string
+    whyAws?: string
+    promotionKeyPoints?: string
+    faq?: string
+    keyTerms?: string
+    successCases?: string
+  }) => {
     if (!selectedSolution) return
+    
+    // Generate markdown content from fields
+    let markdownContent = ''
+    
+    if (data.targetCustomers) {
+      markdownContent += `## 适用客户群体\n\n${data.targetCustomers}\n\n`
+    }
+    if (data.solutionContent) {
+      markdownContent += `## 方案内容\n\n${data.solutionContent}\n\n`
+    }
+    if (data.solutionSource) {
+      markdownContent += `## 方案来源\n\n${data.solutionSource}\n\n`
+    }
+    if (data.awsServices) {
+      markdownContent += `## 主要使用的AWS服务\n\n${data.awsServices}\n\n`
+    }
+    if (data.whyAws) {
+      markdownContent += `## Why AWS\n\n${data.whyAws}\n\n`
+    }
+    if (data.promotionKeyPoints) {
+      markdownContent += `## 方案推广关键点\n\n${data.promotionKeyPoints}\n\n`
+    }
+    if (data.faq) {
+      markdownContent += `## 客户常见问题解答\n\n${data.faq}\n\n`
+    }
+    if (data.keyTerms) {
+      markdownContent += `## 关键术语说明\n\n${data.keyTerms}\n\n`
+    }
+    if (data.successCases) {
+      markdownContent += `## 成功案例\n\n${data.successCases}\n\n`
+    }
+    
     await solutionService.uploadMarkdown(
-      selectedSolution.id, { markdownContent: content },
+      selectedSolution.id,
+      { markdownContent, ...data }
     )
     await fetchSolutions()
   }
@@ -259,7 +286,7 @@ const SolutionManagement: React.FC = () => {
         confirmLoading={submitting}
         okText="保存"
         cancelText="取消"
-        width={1040}
+        width={800}
         style={{ top: 20 }}
         styles={{
           body: {
@@ -307,63 +334,10 @@ const SolutionManagement: React.FC = () => {
               }
             />
           </Form.Item>
-          <Form.Item
-            name="targetCustomers"
-            label="适用客户群体（支持Markdown）"
-          >
-            <TextArea
-              rows={4}
-              placeholder="请输入适用客户群体描述，支持Markdown格式"
-            />
-          </Form.Item>
-          <Form.Item
-            name="solutionContent"
-            label="方案内容（支持Markdown）"
-          >
-            <TextArea
-              rows={6}
-              placeholder="请输入方案内容，支持Markdown格式"
-            />
-          </Form.Item>
-          <Form.Item
-            name="solutionSource"
-            label="方案来源（支持Markdown）"
-          >
-            <TextArea
-              rows={4}
-              placeholder="请输入方案来源，支持Markdown格式"
-            />
-          </Form.Item>
-          <Form.Item
-            name="awsServices"
-            label="主要使用的AWS服务（支持Markdown）"
-          >
-            <TextArea
-              rows={4}
-              placeholder="请输入主要使用的AWS服务，支持Markdown格式"
-            />
-          </Form.Item>
-          <Form.Item
-            name="whyAws"
-            label="Why AWS（支持Markdown）"
-          >
-            <TextArea
-              rows={4}
-              placeholder="请输入Why AWS说明，支持Markdown格式"
-            />
-          </Form.Item>
-          <Form.Item
-            name="promotionKeyPoints"
-            label="方案推广关键点（支持Markdown）"
-          >
-            <TextArea
-              rows={4}
-              placeholder="请输入方案推广关键点，支持Markdown格式"
-            />
-          </Form.Item>
-          <Form.Item
-            name="faq"
-            label="客户常见问题解答（支持Markdown）"
+        </Form>
+      </Modal>
+
+      <Modal
           >
             <TextArea
               rows={4}
@@ -427,7 +401,7 @@ const SolutionManagement: React.FC = () => {
               尚未上传详细介绍文件
             </Text>
           )}
-          <MarkdownUploader onUpload={handleMarkdownUpload} />
+          <SolutionMarkdownEditor onUpload={handleMarkdownUpload} />
         </div>
       </Modal>
     </Card>

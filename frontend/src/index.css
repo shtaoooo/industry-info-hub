@@ -143,6 +143,23 @@ p, span, div {
   background: var(--apple-blue-hover) !important;
   box-shadow: 0 4px 12px rgba(0, 113, 227, 0.35) !important;
   transform: translateY(-1px);
+  color: #ffffff !important;
+}
+
+.ant-btn-primary:focus {
+  background: var(--apple-blue) !important;
+  color: #ffffff !important;
+}
+
+.ant-btn-primary:active {
+  background: var(--apple-blue) !important;
+  color: #ffffff !important;
+}
+
+/* Ensure all text inside primary buttons is white */
+.ant-btn-primary span,
+.ant-btn-primary .anticon {
+  color: #ffffff !important;
 }
 
 .ant-btn-default {
@@ -347,6 +364,18 @@ p, span, div {
 
 .ant-menu-item-selected {
   background: var(--apple-blue) !important;
+  color: #ffffff !important;
+}
+
+.ant-menu-item-selected:hover {
+  background: var(--apple-blue-hover) !important;
+  color: #ffffff !important;
+}
+
+/* Ensure all text and icons inside selected menu items are white */
+.ant-menu-item-selected span,
+.ant-menu-item-selected .anticon,
+.ant-menu-item-selected a {
   color: #ffffff !important;
 }
 

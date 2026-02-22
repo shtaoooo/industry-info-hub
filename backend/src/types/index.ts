@@ -42,15 +42,6 @@ export interface Solution {
   name: string
   description: string
   detailMarkdownUrl?: string
-  targetCustomers?: string
-  solutionContent?: string
-  solutionSource?: string
-  awsServices?: string
-  whyAws?: string
-  promotionKeyPoints?: string
-  faq?: string
-  keyTerms?: string
-  successCases?: string
   documents: Document[]
   createdBy: string
   industryIds: string[]
