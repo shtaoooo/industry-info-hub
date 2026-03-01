@@ -7,6 +7,7 @@ export interface CreateUseCaseRequest {
   description: string
   businessScenario?: string
   customerPainPoints?: string
+  targetAudience?: string
 }
 
 export interface UpdateUseCaseRequest {
@@ -14,6 +15,7 @@ export interface UpdateUseCaseRequest {
   description?: string
   businessScenario?: string
   customerPainPoints?: string
+  targetAudience?: string
 }
 
 export interface UploadDocumentRequest {

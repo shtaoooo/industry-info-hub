@@ -82,6 +82,7 @@ const UseCaseManagement: React.FC = () => {
       name: useCase.name,
       businessScenario: useCase.businessScenario || useCase.description, // 向后兼容
       customerPainPoints: useCase.customerPainPoints || '',
+      targetAudience: useCase.targetAudience || '',
     })
     setModalVisible(true)
   }
@@ -97,6 +98,7 @@ const UseCaseManagement: React.FC = () => {
           description: values.businessScenario, // 保持向后兼容
           businessScenario: values.businessScenario,
           customerPainPoints: values.customerPainPoints,
+          targetAudience: values.targetAudience,
         }
         await useCaseService.update(editingUseCase.id, updateData)
         message.success('用例更新成功')
@@ -107,6 +109,7 @@ const UseCaseManagement: React.FC = () => {
           description: values.businessScenario, // 保持向后兼容
           businessScenario: values.businessScenario,
           customerPainPoints: values.customerPainPoints,
+          targetAudience: values.targetAudience,
         }
         await useCaseService.create(createData)
         message.success('用例创建成功')
@@ -164,6 +167,13 @@ const UseCaseManagement: React.FC = () => {
       key: 'subIndustryId',
       width: 300,
       render: (subIndustryId: string) => <Tag color="cyan">{getSubIndustryName(subIndustryId)}</Tag>,
+    },
+    {
+      title: '切入人群',
+      dataIndex: 'targetAudience',
+      key: 'targetAudience',
+      width: 200,
+      render: (text: string) => text || '-',
     },
     {
       title: '文档数量',
@@ -279,6 +289,13 @@ const UseCaseManagement: React.FC = () => {
             rules={[{ max: 1000, message: '客户痛点不能超过1000个字符' }]}
           >
             <TextArea rows={4} placeholder="请输入客户痛点" />
+          </Form.Item>
+          <Form.Item
+            name="targetAudience"
+            label="切入人群"
+            rules={[{ max: 500, message: '切入人群不能超过500个字符' }]}
+          >
+            <TextArea rows={3} placeholder="请输入切入人群" />
           </Form.Item>
         </Form>
       </Modal>

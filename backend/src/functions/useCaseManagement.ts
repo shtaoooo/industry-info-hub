@@ -108,6 +108,7 @@ export async function listUseCases(event: APIGatewayProxyEvent): Promise<APIGate
               description: item.description,
               businessScenario: item.businessScenario,
               customerPainPoints: item.customerPainPoints,
+              targetAudience: item.targetAudience,
               documents: item.documents || [],
               createdAt: item.createdAt,
               updatedAt: item.updatedAt,
@@ -151,6 +152,7 @@ export async function listUseCases(event: APIGatewayProxyEvent): Promise<APIGate
               description: item.description,
               businessScenario: item.businessScenario,
               customerPainPoints: item.customerPainPoints,
+              targetAudience: item.targetAudience,
               documents: item.documents || [],
               createdAt: item.createdAt,
               updatedAt: item.updatedAt,
@@ -181,7 +183,7 @@ export async function createUseCase(event: APIGatewayProxyEvent): Promise<APIGat
     requireRole(user, ['admin', 'specialist'])
 
     const body = JSON.parse(event.body || '{}')
-    const { subIndustryId, name, description, businessScenario, customerPainPoints } = body
+    const { subIndustryId, name, description, businessScenario, customerPainPoints, targetAudience } = body
 
     if (!subIndustryId || typeof subIndustryId !== 'string' || subIndustryId.trim().length === 0) {
       return errorResponse('VALIDATION_ERROR', '子行业ID不能为空', 400, { field: 'subIndustryId', constraint: 'required' })
@@ -212,6 +214,7 @@ export async function createUseCase(event: APIGatewayProxyEvent): Promise<APIGat
       description: description.trim(),
       businessScenario: businessScenario && typeof businessScenario === 'string' ? businessScenario.trim() : undefined,
       customerPainPoints: customerPainPoints && typeof customerPainPoints === 'string' ? customerPainPoints.trim() : undefined,
+      targetAudience: targetAudience && typeof targetAudience === 'string' ? targetAudience.trim() : undefined,
       documents: [],
       createdAt: now,
       updatedAt: now,
@@ -310,7 +313,7 @@ export async function updateUseCase(event: APIGatewayProxyEvent): Promise<APIGat
     }
 
     const body = JSON.parse(event.body || '{}')
-    const { name, description, businessScenario, customerPainPoints } = body
+    const { name, description, businessScenario, customerPainPoints, targetAudience } = body
 
     if (name !== undefined && (typeof name !== 'string' || name.trim().length === 0)) {
       return errorResponse('VALIDATION_ERROR', '用例名称不能为空', 400, { field: 'name', constraint: 'required' })
@@ -333,6 +336,9 @@ export async function updateUseCase(event: APIGatewayProxyEvent): Promise<APIGat
       customerPainPoints: customerPainPoints !== undefined
         ? (customerPainPoints && typeof customerPainPoints === 'string' ? customerPainPoints.trim() : undefined)
         : existingUseCase.customerPainPoints,
+      targetAudience: targetAudience !== undefined
+        ? (targetAudience && typeof targetAudience === 'string' ? targetAudience.trim() : undefined)
+        : existingUseCase.targetAudience,
       documents: existingUseCase.documents || [],
       createdAt: existingUseCase.createdAt,
       updatedAt: now,

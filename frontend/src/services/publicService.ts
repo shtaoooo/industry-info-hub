@@ -28,6 +28,8 @@ export interface PublicUseCase {
   industryId: string
   name: string
   description: string
+  businessScenario?: string
+  customerPainPoints?: string
   documents?: any[]
   createdAt: string
 }
