@@ -231,7 +231,7 @@ const IndustryManagement: React.FC = () => {
             label="行业定义（英文）"
             rules={commonValidationRules.description}
           >
-            <TextArea rows={8} placeholder="请输入行业定义（英文）" maxLength={500} showCount />
+            <TextArea rows={8} placeholder="请输入行业定义（英文）" maxLength={1000} showCount />
           </Form.Item>
           <Form.Item
             name="definitionCn"

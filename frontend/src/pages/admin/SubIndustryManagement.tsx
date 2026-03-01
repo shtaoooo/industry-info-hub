@@ -349,7 +349,7 @@ const SubIndustryManagement: React.FC = () => {
             label="子行业定义（英文）"
             rules={[
               { required: true, message: '请输入子行业定义' },
-              { max: 500, message: '子行业定义不能超过500个字符' },
+              { max: 1000, message: '子行业定义不能超过1000个字符' },
             ]}
           >
             <TextArea rows={6} placeholder="请输入子行业定义（英文）" />

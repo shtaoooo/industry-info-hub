@@ -387,7 +387,7 @@ export const commonValidationRules = {
     formRules.required('描述'),
     formRules.whitespace('描述'),
     formRules.minLength(1, '描述'),
-    formRules.maxLength(500, '描述'),
+    formRules.maxLength(1000, '描述'),
   ],
   
   // Email
