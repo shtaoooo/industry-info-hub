@@ -269,6 +269,8 @@ export async function getUseCaseDetails(event: APIGatewayProxyEvent): Promise<AP
             industryId: result.Item.industryId,
             name: result.Item.name,
             description: result.Item.description,
+            businessScenario: result.Item.businessScenario,
+            customerPainPoints: result.Item.customerPainPoints,
             documents: result.Item.documents || [],
             createdAt: result.Item.createdAt,
           }
