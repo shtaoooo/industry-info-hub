@@ -47,6 +47,7 @@ export async function listSubIndustries(event: APIGatewayProxyEvent): Promise<AP
         industryId: item.industryId,
         name: item.name,
         definition: item.definition,
+        definitionCn: item.definitionCn,
         typicalGlobalCompanies: item.typicalGlobalCompanies || [],
         typicalChineseCompanies: item.typicalChineseCompanies || [],
         priority: item.priority,
@@ -95,6 +96,7 @@ export async function listSubIndustries(event: APIGatewayProxyEvent): Promise<AP
           industryId: item.industryId,
           name: item.name,
           definition: item.definition,
+          definitionCn: item.definitionCn,
           typicalGlobalCompanies: item.typicalGlobalCompanies || [],
           typicalChineseCompanies: item.typicalChineseCompanies || [],
           priority: item.priority,
@@ -126,7 +128,7 @@ export async function createSubIndustry(event: APIGatewayProxyEvent): Promise<AP
     requireRole(user, 'admin')
 
     const body = JSON.parse(event.body || '{}')
-    const { industryId, name, definition, typicalGlobalCompanies, typicalChineseCompanies, priority } = body
+    const { industryId, name, definition, definitionCn, typicalGlobalCompanies, typicalChineseCompanies, priority } = body
 
     if (!industryId || typeof industryId !== 'string' || industryId.trim().length === 0) {
       return errorResponse('VALIDATION_ERROR', '行业ID不能为空', 400, { field: 'industryId', constraint: 'required' })
@@ -160,6 +162,7 @@ export async function createSubIndustry(event: APIGatewayProxyEvent): Promise<AP
       industryId,
       name: name.trim(),
       definition: definition.trim(),
+      definitionCn: definitionCn && typeof definitionCn === 'string' ? definitionCn.trim() : undefined,
       typicalGlobalCompanies: Array.isArray(typicalGlobalCompanies) ? typicalGlobalCompanies : [],
       typicalChineseCompanies: Array.isArray(typicalChineseCompanies) ? typicalChineseCompanies : [],
       priority: typeof priority === 'number' ? priority : undefined,
@@ -203,7 +206,7 @@ export async function updateSubIndustry(event: APIGatewayProxyEvent): Promise<AP
     }
 
     const body = JSON.parse(event.body || '{}')
-    const { name, definition, typicalGlobalCompanies, typicalChineseCompanies, priority } = body
+    const { name, definition, definitionCn, typicalGlobalCompanies, typicalChineseCompanies, priority } = body
 
     // Find the sub-industry (we need to scan since we don't know the industryId)
     let existingSubIndustry: any = null
@@ -256,6 +259,9 @@ export async function updateSubIndustry(event: APIGatewayProxyEvent): Promise<AP
       industryId: existingIndustryId,
       name: name !== undefined ? name.trim() : existingSubIndustry.name,
       definition: definition !== undefined ? definition.trim() : existingSubIndustry.definition,
+      definitionCn: definitionCn !== undefined 
+        ? (definitionCn && typeof definitionCn === 'string' ? definitionCn.trim() : undefined)
+        : existingSubIndustry.definitionCn,
       typicalGlobalCompanies:
         typicalGlobalCompanies !== undefined ? typicalGlobalCompanies : existingSubIndustry.typicalGlobalCompanies || [],
       typicalChineseCompanies:

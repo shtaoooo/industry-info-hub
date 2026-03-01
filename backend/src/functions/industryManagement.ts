@@ -37,6 +37,7 @@ export async function listIndustries(event: APIGatewayProxyEvent): Promise<APIGa
       id: item.id,
       name: item.name,
       definition: item.definition,
+      definitionCn: item.definitionCn,
       isVisible: item.isVisible,
       createdAt: item.createdAt,
       updatedAt: item.updatedAt,
@@ -69,7 +70,7 @@ export async function createIndustry(event: APIGatewayProxyEvent): Promise<APIGa
     requireRole(user, 'admin')
 
     const body = JSON.parse(event.body || '{}')
-    const { name, definition } = body
+    const { name, definition, definitionCn } = body
 
     if (!name || typeof name !== 'string' || name.trim().length === 0) {
       return errorResponse('VALIDATION_ERROR', '行业名称不能为空', 400, { field: 'name', constraint: 'required' })
@@ -86,6 +87,7 @@ export async function createIndustry(event: APIGatewayProxyEvent): Promise<APIGa
       id,
       name: name.trim(),
       definition: definition.trim(),
+      definitionCn: definitionCn && typeof definitionCn === 'string' ? definitionCn.trim() : undefined,
       isVisible: true,
       createdAt: now,
       updatedAt: now,
@@ -127,7 +129,7 @@ export async function updateIndustry(event: APIGatewayProxyEvent): Promise<APIGa
     }
 
     const body = JSON.parse(event.body || '{}')
-    const { name, definition } = body
+    const { name, definition, definitionCn } = body
 
     if (name !== undefined && (typeof name !== 'string' || name.trim().length === 0)) {
       return errorResponse('VALIDATION_ERROR', '行业名称不能为空', 400, { field: 'name', constraint: 'required' })
@@ -160,6 +162,19 @@ export async function updateIndustry(event: APIGatewayProxyEvent): Promise<APIGa
       updateExpressions.push('#definition = :definition')
       expressionAttributeNames['#definition'] = 'definition'
       expressionAttributeValues[':definition'] = definition.trim()
+    }
+    
+    if (definitionCn !== undefined) {
+      if (definitionCn && typeof definitionCn === 'string' && definitionCn.trim().length > 0) {
+        updateExpressions.push('#definitionCn = :definitionCn')
+        expressionAttributeNames['#definitionCn'] = 'definitionCn'
+        expressionAttributeValues[':definitionCn'] = definitionCn.trim()
+      } else {
+        // Remove definitionCn if empty
+        updateExpressions.push('#definitionCn = :definitionCn')
+        expressionAttributeNames['#definitionCn'] = 'definitionCn'
+        expressionAttributeValues[':definitionCn'] = null
+      }
     }
     
     updateExpressions.push('#updatedAt = :updatedAt')
@@ -206,6 +221,7 @@ export async function updateIndustry(event: APIGatewayProxyEvent): Promise<APIGa
       id: result.Item!.id,
       name: result.Item!.name,
       definition: result.Item!.definition,
+      definitionCn: result.Item!.definitionCn,
       isVisible: result.Item!.isVisible,
       createdAt: result.Item!.createdAt,
       updatedAt: result.Item!.updatedAt,
