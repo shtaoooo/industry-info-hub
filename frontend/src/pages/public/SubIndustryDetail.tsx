@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Layout, Typography, Spin, message, Button } from 'antd'
 import { ArrowLeftOutlined, FileTextOutlined } from '@ant-design/icons'
-import { publicService, PublicUseCase } from '../../services/publicService'
+import { publicService, PublicUseCase, PublicSubIndustry } from '../../services/publicService'
 
 const { Content } = Layout
 const { Title } = Typography
@@ -10,25 +10,27 @@ const { Title } = Typography
 const SubIndustryDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const [subIndustry, setSubIndustry] = useState<PublicSubIndustry | null>(null)
   const [useCases, setUseCases] = useState<PublicUseCase[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (id) {
-      loadUseCases()
+      loadData()
     }
   }, [id])
 
-  const loadUseCases = async () => {
+  const loadData = async () => {
     if (!id) return
 
     setLoading(true)
     try {
       const data = await publicService.listUseCases(id)
-      setUseCases(data)
+      setSubIndustry(data.subIndustry)
+      setUseCases(data.useCases)
     } catch (error: any) {
-      console.error('Failed to load use cases:', error)
-      message.error('加载用例信息失败')
+      console.error('Failed to load data:', error)
+      message.error('加载信息失败')
     } finally {
       setLoading(false)
     }
@@ -62,10 +64,27 @@ const SubIndustryDetail: React.FC = () => {
             返回
           </Button>
 
+          {/* Sub-Industry Header */}
+          {subIndustry && (
+            <div className="apple-card" style={{ padding: 32, marginBottom: 32 }}>
+              <h2 style={{ margin: 0, color: '#1d1d1f', fontSize: 30, fontWeight: 600, marginBottom: 16 }}>
+                {subIndustry.name}
+              </h2>
+              <p style={{ color: '#6e6e73', fontSize: 16, lineHeight: 1.8, margin: 0, marginBottom: 8 }}>
+                {subIndustry.definition}
+              </p>
+              {subIndustry.definitionCn && (
+                <p style={{ color: '#6e6e73', fontSize: 16, lineHeight: 1.8, margin: 0 }}>
+                  {subIndustry.definitionCn}
+                </p>
+              )}
+            </div>
+          )}
+
           <div style={{ marginBottom: 16 }}>
             <Title level={3} style={{ display: 'flex', alignItems: 'center' }}>
               <FileTextOutlined style={{ marginRight: 12, color: '#0071e3' }} />
-              行业用例
+              Use Cases
             </Title>
           </div>
 

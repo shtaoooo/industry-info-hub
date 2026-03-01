@@ -96,7 +96,9 @@ export const publicService = {
 
   // Use Cases
   listUseCases: (subIndustryId: string) =>
-    api.get<PublicUseCase[]>(`/public/sub-industries/${subIndustryId}/use-cases`),
+    api.get<{ subIndustry: PublicSubIndustry; useCases: PublicUseCase[] }>(
+      `/public/sub-industries/${subIndustryId}/use-cases`
+    ),
   
   getUseCase: (id: string) => api.get<PublicUseCase>(`/public/use-cases/${id}`),
   

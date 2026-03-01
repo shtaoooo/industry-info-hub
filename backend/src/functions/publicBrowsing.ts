@@ -148,6 +148,47 @@ export async function listUseCases(event: APIGatewayProxyEvent): Promise<APIGate
       return errorResponse('VALIDATION_ERROR', '子行业ID不能为空', 400)
     }
 
+    // Get sub-industry details
+    let subIndustry: any = null
+    const industries = await docClient.send(
+      new ScanCommand({
+        TableName: TABLE_NAMES.INDUSTRIES,
+        FilterExpression: 'SK = :sk',
+        ExpressionAttributeValues: {
+          ':sk': 'METADATA',
+        },
+      })
+    )
+
+    for (const industry of industries.Items || []) {
+      const result = await docClient.send(
+        new GetCommand({
+          TableName: TABLE_NAMES.SUB_INDUSTRIES,
+          Key: {
+            PK: `INDUSTRY#${industry.id}`,
+            SK: `SUBINDUSTRY#${subIndustryId}`,
+          },
+        })
+      )
+
+      if (result.Item) {
+        subIndustry = {
+          id: result.Item.id,
+          industryId: result.Item.industryId,
+          name: result.Item.name,
+          definition: result.Item.definition,
+          definitionCn: result.Item.definitionCn,
+          typicalGlobalCompanies: result.Item.typicalGlobalCompanies || [],
+          typicalChineseCompanies: result.Item.typicalChineseCompanies || [],
+        }
+        break
+      }
+    }
+
+    if (!subIndustry) {
+      return errorResponse('NOT_FOUND', '子行业不存在', 404)
+    }
+
     const result = await docClient.send(
       new QueryCommand({
         TableName: TABLE_NAMES.USE_CASES,
@@ -167,7 +208,10 @@ export async function listUseCases(event: APIGatewayProxyEvent): Promise<APIGate
       createdAt: item.createdAt,
     }))
 
-    return successResponse(useCases)
+    return successResponse({
+      subIndustry,
+      useCases,
+    })
   } catch (error: any) {
     console.error('Error listing use cases:', error)
     return errorResponse('INTERNAL_ERROR', '获取用例列表失败', 500)
