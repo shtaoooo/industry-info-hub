@@ -30,6 +30,7 @@ export interface PublicUseCase {
   description: string
   businessScenario?: string
   customerPainPoints?: string
+  targetAudience?: string
   documents?: any[]
   createdAt: string
 }
