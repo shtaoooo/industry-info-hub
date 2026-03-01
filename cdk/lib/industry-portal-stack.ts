@@ -138,6 +138,22 @@ export class IndustryPortalStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
+    const companiesTable = new dynamodb.Table(this, 'CompaniesTable', {
+      tableName: 'IndustryPortal-Companies',
+      partitionKey: { name: 'PK', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'SK', type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      pointInTimeRecovery: true,
+      encryption: dynamodb.TableEncryption.AWS_MANAGED,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    // Add GSI for fuzzy search by company name
+    companiesTable.addGlobalSecondaryIndex({
+      indexName: 'NameIndex',
+      partitionKey: { name: 'normalizedName', type: dynamodb.AttributeType.STRING },
+    });
+
     // S3 Bucket for Documents
     const documentsBucket = new s3.Bucket(this, 'DocumentsBucket', {
       bucketName: `industry-portal-docs-v2-${this.account}`,
@@ -205,6 +221,7 @@ export class IndustryPortalStack extends cdk.Stack {
       NEWS_TABLE: newsTable.tableName,
       BLOGS_TABLE: blogsTable.tableName,
       ACCOUNTS_TABLE: accountsTable.tableName,
+      COMPANIES_TABLE: companiesTable.tableName,
       DOCUMENTS_BUCKET: documentsBucket.bucketName,
       USER_POOL_ID: userPool.userPoolId,
       NODE_OPTIONS: '--enable-source-maps',
@@ -251,6 +268,7 @@ export class IndustryPortalStack extends cdk.Stack {
     industriesTable.grantReadWriteData(subIndustryManagementFn);
     subIndustriesTable.grantReadWriteData(subIndustryManagementFn);
     useCasesTable.grantReadWriteData(subIndustryManagementFn);
+    companiesTable.grantReadWriteData(subIndustryManagementFn);
     solutionsTable.grantReadWriteData(solutionManagementFn);
     customerCasesTable.grantReadWriteData(solutionManagementFn);
     // Solution management needs to read industries, sub-industries, use cases, and mappings for specialist filtering

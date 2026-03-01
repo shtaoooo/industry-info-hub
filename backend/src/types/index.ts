@@ -128,3 +128,12 @@ export interface Account {
   createdAt: string
   updatedAt: string
 }
+
+export interface Company {
+  id: string
+  name: string
+  normalizedName: string
+  type: 'chinese' | 'global'
+  createdAt: string
+  updatedAt: string
+}

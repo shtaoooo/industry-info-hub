@@ -152,11 +152,11 @@ const IndustryDetail: React.FC = () => {
                   <div style={{ width: '20%', fontSize: 13, color: '#6e6e73', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 5, WebkitBoxOrient: 'vertical', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {subIndustry.definitionCn || '-'}
                   </div>
-                  <div style={{ width: '20%', fontSize: 13, color: '#6e6e73', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 5, WebkitBoxOrient: 'vertical', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {subIndustry.typicalGlobalCompanies?.length > 0 ? subIndustry.typicalGlobalCompanies.join(', ') : '-'}
+                  <div style={{ width: '20%', fontSize: 13, color: '#6e6e73', lineHeight: 1.5, whiteSpace: 'pre-wrap', display: '-webkit-box', WebkitLineClamp: 5, WebkitBoxOrient: 'vertical', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {subIndustry.typicalGlobalCompanies?.length > 0 ? subIndustry.typicalGlobalCompanies.join('\n') : '-'}
                   </div>
-                  <div style={{ width: '20%', fontSize: 13, color: '#6e6e73', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 5, WebkitBoxOrient: 'vertical', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {subIndustry.typicalChineseCompanies?.length > 0 ? subIndustry.typicalChineseCompanies.join(', ') : '-'}
+                  <div style={{ width: '20%', fontSize: 13, color: '#6e6e73', lineHeight: 1.5, whiteSpace: 'pre-wrap', display: '-webkit-box', WebkitLineClamp: 5, WebkitBoxOrient: 'vertical', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {subIndustry.typicalChineseCompanies?.length > 0 ? subIndustry.typicalChineseCompanies.join('\n') : '-'}
                   </div>
                 </div>
               ))}

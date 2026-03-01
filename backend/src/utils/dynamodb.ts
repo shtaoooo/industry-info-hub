@@ -22,4 +22,5 @@ export const TABLE_NAMES = {
   NEWS: process.env.NEWS_TABLE || 'IndustryPortal-News',
   BLOGS: process.env.BLOGS_TABLE || 'IndustryPortal-Blogs',
   ACCOUNTS: process.env.ACCOUNTS_TABLE || 'IndustryPortal-Accounts',
+  COMPANIES: process.env.COMPANIES_TABLE || 'IndustryPortal-Companies',
 }

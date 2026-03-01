@@ -3,11 +3,97 @@ import { PutCommand, GetCommand, DeleteCommand, QueryCommand, ScanCommand } from
 import { successResponse, errorResponse } from '../utils/response'
 import { getUserFromEvent, requireRole } from '../utils/auth'
 import { docClient, TABLE_NAMES } from '../utils/dynamodb'
-import { SubIndustry } from '../types'
+import { SubIndustry, Company } from '../types'
 import { randomUUID } from 'crypto'
 
 function generateId(): string {
   return randomUUID()
+}
+
+/**
+ * Normalize company name for fuzzy matching
+ */
+function normalizeCompanyName(name: string): string {
+  return name.toLowerCase().trim().replace(/\s+/g, '')
+}
+
+/**
+ * Check if a company exists in the database using fuzzy matching
+ */
+async function findCompanyByName(name: string): Promise<Company | null> {
+  const normalizedName = normalizeCompanyName(name)
+  
+  try {
+    const result = await docClient.send(
+      new QueryCommand({
+        TableName: TABLE_NAMES.COMPANIES,
+        IndexName: 'NameIndex',
+        KeyConditionExpression: 'normalizedName = :name',
+        ExpressionAttributeValues: {
+          ':name': normalizedName,
+        },
+        Limit: 1,
+      })
+    )
+
+    if (result.Items && result.Items.length > 0) {
+      return result.Items[0] as Company
+    }
+    return null
+  } catch (error) {
+    console.error('Error finding company:', error)
+    return null
+  }
+}
+
+/**
+ * Save a company to the database if it doesn't exist
+ */
+async function saveCompanyIfNotExists(name: string, type: 'chinese' | 'global'): Promise<void> {
+  // Check if company already exists
+  const existing = await findCompanyByName(name)
+  if (existing) {
+    console.log(`Company "${name}" already exists with ID ${existing.id}`)
+    return
+  }
+
+  // Create new company
+  const id = generateId()
+  const now = new Date().toISOString()
+  const normalizedName = normalizeCompanyName(name)
+
+  const company: Company = {
+    id,
+    name: name.trim(),
+    normalizedName,
+    type,
+    createdAt: now,
+    updatedAt: now,
+  }
+
+  await docClient.send(
+    new PutCommand({
+      TableName: TABLE_NAMES.COMPANIES,
+      Item: {
+        PK: `COMPANY#${id}`,
+        SK: 'METADATA',
+        ...company,
+      },
+    })
+  )
+
+  console.log(`Created new company: ${name} (${type})`)
+}
+
+/**
+ * Process and save companies from a list
+ */
+async function processAndSaveCompanies(companies: string[], type: 'chinese' | 'global'): Promise<void> {
+  for (const companyName of companies) {
+    if (companyName && companyName.trim().length > 0) {
+      await saveCompanyIfNotExists(companyName.trim(), type)
+    }
+  }
 }
 
 /**
@@ -181,6 +267,16 @@ export async function createSubIndustry(event: APIGatewayProxyEvent): Promise<AP
       })
     )
 
+    // Save Chinese companies to Companies table
+    if (subIndustry.typicalChineseCompanies && subIndustry.typicalChineseCompanies.length > 0) {
+      await processAndSaveCompanies(subIndustry.typicalChineseCompanies, 'chinese')
+    }
+
+    // Save global companies to Companies table
+    if (subIndustry.typicalGlobalCompanies && subIndustry.typicalGlobalCompanies.length > 0) {
+      await processAndSaveCompanies(subIndustry.typicalGlobalCompanies, 'global')
+    }
+
     return successResponse(subIndustry, 201)
   } catch (error: any) {
     if (error.message === 'Insufficient permissions') {
@@ -281,6 +377,16 @@ export async function updateSubIndustry(event: APIGatewayProxyEvent): Promise<AP
         },
       })
     )
+
+    // Save Chinese companies to Companies table
+    if (updated.typicalChineseCompanies && updated.typicalChineseCompanies.length > 0) {
+      await processAndSaveCompanies(updated.typicalChineseCompanies, 'chinese')
+    }
+
+    // Save global companies to Companies table
+    if (updated.typicalGlobalCompanies && updated.typicalGlobalCompanies.length > 0) {
+      await processAndSaveCompanies(updated.typicalGlobalCompanies, 'global')
+    }
 
     return successResponse(updated)
   } catch (error: any) {

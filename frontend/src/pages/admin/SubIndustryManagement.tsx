@@ -104,17 +104,17 @@ const SubIndustryManagement: React.FC = () => {
       const values = await form.validateFields()
       setSubmitting(true)
 
-      // Parse company lists
+      // Parse company lists - support multiple delimiters: , , ; ；
       const typicalGlobalCompanies = values.typicalGlobalCompanies
         ? values.typicalGlobalCompanies
-            .split(',')
+            .split(/[,，;；]/)
             .map((c: string) => c.trim())
             .filter((c: string) => c.length > 0)
         : []
 
       const typicalChineseCompanies = values.typicalChineseCompanies
         ? values.typicalChineseCompanies
-            .split(',')
+            .split(/[,，;；]/)
             .map((c: string) => c.trim())
             .filter((c: string) => c.length > 0)
         : []
@@ -216,14 +216,26 @@ const SubIndustryManagement: React.FC = () => {
       dataIndex: 'typicalGlobalCompanies',
       key: 'typicalGlobalCompanies',
       width: 200,
-      render: (companies: string[]) => (companies && companies.length > 0 ? companies.join(', ') : '-'),
+      render: (companies: string[]) => (
+        companies && companies.length > 0 ? (
+          <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+            {companies.join('\n')}
+          </div>
+        ) : '-'
+      ),
     },
     {
       title: '典型中国企业',
       dataIndex: 'typicalChineseCompanies',
       key: 'typicalChineseCompanies',
       width: 200,
-      render: (companies: string[]) => (companies && companies.length > 0 ? companies.join(', ') : '-'),
+      render: (companies: string[]) => (
+        companies && companies.length > 0 ? (
+          <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+            {companies.join('\n')}
+          </div>
+        ) : '-'
+      ),
     },
     {
       title: '优先级',
@@ -361,11 +373,11 @@ const SubIndustryManagement: React.FC = () => {
           >
             <TextArea rows={6} placeholder="请输入子行业定义（中文）" />
           </Form.Item>
-          <Form.Item name="typicalGlobalCompanies" label="典型全球企业（用逗号分隔）">
-            <Input placeholder="例如：Google, Microsoft, Amazon" />
+          <Form.Item name="typicalGlobalCompanies" label="典型全球企业（用逗号、分号分隔）">
+            <Input placeholder="例如：Google, Microsoft, Amazon 或 Google；Microsoft；Amazon" />
           </Form.Item>
-          <Form.Item name="typicalChineseCompanies" label="典型中国企业（用逗号分隔）">
-            <Input placeholder="例如：阿里巴巴, 腾讯, 百度" />
+          <Form.Item name="typicalChineseCompanies" label="典型中国企业（用逗号、分号分隔）">
+            <Input placeholder="例如：阿里巴巴, 腾讯, 百度 或 阿里巴巴；腾讯；百度" />
           </Form.Item>
           <Form.Item name="priority" label="排序优先级（数值越小越靠前）">
             <Input type="number" placeholder="例如：1, 2, 3（不填则排在最后）" />
