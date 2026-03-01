@@ -5,11 +5,15 @@ export interface CreateUseCaseRequest {
   subIndustryId: string
   name: string
   description: string
+  businessScenario?: string
+  customerPainPoints?: string
 }
 
 export interface UpdateUseCaseRequest {
   name?: string
   description?: string
+  businessScenario?: string
+  customerPainPoints?: string
 }
 
 export interface UploadDocumentRequest {

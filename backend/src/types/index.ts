@@ -30,7 +30,9 @@ export interface UseCase {
   subIndustryId: string
   industryId: string
   name: string
-  description: string
+  description: string // 保留用于向后兼容
+  businessScenario?: string // 业务场景
+  customerPainPoints?: string // 客户痛点
   documents: Document[]
   createdAt: string
   updatedAt: string

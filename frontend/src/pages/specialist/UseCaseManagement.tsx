@@ -13,12 +13,11 @@ import {
   Card,
   Tag,
 } from 'antd'
-import { PlusOutlined, EditOutlined, DeleteOutlined, FileOutlined } from '@ant-design/icons'
+import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
 import { UseCase, SubIndustry, Industry } from '../../types'
 import { useCaseService, CreateUseCaseRequest, UpdateUseCaseRequest } from '../../services/useCaseService'
 import { subIndustryService } from '../../services/subIndustryService'
 import { industryService } from '../../services/industryService'
-import { DocumentUploader } from '../../components/DocumentUploader'
 
 const { Title } = Typography
 const { TextArea } = Input
@@ -30,9 +29,7 @@ const UseCaseManagement: React.FC = () => {
   const [industries, setIndustries] = useState<Industry[]>([])
   const [loading, setLoading] = useState(false)
   const [modalVisible, setModalVisible] = useState(false)
-  const [documentModalVisible, setDocumentModalVisible] = useState(false)
   const [editingUseCase, setEditingUseCase] = useState<UseCase | null>(null)
-  const [selectedUseCase, setSelectedUseCase] = useState<UseCase | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [form] = Form.useForm()
 
@@ -83,14 +80,10 @@ const UseCaseManagement: React.FC = () => {
     form.setFieldsValue({
       subIndustryId: useCase.subIndustryId,
       name: useCase.name,
-      description: useCase.description,
+      businessScenario: useCase.businessScenario || useCase.description, // 向后兼容
+      customerPainPoints: useCase.customerPainPoints || '',
     })
     setModalVisible(true)
-  }
-
-  const handleManageDocuments = (useCase: UseCase) => {
-    setSelectedUseCase(useCase)
-    setDocumentModalVisible(true)
   }
 
   const handleSubmit = async () => {
@@ -101,7 +94,9 @@ const UseCaseManagement: React.FC = () => {
       if (editingUseCase) {
         const updateData: UpdateUseCaseRequest = {
           name: values.name,
-          description: values.description,
+          description: values.businessScenario, // 保持向后兼容
+          businessScenario: values.businessScenario,
+          customerPainPoints: values.customerPainPoints,
         }
         await useCaseService.update(editingUseCase.id, updateData)
         message.success('用例更新成功')
@@ -109,7 +104,9 @@ const UseCaseManagement: React.FC = () => {
         const createData: CreateUseCaseRequest = {
           subIndustryId: values.subIndustryId,
           name: values.name,
-          description: values.description,
+          description: values.businessScenario, // 保持向后兼容
+          businessScenario: values.businessScenario,
+          customerPainPoints: values.customerPainPoints,
         }
         await useCaseService.create(createData)
         message.success('用例创建成功')
@@ -124,38 +121,6 @@ const UseCaseManagement: React.FC = () => {
       message.error(error.message || '操作失败')
     } finally {
       setSubmitting(false)
-    }
-  }
-
-  const handleDocumentUpload = async (fileName: string, fileContent: string, contentType: string) => {
-    if (!selectedUseCase) return
-
-    try {
-      await useCaseService.uploadDocument(selectedUseCase.id, { fileName, fileContent, contentType })
-      await fetchUseCases()
-      // Update selected use case
-      const updated = useCases.find((uc) => uc.id === selectedUseCase.id)
-      if (updated) {
-        setSelectedUseCase(updated)
-      }
-    } catch (error: any) {
-      throw error
-    }
-  }
-
-  const handleDocumentDelete = async (docId: string) => {
-    if (!selectedUseCase) return
-
-    try {
-      await useCaseService.deleteDocument(selectedUseCase.id, docId)
-      await fetchUseCases()
-      // Update selected use case
-      const updated = useCases.find((uc) => uc.id === selectedUseCase.id)
-      if (updated) {
-        setSelectedUseCase(updated)
-      }
-    } catch (error: any) {
-      throw error
     }
   }
 
@@ -197,14 +162,8 @@ const UseCaseManagement: React.FC = () => {
       title: '所属子行业',
       dataIndex: 'subIndustryId',
       key: 'subIndustryId',
-      width: 150,
+      width: 300,
       render: (subIndustryId: string) => <Tag color="cyan">{getSubIndustryName(subIndustryId)}</Tag>,
-    },
-    {
-      title: '描述',
-      dataIndex: 'description',
-      key: 'description',
-      ellipsis: true,
     },
     {
       title: '文档数量',
@@ -223,15 +182,12 @@ const UseCaseManagement: React.FC = () => {
     {
       title: '操作',
       key: 'actions',
-      width: 250,
+      width: 150,
       fixed: 'right' as const,
       render: (_: unknown, record: UseCase) => (
         <Space>
           <Button type="link" icon={<EditOutlined />} onClick={() => handleEdit(record)}>
             编辑
-          </Button>
-          <Button type="link" icon={<FileOutlined />} onClick={() => handleManageDocuments(record)}>
-            文档
           </Button>
           <Popconfirm
             title="确定要删除此用例吗？"
@@ -308,45 +264,23 @@ const UseCaseManagement: React.FC = () => {
             <Input placeholder="请输入用例名称" />
           </Form.Item>
           <Form.Item
-            name="description"
-            label="用例描述"
+            name="businessScenario"
+            label="业务场景"
             rules={[
-              { required: true, message: '请输入用例描述' },
-              { max: 1000, message: '用例描述不能超过1000个字符' },
+              { required: true, message: '请输入业务场景' },
+              { max: 1000, message: '业务场景不能超过1000个字符' },
             ]}
           >
-            <TextArea rows={4} placeholder="请输入用例描述" />
+            <TextArea rows={4} placeholder="请输入业务场景" />
+          </Form.Item>
+          <Form.Item
+            name="customerPainPoints"
+            label="客户痛点"
+            rules={[{ max: 1000, message: '客户痛点不能超过1000个字符' }]}
+          >
+            <TextArea rows={4} placeholder="请输入客户痛点" />
           </Form.Item>
         </Form>
-      </Modal>
-
-      <Modal
-        title={`管理文档 - ${selectedUseCase?.name}`}
-        open={documentModalVisible}
-        onCancel={() => {
-          setDocumentModalVisible(false)
-          setSelectedUseCase(null)
-        }}
-        footer={[
-          <Button
-            key="close"
-            onClick={() => {
-              setDocumentModalVisible(false)
-              setSelectedUseCase(null)
-            }}
-          >
-            关闭
-          </Button>,
-        ]}
-        width={700}
-      >
-        {selectedUseCase && (
-          <DocumentUploader
-            documents={selectedUseCase.documents || []}
-            onUpload={handleDocumentUpload}
-            onDelete={handleDocumentDelete}
-          />
-        )}
       </Modal>
     </Card>
   )
