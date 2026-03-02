@@ -37,6 +37,69 @@ function stripHtml(html: string): string {
 }
 
 /**
+ * Detect if content is RSS/Atom XML feed
+ */
+function isRssFeed(content: string): boolean {
+  const trimmed = content.trim().substring(0, 500)
+  return (
+    trimmed.includes('<rss') ||
+    trimmed.includes('<feed') ||
+    trimmed.includes('<channel>') ||
+    (trimmed.includes('<?xml') && (trimmed.includes('<rss') || trimmed.includes('<feed') || content.includes('<channel>')))
+  )
+}
+
+/**
+ * Parse RSS 2.0 feed items
+ */
+function parseRssItems(xml: string): Array<{ title: string; link: string; description: string; pubDate: string; author: string }> {
+  const items: Array<{ title: string; link: string; description: string; pubDate: string; author: string }> = []
+  const itemRegex = /<item>([\s\S]*?)<\/item>/gi
+  let match
+  while ((match = itemRegex.exec(xml)) !== null && items.length < 20) {
+    const itemXml = match[1]
+    const title = itemXml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1').trim() || ''
+    const link = itemXml.match(/<link[^>]*>([\s\S]*?)<\/link>/i)?.[1]?.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1').trim() || ''
+    const description = itemXml.match(/<description[^>]*>([\s\S]*?)<\/description>/i)?.[1]?.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1').trim() || ''
+    const content = itemXml.match(/<content:encoded[^>]*>([\s\S]*?)<\/content:encoded>/i)?.[1]?.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1').trim() || ''
+    const pubDate = itemXml.match(/<pubDate[^>]*>([\s\S]*?)<\/pubDate>/i)?.[1]?.trim() || ''
+    const author = itemXml.match(/<(?:dc:creator|author)[^>]*>([\s\S]*?)<\/(?:dc:creator|author)>/i)?.[1]?.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1').trim() || ''
+    items.push({ title, link, description: stripHtml(content || description).substring(0, 2000), pubDate, author })
+  }
+  return items
+}
+
+/**
+ * Parse Atom feed entries
+ */
+function parseAtomEntries(xml: string): Array<{ title: string; link: string; description: string; pubDate: string; author: string }> {
+  const items: Array<{ title: string; link: string; description: string; pubDate: string; author: string }> = []
+  const entryRegex = /<entry>([\s\S]*?)<\/entry>/gi
+  let match
+  while ((match = entryRegex.exec(xml)) !== null && items.length < 20) {
+    const entryXml = match[1]
+    const title = entryXml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1').trim() || ''
+    const linkMatch = entryXml.match(/<link[^>]*href=["']([^"']*)["'][^>]*\/?>/i)
+    const link = linkMatch?.[1] || ''
+    const summary = entryXml.match(/<summary[^>]*>([\s\S]*?)<\/summary>/i)?.[1]?.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1').trim() || ''
+    const content = entryXml.match(/<content[^>]*>([\s\S]*?)<\/content>/i)?.[1]?.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1').trim() || ''
+    const pubDate = entryXml.match(/<(?:published|updated)[^>]*>([\s\S]*?)<\/(?:published|updated)>/i)?.[1]?.trim() || ''
+    const author = entryXml.match(/<author>[\s\S]*?<name>([\s\S]*?)<\/name>[\s\S]*?<\/author>/i)?.[1]?.trim() || ''
+    items.push({ title, link, description: stripHtml(content || summary).substring(0, 2000), pubDate, author })
+  }
+  return items
+}
+
+/**
+ * Format parsed feed items into structured text for Bedrock
+ */
+function formatFeedItems(items: Array<{ title: string; link: string; description: string; pubDate: string; author: string }>): string {
+  return items.map((item, i) => 
+    `[${i + 1}] 标题: ${item.title}\n链接: ${item.link}\n时间: ${item.pubDate}\n作者: ${item.author}\n内容: ${item.description}`
+  ).join('\n\n')
+}
+
+/**
  * Fetch news feeds for an industry from DynamoDB
  */
 async function getNewsFeeds(industryId: string): Promise<Array<{ name: string; url: string }>> {
@@ -54,22 +117,43 @@ async function getNewsFeeds(industryId: string): Promise<Array<{ name: string; u
 
 /**
  * Fetch content from a news feed URL and extract text
+ * Automatically detects RSS/Atom feeds and parses them structurally
  */
-async function fetchFeedContent(url: string): Promise<string> {
+async function fetchFeedContent(url: string): Promise<{ content: string; isRss: boolean }> {
   try {
     const headers = {
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,application/rss+xml;q=0.9,application/atom+xml;q=0.9,*/*;q=0.8',
       'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
     }
-    const html = await httpGet(url, headers)
-    const text = stripHtml(html)
-    console.log(`[FEED] Fetched ${url} - HTML length: ${html.length}, Text length: ${text.length}, Preview: ${text.substring(0, 200)}`)
-    // Limit to 8000 chars to avoid token limits
-    return text.substring(0, 8000)
+    const rawContent = await httpGet(url, headers)
+    
+    // Check if it's an RSS/Atom feed
+    if (isRssFeed(rawContent)) {
+      console.log(`[FEED] Detected RSS/Atom feed: ${url} (${rawContent.length} bytes)`)
+      
+      // Try RSS 2.0 first, then Atom
+      let items = parseRssItems(rawContent)
+      if (items.length === 0) {
+        items = parseAtomEntries(rawContent)
+      }
+      
+      console.log(`[FEED] Parsed ${items.length} items from RSS/Atom feed: ${url}`)
+      if (items.length > 0) {
+        console.log(`[FEED] First item: ${items[0].title}`)
+      }
+      
+      const formatted = formatFeedItems(items)
+      return { content: formatted.substring(0, 12000), isRss: true }
+    }
+    
+    // Regular HTML page - strip and extract text
+    const text = stripHtml(rawContent)
+    console.log(`[FEED] Fetched HTML page: ${url} - HTML: ${rawContent.length} bytes, Text: ${text.length} chars, Preview: ${text.substring(0, 200)}`)
+    return { content: text.substring(0, 8000), isRss: false }
   } catch (error: any) {
     console.error(`[FEED] Failed to fetch ${url}:`, error.message)
-    return ''
+    return { content: '', isRss: false }
   }
 }
 
@@ -77,25 +161,32 @@ async function fetchFeedContent(url: string): Promise<string> {
  * Use Bedrock Nova Premier to extract and summarize news from feed content
  */
 async function extractNewsFromContent(
-  feedContents: Array<{ name: string; url: string; content: string }>,
+  feedContents: Array<{ name: string; url: string; content: string; isRss: boolean }>,
   userQuery: string,
   industryName: string
 ): Promise<string> {
+  const hasRssFeeds = feedContents.some((f) => f.isRss && f.content.length > 50)
+  
   const feedTexts = feedContents
-    .filter((f) => f.content.length > 100)
-    .map((f) => `===== 来源: ${f.name} (${f.url}) =====\n${f.content}`)
+    .filter((f) => f.content.length > 50)
+    .map((f) => `===== 来源: ${f.name} (${f.url}) [${f.isRss ? 'RSS/Atom Feed' : 'HTML页面'}] =====\n${f.content}`)
     .join('\n\n')
 
   if (!feedTexts) {
     return JSON.stringify({ news: [], message: '无法从订阅源获取内容' })
   }
 
-  const systemPrompt = `你是一个专业的新闻编辑助手。你的任务是从多个新闻订阅源的网页内容中，根据用户的检索需求，提取相关的新闻文章。
+  const rssHint = hasRssFeeds 
+    ? '部分内容来自RSS/Atom订阅源，已经结构化解析，每条新闻有标题、链接、时间、作者和内容摘要。请直接使用这些结构化信息。'
+    : ''
+
+  const systemPrompt = `你是一个专业的新闻编辑助手。你的任务是从多个新闻订阅源的内容中，根据用户的检索需求，提取相关的新闻文章。
 
 行业: ${industryName}
 用户检索需求: ${userQuery}
+${rssHint}
 
-请从以下网页内容中提取与用户需求相关的新闻文章。对每篇新闻：
+请从以下内容中提取与用户需求相关的新闻文章。对每篇新闻：
 1. 提取标题
 2. 写一个200字左右的中文概括摘要
 3. 提取原文链接（如果有）
@@ -191,17 +282,17 @@ async function handleSearch(event: APIGatewayProxyEvent, user: any): Promise<API
     const feedsToFetch = feeds.slice(0, 5)
     const feedContents = await Promise.all(
       feedsToFetch.map(async (feed) => {
-        const content = await fetchFeedContent(feed.url)
-        return { name: feed.name, url: feed.url, content }
+        const { content, isRss } = await fetchFeedContent(feed.url)
+        return { name: feed.name, url: feed.url, content, isRss }
       })
     )
 
-    const validFeeds = feedContents.filter((f) => f.content.length > 100)
-    console.log(`[AGENT] Fetched ${feedContents.length} feeds, ${validFeeds.length} have valid content (>100 chars)`)
-    feedContents.forEach((f) => console.log(`[AGENT] Feed content: ${f.name} - length: ${f.content.length}`))
+    const validFeeds = feedContents.filter((f) => f.content.length > 50)
+    console.log(`[AGENT] Fetched ${feedContents.length} feeds, ${validFeeds.length} have valid content`)
+    feedContents.forEach((f) => console.log(`[AGENT] Feed: ${f.name} - type: ${f.isRss ? 'RSS' : 'HTML'}, length: ${f.content.length}`))
 
     if (validFeeds.length === 0) {
-      return successResponse({ news: [], message: '无法从订阅源获取有效内容，请检查订阅源链接是否可访问' })
+      return successResponse({ news: [], message: '无法从订阅源获取有效内容，请检查订阅源链接是否可访问。建议使用RSS订阅源链接（通常以/feed/或/rss结尾）' })
     }
 
     // Use Bedrock to extract and summarize news
