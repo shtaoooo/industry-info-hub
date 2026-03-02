@@ -126,10 +126,27 @@ const SubIndustryDetail: React.FC = () => {
                       WebkitLineClamp: 4,
                       WebkitBoxOrient: 'vertical',
                       overflow: 'hidden',
+                      marginBottom: 16,
                     }}
                   >
-                    {useCase.description}
+                    {useCase.businessScenario || useCase.description}
                   </div>
+                  {useCase.targetAudience && (
+                    <>
+                      <div style={{ 
+                        borderTop: '1px solid #d2d2d7', 
+                        margin: '16px 0',
+                      }} />
+                      <div style={{
+                        fontSize: 14,
+                        color: '#6e6e73',
+                        lineHeight: '1.5',
+                      }}>
+                        <span style={{ fontWeight: 600, color: '#1d1d1f' }}>切入人群：</span>
+                        {useCase.targetAudience}
+                      </div>
+                    </>
+                  )}
                 </div>
               ))}
             </div>
