@@ -503,6 +503,18 @@ frontend:
   cache:
     paths:
       - frontend/node_modules/**/*`,
+      customRules: [
+        {
+          source: '</^[^.]+$|\\.(?!(css|gif|ico|jpg|js|png|txt|svg|woff|woff2|ttf|map|json|webp)$)([^.]+$)/>',
+          target: '/index.html',
+          status: '200',
+        },
+        {
+          source: '/<*>',
+          target: '/index.html',
+          status: '404-200',
+        },
+      ],
       environmentVariables: [
         { name: 'VITE_AWS_REGION', value: this.region },
         { name: 'VITE_USER_POOL_ID', value: userPool.userPoolId },
