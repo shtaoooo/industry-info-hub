@@ -108,7 +108,7 @@ async function extractNewsFromContent(
 - 最多提取10篇新闻
 - 如果没有找到相关新闻，返回空列表
 
-你必须严格按照以下JSON格式输出，不要输出任何其他内容：
+你必须严格按照以下JSON格式输出，不要输出任何其他内容，不要使用markdown代码块，直接输出纯JSON：
 {
   "news": [
     {
@@ -119,7 +119,9 @@ async function extractNewsFromContent(
       "publishedAt": "YYYY-MM-DDTHH:mm:ss.000Z格式的时间"
     }
   ]
-}`
+}
+
+再次强调：只输出JSON，不要有任何前缀、后缀或解释文字。`
 
   const payload = {
     messages: [
@@ -195,16 +197,43 @@ async function handleSearch(event: APIGatewayProxyEvent, user: any): Promise<API
 
     // Parse the JSON response
     try {
-      // Extract JSON from response (handle markdown code blocks)
-      let jsonStr = resultText
-      const jsonMatch = resultText.match(/```(?:json)?\s*([\s\S]*?)```/)
+      // Extract JSON from response (handle markdown code blocks and extra text)
+      let jsonStr = resultText.trim()
+      
+      // Try to extract from markdown code block
+      const jsonMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/)
       if (jsonMatch) {
         jsonStr = jsonMatch[1].trim()
       }
+      
+      // Try to find JSON object in the text if not already valid JSON
+      if (!jsonStr.startsWith('{')) {
+        const objMatch = jsonStr.match(/\{[\s\S]*\}/)
+        if (objMatch) {
+          jsonStr = objMatch[0]
+        }
+      }
+      
       const parsed = JSON.parse(jsonStr)
+      
+      // Ensure the response has the expected structure
+      if (!parsed.news || !Array.isArray(parsed.news)) {
+        return successResponse({ news: [], message: '未找到相关新闻' })
+      }
+      
       return successResponse(parsed)
     } catch {
-      console.error('Failed to parse Bedrock response:', resultText.substring(0, 500))
+      console.error('Failed to parse Bedrock response:', resultText.substring(0, 1000))
+      // Try one more time with a more aggressive extraction
+      try {
+        const lastResort = resultText.match(/\{\s*"news"\s*:\s*\[[\s\S]*\]\s*\}/)
+        if (lastResort) {
+          const parsed = JSON.parse(lastResort[0])
+          return successResponse(parsed)
+        }
+      } catch {
+        // Give up
+      }
       return successResponse({ news: [], message: 'AI返回格式异常，请重试' })
     }
   } catch (error: any) {
