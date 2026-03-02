@@ -26,6 +26,7 @@ import BlogsListPage from './pages/public/BlogsListPage'
 import AdminLayout from './components/AdminLayout'
 
 function App() {
+  console.log('=== App组件渲染, pathname:', window.location.pathname, '===')
   return (
     <ConfigProvider
       locale={zhCN}
@@ -154,7 +155,7 @@ function App() {
             <Route path="/public/blogs/:id" element={<BlogDetail />} />
             <Route path="/public/industries/:id/news" element={<NewsListPage />} />
             <Route path="/public/industries/:id/blogs" element={<BlogsListPage />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
+            <Route path="*" element={(() => { console.log('=== 匹配到catch-all路由, pathname:', window.location.pathname, '==='); return <Navigate to="/" replace />; })()} />
           </Routes>
         </AuthProvider>
       </Router>
