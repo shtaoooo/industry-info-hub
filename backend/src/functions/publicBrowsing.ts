@@ -205,6 +205,10 @@ export async function listUseCases(event: APIGatewayProxyEvent): Promise<APIGate
       industryId: item.industryId,
       name: item.name,
       description: item.description,
+      businessScenario: item.businessScenario,
+      customerPainPoints: item.customerPainPoints,
+      targetAudience: item.targetAudience,
+      communicationScript: item.communicationScript,
       createdAt: item.createdAt,
     }))
 
