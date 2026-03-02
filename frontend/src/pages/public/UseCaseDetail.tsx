@@ -109,7 +109,7 @@ const UseCaseDetail: React.FC = () => {
           ) : (
             <div className="responsive-grid-auto">
               {solutions.map((solution) => (
-                <div key={solution.id} onClick={() => navigate(/public/solutions/+solution.id)} className="apple-card" style={{ padding: 24, cursor: 'pointer' }}>
+                <div key={solution.id} onClick={() => navigate(`/public/solutions/${solution.id}`)} className="apple-card" style={{ padding: 24, cursor: 'pointer' }}>
                   <div style={{ fontSize: 17, fontWeight: 600, marginBottom: 12 }}>{solution.name}</div>
                   <div className="public-detail-secondary" style={{ fontSize: 15, lineHeight: '1.6', display: '-webkit-box', WebkitLineClamp: 4, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{solution.description}</div>
                 </div>
