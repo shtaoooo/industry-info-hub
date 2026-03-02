@@ -277,6 +277,7 @@ export class IndustryPortalStack extends cdk.Stack {
     const blogsManagementFn = createFunction('BlogsManagement', 'blogsManagement');
     const accountsManagementFn = createFunction('AccountsManagement', 'accountsManagement');
     const copilotAgentFn = createFunction('CopilotAgent', 'copilotAgent', 60, 1024);
+    const newsAgentFn = createFunction('NewsAgent', 'newsAgent', 120, 1024);
 
     // Grant DynamoDB permissions
     industriesTable.grantReadWriteData(industryManagementFn);
@@ -332,6 +333,14 @@ export class IndustryPortalStack extends cdk.Stack {
     industriesTable.grantReadData(copilotAgentFn);
     subIndustriesTable.grantReadData(copilotAgentFn);
     copilotAgentFn.addToRolePolicy(new iam.PolicyStatement({
+      actions: ['bedrock:InvokeModel'],
+      resources: ['*'],
+    }));
+
+    // News Agent permissions
+    industriesTable.grantReadData(newsAgentFn);
+    newsFeedsTable.grantReadData(newsAgentFn);
+    newsAgentFn.addToRolePolicy(new iam.PolicyStatement({
       actions: ['bedrock:InvokeModel'],
       resources: ['*'],
     }));
@@ -485,6 +494,9 @@ export class IndustryPortalStack extends cdk.Stack {
 
     // Copilot Agent route
     addRoute('/public/copilot/chat', apigatewayv2.HttpMethod.POST, copilotAgentFn);
+
+    // News Agent route
+    addRoute('/admin/news-agent/search', apigatewayv2.HttpMethod.POST, newsAgentFn);
 
     // CloudFront OAI for S3 (commented out - not using CloudFront for now)
     // const oai = new cloudfront.OriginAccessIdentity(this, 'OAI', {

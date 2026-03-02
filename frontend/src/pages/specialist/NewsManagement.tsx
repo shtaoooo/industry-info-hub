@@ -13,8 +13,12 @@ import {
   Card,
   Dropdown,
   List,
+  Drawer,
+  Spin,
+  Tag,
+  Radio,
 } from 'antd'
-import { PlusOutlined, EditOutlined, DeleteOutlined, SettingOutlined, LinkOutlined } from '@ant-design/icons'
+import { PlusOutlined, EditOutlined, DeleteOutlined, SettingOutlined, LinkOutlined, RobotOutlined, SearchOutlined, SendOutlined } from '@ant-design/icons'
 import { News, Industry } from '../../types'
 import { industryService } from '../../services/industryService'
 import { api } from '../../services/api'
@@ -33,6 +37,14 @@ interface NewsFeed {
   createdBy: string
 }
 
+interface AgentNewsItem {
+  title: string
+  summary: string
+  externalUrl: string
+  author: string
+  publishedAt: string
+}
+
 const newsService = {
   list: () => api.get<News[]>('/admin/news'),
   create: (data: Partial<News>) => api.post<News>('/admin/news', data),
@@ -44,6 +56,11 @@ const newsFeedService = {
   list: (industryId: string) => api.get<NewsFeed[]>(`/admin/news-feeds?industryId=${industryId}`),
   create: (data: Partial<NewsFeed>) => api.post<NewsFeed>('/admin/news-feeds', data),
   delete: (id: string) => api.delete<void>(`/admin/news-feeds/${id}`),
+}
+
+const newsAgentService = {
+  search: (industryId: string, query: string) =>
+    api.post<{ news: AgentNewsItem[]; message?: string }>('/admin/news-agent/search', { industryId, query }),
 }
 
 const NewsManagement: React.FC = () => {
@@ -212,6 +229,73 @@ const NewsManagement: React.FC = () => {
     }
   }
 
+  // News Agent state
+  const [agentDrawerVisible, setAgentDrawerVisible] = useState(false)
+  const [agentIndustryId, setAgentIndustryId] = useState<string>('')
+  const [agentQuery, setAgentQuery] = useState('')
+  const [agentSearching, setAgentSearching] = useState(false)
+  const [agentResults, setAgentResults] = useState<AgentNewsItem[]>([])
+  const [agentMessage, setAgentMessage] = useState('')
+  const [publishingIndex, setPublishingIndex] = useState<number | null>(null)
+  const [publishType, setPublishType] = useState<'news' | 'blog'>('news')
+
+  const openAgentDrawer = () => {
+    if (industries.length > 0 && !agentIndustryId) {
+      setAgentIndustryId(industries[0].id)
+    }
+    setAgentDrawerVisible(true)
+  }
+
+  const handleAgentSearch = async () => {
+    if (!agentIndustryId || !agentQuery.trim()) {
+      message.warning('请选择行业并输入检索关键词')
+      return
+    }
+    setAgentSearching(true)
+    setAgentResults([])
+    setAgentMessage('')
+    try {
+      const result = await newsAgentService.search(agentIndustryId, agentQuery.trim())
+      setAgentResults(result.news || [])
+      if (result.message) setAgentMessage(result.message)
+      if (!result.news || result.news.length === 0) {
+        setAgentMessage(result.message || '未找到相关新闻')
+      }
+    } catch (error: any) {
+      message.error(error.message || '检索失败')
+    } finally {
+      setAgentSearching(false)
+    }
+  }
+
+  const handlePublish = async (item: AgentNewsItem, index: number) => {
+    setPublishingIndex(index)
+    try {
+      const data = {
+        industryId: agentIndustryId,
+        title: item.title,
+        summary: item.summary,
+        content: item.summary,
+        externalUrl: item.externalUrl || '',
+        author: item.author || '编辑部',
+        publishedAt: item.publishedAt || new Date().toISOString(),
+      }
+
+      if (publishType === 'news') {
+        await newsService.create(data)
+        message.success('已发布到新闻')
+      } else {
+        await api.post('/admin/blogs', data)
+        message.success('已发布到博客')
+      }
+      await fetchNews()
+    } catch (error: any) {
+      message.error(error.message || '发布失败')
+    } finally {
+      setPublishingIndex(null)
+    }
+  }
+
   const columns = [
     {
       title: '标题',
@@ -271,6 +355,12 @@ const NewsManagement: React.FC = () => {
   ]
 
   const settingsMenuItems = [
+    {
+      key: 'agent',
+      icon: <RobotOutlined />,
+      label: 'AI 新闻检索助手',
+      onClick: openAgentDrawer,
+    },
     {
       key: 'feeds',
       icon: <LinkOutlined />,
@@ -437,6 +527,118 @@ const NewsManagement: React.FC = () => {
           </div>
         )}
       </Modal>
+
+      {/* AI 新闻检索助手 Drawer */}
+      <Drawer
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <RobotOutlined style={{ color: '#0071e3', fontSize: 20 }} />
+            <span>AI 新闻检索助手</span>
+          </div>
+        }
+        open={agentDrawerVisible}
+        onClose={() => setAgentDrawerVisible(false)}
+        width={640}
+        styles={{ body: { padding: '16px 24px' } }}
+      >
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ marginBottom: 8, fontWeight: 500 }}>选择行业</div>
+          <Select
+            value={agentIndustryId}
+            onChange={setAgentIndustryId}
+            style={{ width: '100%' }}
+            placeholder="选择行业"
+          >
+            {industries.map((industry) => (
+              <Option key={industry.id} value={industry.id}>{industry.name}</Option>
+            ))}
+          </Select>
+        </div>
+
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ marginBottom: 8, fontWeight: 500 }}>检索关键词</div>
+          <Space.Compact style={{ width: '100%' }}>
+            <Input
+              value={agentQuery}
+              onChange={(e) => setAgentQuery(e.target.value)}
+              onPressEnter={handleAgentSearch}
+              placeholder="输入关键词，如：云计算、AI芯片、新能源..."
+              disabled={agentSearching}
+            />
+            <Button
+              type="primary"
+              icon={<SearchOutlined />}
+              onClick={handleAgentSearch}
+              loading={agentSearching}
+            >
+              检索
+            </Button>
+          </Space.Compact>
+        </div>
+
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ marginBottom: 8, fontWeight: 500 }}>发布到</div>
+          <Radio.Group value={publishType} onChange={(e) => setPublishType(e.target.value)}>
+            <Radio.Button value="news">新闻</Radio.Button>
+            <Radio.Button value="blog">博客</Radio.Button>
+          </Radio.Group>
+        </div>
+
+        {agentSearching && (
+          <div style={{ textAlign: 'center', padding: 40 }}>
+            <Spin size="large" />
+            <div style={{ marginTop: 16, color: '#6e6e73' }}>正在从订阅源检索并分析新闻，请稍候...</div>
+          </div>
+        )}
+
+        {agentMessage && !agentSearching && (
+          <div style={{ padding: 16, background: '#f5f5f7', borderRadius: 8, marginBottom: 16, color: '#6e6e73' }}>
+            {agentMessage}
+          </div>
+        )}
+
+        {agentResults.length > 0 && !agentSearching && (
+          <List
+            dataSource={agentResults}
+            renderItem={(item, index) => (
+              <div style={{
+                padding: 20,
+                marginBottom: 16,
+                background: '#ffffff',
+                border: '1px solid #e5e5ea',
+                borderRadius: 12,
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                  <div style={{ fontSize: 16, fontWeight: 600, flex: 1, marginRight: 12 }}>{item.title}</div>
+                  <Button
+                    type="primary"
+                    size="small"
+                    icon={<SendOutlined />}
+                    loading={publishingIndex === index}
+                    onClick={() => handlePublish(item, index)}
+                  >
+                    发布
+                  </Button>
+                </div>
+                <div style={{ fontSize: 14, lineHeight: 1.8, color: '#1d1d1f', marginBottom: 12 }}>
+                  {item.summary}
+                </div>
+                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                  {item.author && <Tag color="blue">{item.author}</Tag>}
+                  {item.publishedAt && (
+                    <Tag>{new Date(item.publishedAt).toLocaleDateString('zh-CN')}</Tag>
+                  )}
+                  {item.externalUrl && (
+                    <a href={item.externalUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13 }}>
+                      查看原文 →
+                    </a>
+                  )}
+                </div>
+              </div>
+            )}
+          />
+        )}
+      </Drawer>
     </Card>
   )
 }
