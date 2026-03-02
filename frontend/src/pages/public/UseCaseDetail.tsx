@@ -76,14 +76,6 @@ const UseCaseDetail: React.FC = () => {
             返回
           </Button>
 
-          {/* 标题卡片 */}
-          <div className="apple-card" style={{ padding: 40, marginBottom: 24, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
-              <FileTextOutlined style={{ fontSize: 36, color: '#ffffff', marginRight: 16 }} />
-              <h1 style={{ margin: 0, fontSize: 34, fontWeight: 700, color: '#ffffff' }}>{useCase.name}</h1>
-            </div>
-          </div>
-
           {/* 场景介绍卡片 */}
           <div className="apple-card" style={{ padding: 32, marginBottom: 24 }}>
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: 20 }}>
