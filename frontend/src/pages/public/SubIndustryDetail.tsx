@@ -123,7 +123,7 @@ const SubIndustryDetail: React.FC = () => {
                       fontSize: 15,
                       lineHeight: '1.6',
                       display: '-webkit-box',
-                      WebkitLineClamp: 4,
+                      WebkitLineClamp: 5,
                       WebkitBoxOrient: 'vertical',
                       overflow: 'hidden',
                       marginBottom: 16,
