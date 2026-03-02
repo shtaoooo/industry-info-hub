@@ -219,8 +219,11 @@ async function handleSearch(event: APIGatewayProxyEvent, user: any): Promise<API
         jsonStr = jsonMatch[1].trim()
       }
       
-      // Try to find JSON object in the text if not already valid JSON
-      if (!jsonStr.startsWith('{')) {
+      // Try to find JSON object with news array
+      const newsObjMatch = jsonStr.match(/\{\s*"news"\s*:\s*\[[\s\S]*?\]\s*\}/)
+      if (newsObjMatch) {
+        jsonStr = newsObjMatch[0]
+      } else if (!jsonStr.startsWith('{')) {
         const objMatch = jsonStr.match(/\{[\s\S]*\}/)
         if (objMatch) {
           jsonStr = objMatch[0]
@@ -231,17 +234,25 @@ async function handleSearch(event: APIGatewayProxyEvent, user: any): Promise<API
       
       // Ensure the response has the expected structure
       if (!parsed.news || !Array.isArray(parsed.news)) {
+        console.log('[AGENT] Parsed response has no news array:', JSON.stringify(parsed).substring(0, 200))
         return successResponse({ news: [], message: '未找到相关新闻' })
+      }
+
+      console.log(`[AGENT] Found ${parsed.news.length} news items`)
+      
+      if (parsed.news.length === 0) {
+        return successResponse({ news: [], message: '订阅源中未找到与关键词相关的新闻，请尝试其他关键词或检查订阅源内容' })
       }
       
       return successResponse(parsed)
-    } catch {
-      console.error('Failed to parse Bedrock response:', resultText.substring(0, 1000))
+    } catch (parseError: any) {
+      console.error('[AGENT] Failed to parse Bedrock response:', resultText.substring(0, 1000))
       // Try one more time with a more aggressive extraction
       try {
-        const lastResort = resultText.match(/\{\s*"news"\s*:\s*\[[\s\S]*\]\s*\}/)
+        const lastResort = resultText.match(/\{\s*"news"\s*:\s*\[[\s\S]*?\]\s*\}/)
         if (lastResort) {
           const parsed = JSON.parse(lastResort[0])
+          console.log(`[AGENT] Last resort parse found ${parsed.news?.length || 0} news items`)
           return successResponse(parsed)
         }
       } catch {
