@@ -64,10 +64,11 @@ async function fetchFeedContent(url: string): Promise<string> {
     }
     const html = await httpGet(url, headers)
     const text = stripHtml(html)
+    console.log(`[FEED] Fetched ${url} - HTML length: ${html.length}, Text length: ${text.length}, Preview: ${text.substring(0, 200)}`)
     // Limit to 8000 chars to avoid token limits
     return text.substring(0, 8000)
   } catch (error: any) {
-    console.error(`Failed to fetch ${url}:`, error.message)
+    console.error(`[FEED] Failed to fetch ${url}:`, error.message)
     return ''
   }
 }
@@ -179,6 +180,9 @@ async function handleSearch(event: APIGatewayProxyEvent, user: any): Promise<API
 
     // Get news feeds for this industry
     const feeds = await getNewsFeeds(industryId)
+    console.log(`[AGENT] Industry: ${industryName} (${industryId}), Query: ${query}, Feeds count: ${feeds.length}`)
+    feeds.forEach((f) => console.log(`[AGENT] Feed: ${f.name} -> ${f.url}`))
+
     if (feeds.length === 0) {
       return successResponse({ news: [], message: '该行业暂无配置订阅源，请先在设置中添加订阅源' })
     }
@@ -192,8 +196,17 @@ async function handleSearch(event: APIGatewayProxyEvent, user: any): Promise<API
       })
     )
 
+    const validFeeds = feedContents.filter((f) => f.content.length > 100)
+    console.log(`[AGENT] Fetched ${feedContents.length} feeds, ${validFeeds.length} have valid content (>100 chars)`)
+    feedContents.forEach((f) => console.log(`[AGENT] Feed content: ${f.name} - length: ${f.content.length}`))
+
+    if (validFeeds.length === 0) {
+      return successResponse({ news: [], message: '无法从订阅源获取有效内容，请检查订阅源链接是否可访问' })
+    }
+
     // Use Bedrock to extract and summarize news
     const resultText = await extractNewsFromContent(feedContents, query, industryName)
+    console.log(`[AGENT] Bedrock response length: ${resultText.length}, Preview: ${resultText.substring(0, 500)}`)
 
     // Parse the JSON response
     try {
