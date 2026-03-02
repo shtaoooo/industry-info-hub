@@ -34,6 +34,7 @@ export interface UseCase {
   businessScenario?: string // 业务场景
   customerPainPoints?: string // 客户痛点
   targetAudience?: string // 切入人群
+  communicationScript?: string // 沟通话术
   documents: Document[]
   createdAt: string
   updatedAt: string

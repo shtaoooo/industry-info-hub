@@ -666,34 +666,34 @@ export async function handler(event: any): Promise<APIGatewayProxyResult> {
     }
 
     // GET /public/industries/{id}
-    if (method === 'GET' && path.match(/\/public\/industries\/[^/]+$/) && !path.includes('sub-industries')) {
+    if (method === 'GET' && path.match(/\/public\/industries\/[^/]+\/?$/) && !path.includes('sub-industries')) {
       return await getIndustryDetails(event)
     }
 
     // GET /public/industries/{id}/sub-industries
-    if (method === 'GET' && path.match(/\/public\/industries\/[^/]+\/sub-industries$/)) {
+    if (method === 'GET' && path.match(/\/public\/industries\/[^/]+\/sub-industries\/?$/)) {
       return await listSubIndustries(event)
     }
 
     // GET /public/sub-industries/{id}/use-cases
-    if (method === 'GET' && path.match(/\/public\/sub-industries\/[^/]+\/use-cases$/)) {
+    if (method === 'GET' && path.match(/\/public\/sub-industries\/[^/]+\/use-cases\/?$/)) {
       return await listUseCases(event)
     }
 
     // GET /public/use-cases/{id}
-    if (method === 'GET' && path.match(/\/public\/use-cases\/[^/]+$/) && !path.includes('solutions')) {
+    if (method === 'GET' && path.match(/\/public\/use-cases\/[^/]+\/?$/) && !path.includes('solutions')) {
       return await getUseCaseDetails(event)
     }
 
     // GET /public/use-cases/{id}/solutions
-    if (method === 'GET' && path.match(/\/public\/use-cases\/[^/]+\/solutions$/)) {
+    if (method === 'GET' && path.match(/\/public\/use-cases\/[^/]+\/solutions\/?$/)) {
       return await getSolutionsForUseCase(event)
     }
 
     // GET /public/solutions/{id}
     if (
       method === 'GET' &&
-      path.match(/\/public\/solutions\/[^/]+$/) &&
+      path.match(/\/public\/solutions\/[^/]+\/?$/) &&
       !path.includes('detail-markdown') &&
       !path.includes('customer-cases')
     ) {
@@ -701,32 +701,32 @@ export async function handler(event: any): Promise<APIGatewayProxyResult> {
     }
 
     // GET /public/solutions/{id}/detail-markdown
-    if (method === 'GET' && path.match(/\/public\/solutions\/[^/]+\/detail-markdown$/)) {
+    if (method === 'GET' && path.match(/\/public\/solutions\/[^/]+\/detail-markdown\/?$/)) {
       return await getSolutionMarkdown(event)
     }
 
     // GET /public/solutions/{id}/customer-cases
-    if (method === 'GET' && path.match(/\/public\/solutions\/[^/]+\/customer-cases$/)) {
+    if (method === 'GET' && path.match(/\/public\/solutions\/[^/]+\/customer-cases\/?$/)) {
       return await getCustomerCasesForSolution(event)
     }
 
     // GET /public/industries/{id}/news
-    if (method === 'GET' && path.match(/\/public\/industries\/[^/]+\/news$/)) {
+    if (method === 'GET' && path.match(/\/public\/industries\/[^/]+\/news\/?$/)) {
       return await getIndustryNews(event)
     }
 
     // GET /public/industries/{id}/blogs
-    if (method === 'GET' && path.match(/\/public\/industries\/[^/]+\/blogs$/)) {
+    if (method === 'GET' && path.match(/\/public\/industries\/[^/]+\/blogs\/?$/)) {
       return await getIndustryBlogs(event)
     }
 
     // GET /public/news/{id}
-    if (method === 'GET' && path.match(/\/public\/news\/[^/]+$/)) {
+    if (method === 'GET' && path.match(/\/public\/news\/[^/]+\/?$/)) {
       return await getNewsDetail(event)
     }
 
     // GET /public/blogs/{id}
-    if (method === 'GET' && path.match(/\/public\/blogs\/[^/]+$/)) {
+    if (method === 'GET' && path.match(/\/public\/blogs\/[^/]+\/?$/)) {
       return await getBlogDetail(event)
     }
 

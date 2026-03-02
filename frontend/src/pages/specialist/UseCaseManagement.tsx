@@ -83,6 +83,7 @@ const UseCaseManagement: React.FC = () => {
       businessScenario: useCase.businessScenario || useCase.description, // 向后兼容
       customerPainPoints: useCase.customerPainPoints || '',
       targetAudience: useCase.targetAudience || '',
+      communicationScript: useCase.communicationScript || '',
     })
     setModalVisible(true)
   }
@@ -99,6 +100,7 @@ const UseCaseManagement: React.FC = () => {
           businessScenario: values.businessScenario,
           customerPainPoints: values.customerPainPoints,
           targetAudience: values.targetAudience,
+          communicationScript: values.communicationScript,
         }
         await useCaseService.update(editingUseCase.id, updateData)
         message.success('用例更新成功')
@@ -110,6 +112,7 @@ const UseCaseManagement: React.FC = () => {
           businessScenario: values.businessScenario,
           customerPainPoints: values.customerPainPoints,
           targetAudience: values.targetAudience,
+          communicationScript: values.communicationScript,
         }
         await useCaseService.create(createData)
         message.success('用例创建成功')
@@ -296,6 +299,13 @@ const UseCaseManagement: React.FC = () => {
             rules={[{ max: 500, message: '切入人群不能超过500个字符' }]}
           >
             <TextArea rows={3} placeholder="请输入切入人群" />
+          </Form.Item>
+          <Form.Item
+            name="communicationScript"
+            label="沟通话术"
+            rules={[{ max: 500, message: '沟通话术不能超过500个字符' }]}
+          >
+            <TextArea rows={3} placeholder="请输入沟通话术" />
           </Form.Item>
         </Form>
       </Modal>

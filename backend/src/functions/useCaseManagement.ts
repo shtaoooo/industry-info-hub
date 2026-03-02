@@ -109,6 +109,7 @@ export async function listUseCases(event: APIGatewayProxyEvent): Promise<APIGate
               businessScenario: item.businessScenario,
               customerPainPoints: item.customerPainPoints,
               targetAudience: item.targetAudience,
+              communicationScript: item.communicationScript,
               documents: item.documents || [],
               createdAt: item.createdAt,
               updatedAt: item.updatedAt,
@@ -153,6 +154,7 @@ export async function listUseCases(event: APIGatewayProxyEvent): Promise<APIGate
               businessScenario: item.businessScenario,
               customerPainPoints: item.customerPainPoints,
               targetAudience: item.targetAudience,
+              communicationScript: item.communicationScript,
               documents: item.documents || [],
               createdAt: item.createdAt,
               updatedAt: item.updatedAt,
@@ -183,7 +185,7 @@ export async function createUseCase(event: APIGatewayProxyEvent): Promise<APIGat
     requireRole(user, ['admin', 'specialist'])
 
     const body = JSON.parse(event.body || '{}')
-    const { subIndustryId, name, description, businessScenario, customerPainPoints, targetAudience } = body
+    const { subIndustryId, name, description, businessScenario, customerPainPoints, targetAudience, communicationScript } = body
 
     if (!subIndustryId || typeof subIndustryId !== 'string' || subIndustryId.trim().length === 0) {
       return errorResponse('VALIDATION_ERROR', '子行业ID不能为空', 400, { field: 'subIndustryId', constraint: 'required' })
@@ -215,6 +217,7 @@ export async function createUseCase(event: APIGatewayProxyEvent): Promise<APIGat
       businessScenario: businessScenario && typeof businessScenario === 'string' ? businessScenario.trim() : undefined,
       customerPainPoints: customerPainPoints && typeof customerPainPoints === 'string' ? customerPainPoints.trim() : undefined,
       targetAudience: targetAudience && typeof targetAudience === 'string' ? targetAudience.trim() : undefined,
+      communicationScript: communicationScript && typeof communicationScript === 'string' ? communicationScript.trim() : undefined,
       documents: [],
       createdAt: now,
       updatedAt: now,
@@ -313,7 +316,7 @@ export async function updateUseCase(event: APIGatewayProxyEvent): Promise<APIGat
     }
 
     const body = JSON.parse(event.body || '{}')
-    const { name, description, businessScenario, customerPainPoints, targetAudience } = body
+    const { name, description, businessScenario, customerPainPoints, targetAudience, communicationScript } = body
 
     if (name !== undefined && (typeof name !== 'string' || name.trim().length === 0)) {
       return errorResponse('VALIDATION_ERROR', '用例名称不能为空', 400, { field: 'name', constraint: 'required' })
@@ -339,6 +342,9 @@ export async function updateUseCase(event: APIGatewayProxyEvent): Promise<APIGat
       targetAudience: targetAudience !== undefined
         ? (targetAudience && typeof targetAudience === 'string' ? targetAudience.trim() : undefined)
         : existingUseCase.targetAudience,
+      communicationScript: communicationScript !== undefined
+        ? (communicationScript && typeof communicationScript === 'string' ? communicationScript.trim() : undefined)
+        : existingUseCase.communicationScript,
       documents: existingUseCase.documents || [],
       createdAt: existingUseCase.createdAt,
       updatedAt: now,
@@ -743,22 +749,22 @@ export async function handler(event: any): Promise<APIGatewayProxyResult> {
     }
 
     // PUT /specialist/use-cases/{id}
-    if (method === 'PUT' && path.match(/\/specialist\/use-cases\/[^/]+$/) && !path.includes('documents')) {
+    if (method === 'PUT' && path.match(/\/specialist\/use-cases\/[^/]+\/?$/) && !path.includes('documents')) {
       return await updateUseCase(event)
     }
 
     // DELETE /specialist/use-cases/{id}
-    if (method === 'DELETE' && path.match(/\/specialist\/use-cases\/[^/]+$/) && !path.includes('documents')) {
+    if (method === 'DELETE' && path.match(/\/specialist\/use-cases\/[^/]+\/?$/) && !path.includes('documents')) {
       return await deleteUseCase(event)
     }
 
     // POST /specialist/use-cases/{id}/documents
-    if (method === 'POST' && path.match(/\/specialist\/use-cases\/[^/]+\/documents$/)) {
+    if (method === 'POST' && path.match(/\/specialist\/use-cases\/[^/]+\/documents\/?$/)) {
       return await uploadDocument(event)
     }
 
     // DELETE /specialist/use-cases/{id}/documents/{docId}
-    if (method === 'DELETE' && path.match(/\/specialist\/use-cases\/[^/]+\/documents\/[^/]+$/)) {
+    if (method === 'DELETE' && path.match(/\/specialist\/use-cases\/[^/]+\/documents\/[^/]+\/?$/)) {
       return await deleteDocument(event)
     }
 
