@@ -1,5 +1,5 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
-import { GetCommand, PutCommand, DeleteCommand, ScanCommand } from '@aws-sdk/lib-dynamodb'
+import { GetCommand, PutCommand, DeleteCommand, ScanCommand, QueryCommand } from '@aws-sdk/lib-dynamodb'
 import { randomUUID } from 'crypto'
 import { successResponse, errorResponse } from '../utils/response'
 import { docClient, TABLE_NAMES } from '../utils/dynamodb'
@@ -214,6 +214,149 @@ async function deleteNews(event: APIGatewayProxyEvent, user: any): Promise<APIGa
 }
 
 /**
+ * List news feeds for an industry
+ * GET /admin/news-feeds?industryId=xxx
+ */
+async function listNewsFeeds(event: APIGatewayProxyEvent, user: any): Promise<APIGatewayProxyResult> {
+  try {
+    const industryId = event.queryStringParameters?.industryId
+    if (!industryId) {
+      return errorResponse('VALIDATION_ERROR', '缺少industryId参数', 400)
+    }
+
+    // Check industry access for specialist
+    if (!hasIndustryAccess(user, industryId)) {
+      return errorResponse('FORBIDDEN', '您没有权限查看该行业的订阅源', 403)
+    }
+
+    const result = await docClient.send(
+      new QueryCommand({
+        TableName: TABLE_NAMES.NEWS_FEEDS,
+        IndexName: 'IndustryIndex',
+        KeyConditionExpression: 'industryId = :industryId',
+        ExpressionAttributeValues: {
+          ':industryId': industryId,
+        },
+        ScanIndexForward: false,
+      })
+    )
+
+    const feeds = (result.Items || []).map((item) => ({
+      id: item.id,
+      industryId: item.industryId,
+      name: item.name,
+      url: item.url,
+      description: item.description,
+      createdAt: item.createdAt,
+      createdBy: item.createdBy,
+    }))
+
+    return successResponse(feeds)
+  } catch (error: any) {
+    console.error('Error listing news feeds:', error)
+    return errorResponse('INTERNAL_ERROR', '获取订阅源列表失败', 500)
+  }
+}
+
+/**
+ * Create news feed
+ * POST /admin/news-feeds
+ */
+async function createNewsFeed(event: APIGatewayProxyEvent, user: any): Promise<APIGatewayProxyResult> {
+  try {
+    const body = JSON.parse(event.body || '{}')
+    const { industryId, name, url, description } = body
+
+    if (!industryId || !name || !url) {
+      return errorResponse('VALIDATION_ERROR', '缺少必填字段', 400)
+    }
+
+    // Check industry access for specialist
+    if (!hasIndustryAccess(user, industryId)) {
+      return errorResponse('FORBIDDEN', '您没有权限管理该行业的订阅源', 403)
+    }
+
+    const feedId = randomUUID()
+    const now = new Date().toISOString()
+
+    const feedItem = {
+      PK: `INDUSTRY#${industryId}`,
+      SK: `FEED#${feedId}`,
+      id: feedId,
+      industryId,
+      name,
+      url,
+      description: description || '',
+      createdAt: now,
+      createdBy: user.email,
+    }
+
+    await docClient.send(
+      new PutCommand({
+        TableName: TABLE_NAMES.NEWS_FEEDS,
+        Item: feedItem,
+      })
+    )
+
+    return successResponse(feedItem, 201)
+  } catch (error: any) {
+    console.error('Error creating news feed:', error)
+    return errorResponse('INTERNAL_ERROR', '创建订阅源失败', 500)
+  }
+}
+
+/**
+ * Delete news feed
+ * DELETE /admin/news-feeds/{id}
+ */
+async function deleteNewsFeed(event: APIGatewayProxyEvent, user: any): Promise<APIGatewayProxyResult> {
+  try {
+    const feedId = event.pathParameters?.id
+    if (!feedId) {
+      return errorResponse('VALIDATION_ERROR', '订阅源ID不能为空', 400)
+    }
+
+    // Find the feed first to get PK and check access
+    const scanResult = await docClient.send(
+      new ScanCommand({
+        TableName: TABLE_NAMES.NEWS_FEEDS,
+        FilterExpression: 'id = :id',
+        ExpressionAttributeValues: {
+          ':id': feedId,
+        },
+        Limit: 1,
+      })
+    )
+
+    if (!scanResult.Items || scanResult.Items.length === 0) {
+      return errorResponse('NOT_FOUND', '订阅源不存在', 404)
+    }
+
+    const feed = scanResult.Items[0]
+
+    // Check industry access for specialist
+    if (!hasIndustryAccess(user, feed.industryId)) {
+      return errorResponse('FORBIDDEN', '您没有权限删除该行业的订阅源', 403)
+    }
+
+    await docClient.send(
+      new DeleteCommand({
+        TableName: TABLE_NAMES.NEWS_FEEDS,
+        Key: {
+          PK: feed.PK,
+          SK: feed.SK,
+        },
+      })
+    )
+
+    return successResponse({ message: '订阅源已删除' })
+  } catch (error: any) {
+    console.error('Error deleting news feed:', error)
+    return errorResponse('INTERNAL_ERROR', '删除订阅源失败', 500)
+  }
+}
+
+/**
  * Lambda handler
  */
 export async function handler(event: any): Promise<APIGatewayProxyResult> {
@@ -227,6 +370,23 @@ export async function handler(event: any): Promise<APIGatewayProxyResult> {
       return errorResponse('FORBIDDEN', '权限不足', 403)
     }
 
+    // News Feeds routes
+    // GET /admin/news-feeds?industryId=xxx
+    if (method === 'GET' && (path === '/admin/news-feeds' || path === '/admin/news-feeds/')) {
+      return await listNewsFeeds(event, user)
+    }
+
+    // POST /admin/news-feeds
+    if (method === 'POST' && (path === '/admin/news-feeds' || path === '/admin/news-feeds/')) {
+      return await createNewsFeed(event, user)
+    }
+
+    // DELETE /admin/news-feeds/{id}
+    if (method === 'DELETE' && path.match(/\/admin\/news-feeds\/[^/]+$/)) {
+      return await deleteNewsFeed(event, user)
+    }
+
+    // News routes
     // GET /admin/news
     if (method === 'GET' && (path === '/admin/news' || path === '/admin/news/')) {
       return await listNews(event, user)

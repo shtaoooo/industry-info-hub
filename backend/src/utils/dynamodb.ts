@@ -20,6 +20,7 @@ export const TABLE_NAMES = {
   CUSTOMER_CASES: process.env.CUSTOMER_CASES_TABLE || 'IndustryPortal-CustomerCases',
   USERS: process.env.USERS_TABLE || 'IndustryPortal-Users',
   NEWS: process.env.NEWS_TABLE || 'IndustryPortal-News',
+  NEWS_FEEDS: process.env.NEWS_FEEDS_TABLE || 'IndustryPortal-NewsFeeds',
   BLOGS: process.env.BLOGS_TABLE || 'IndustryPortal-Blogs',
   ACCOUNTS: process.env.ACCOUNTS_TABLE || 'IndustryPortal-Accounts',
   COMPANIES: process.env.COMPANIES_TABLE || 'IndustryPortal-Companies',

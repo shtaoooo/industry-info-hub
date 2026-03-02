@@ -154,6 +154,23 @@ export class IndustryPortalStack extends cdk.Stack {
       partitionKey: { name: 'normalizedName', type: dynamodb.AttributeType.STRING },
     });
 
+    // News Feeds Table
+    const newsFeedsTable = new dynamodb.Table(this, 'NewsFeedsTable', {
+      tableName: 'IndustryPortal-NewsFeeds',
+      partitionKey: { name: 'PK', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'SK', type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      pointInTimeRecovery: true,
+      encryption: dynamodb.TableEncryption.AWS_MANAGED,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    newsFeedsTable.addGlobalSecondaryIndex({
+      indexName: 'IndustryIndex',
+      partitionKey: { name: 'industryId', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'createdAt', type: dynamodb.AttributeType.STRING },
+    });
+
     // S3 Bucket for Documents
     const documentsBucket = new s3.Bucket(this, 'DocumentsBucket', {
       bucketName: `industry-portal-docs-v2-${this.account}`,
@@ -219,6 +236,7 @@ export class IndustryPortalStack extends cdk.Stack {
       CUSTOMER_CASES_TABLE: customerCasesTable.tableName,
       USERS_TABLE: usersTable.tableName,
       NEWS_TABLE: newsTable.tableName,
+      NEWS_FEEDS_TABLE: newsFeedsTable.tableName,
       BLOGS_TABLE: blogsTable.tableName,
       ACCOUNTS_TABLE: accountsTable.tableName,
       COMPANIES_TABLE: companiesTable.tableName,
@@ -302,6 +320,7 @@ export class IndustryPortalStack extends cdk.Stack {
     accountsTable.grantReadData(publicBrowsingFn);
     usersTable.grantReadWriteData(userManagementFn);
     newsTable.grantReadWriteData(newsManagementFn);
+    newsFeedsTable.grantReadWriteData(newsManagementFn);
     industriesTable.grantReadData(newsManagementFn);
     accountsTable.grantReadData(newsManagementFn);
     blogsTable.grantReadWriteData(blogsManagementFn);
@@ -446,6 +465,11 @@ export class IndustryPortalStack extends cdk.Stack {
     addRoute('/admin/news', apigatewayv2.HttpMethod.POST, newsManagementFn);
     addRoute('/admin/news/{id}', apigatewayv2.HttpMethod.PUT, newsManagementFn);
     addRoute('/admin/news/{id}', apigatewayv2.HttpMethod.DELETE, newsManagementFn);
+
+    // Admin routes - News Feeds Management
+    addRoute('/admin/news-feeds', apigatewayv2.HttpMethod.GET, newsManagementFn);
+    addRoute('/admin/news-feeds', apigatewayv2.HttpMethod.POST, newsManagementFn);
+    addRoute('/admin/news-feeds/{id}', apigatewayv2.HttpMethod.DELETE, newsManagementFn);
 
     // Admin routes - Blogs Management
     addRoute('/admin/blogs', apigatewayv2.HttpMethod.GET, blogsManagementFn);
