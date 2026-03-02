@@ -31,6 +31,7 @@ export interface PublicUseCase {
   businessScenario?: string
   customerPainPoints?: string
   targetAudience?: string
+  communicationScript?: string
   documents?: any[]
   createdAt: string
 }
