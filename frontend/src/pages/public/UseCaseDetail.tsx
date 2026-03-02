@@ -4,6 +4,7 @@ import { Layout, Spin, message, Button, Empty } from 'antd'
 import { ArrowLeftOutlined, FileTextOutlined, BulbOutlined, UserOutlined, ExclamationCircleOutlined, CommentOutlined, FileOutlined } from '@ant-design/icons'
 import { publicService, PublicUseCase, PublicSolution } from '../../services/publicService'
 import { DocumentDownloadList } from '../../components/DocumentDownloadList'
+import MarkdownText from '../../components/MarkdownText'
 
 const { Content } = Layout
 
@@ -104,7 +105,7 @@ const UseCaseDetail: React.FC = () => {
               </div>
               <h3 style={{ margin: 0, fontSize: 22, fontWeight: 600 }}>场景介绍</h3>
             </div>
-            <p style={{ 
+            <MarkdownText style={{ 
               fontSize: 16, 
               lineHeight: 1.8, 
               margin: 0, 
@@ -112,7 +113,7 @@ const UseCaseDetail: React.FC = () => {
               paddingLeft: 52
             }}>
               {useCase.businessScenario || useCase.description}
-            </p>
+            </MarkdownText>
           </div>
 
           {/* 客户痛点卡片 */}
@@ -132,15 +133,14 @@ const UseCaseDetail: React.FC = () => {
               </div>
               <h3 style={{ margin: 0, fontSize: 22, fontWeight: 600 }}>客户痛点</h3>
             </div>
-            <div style={{ 
+            <MarkdownText style={{ 
               paddingLeft: 52,
               fontSize: 16, 
               lineHeight: 1.8, 
               color: '#1d1d1f',
-              whiteSpace: 'pre-wrap'
-            }}>
-              {useCase.customerPainPoints || <span style={{ color: '#86868b', fontStyle: 'italic' }}>暂无数据</span>}
-            </div>
+            }} fallback={<span style={{ color: '#86868b', fontStyle: 'italic', paddingLeft: 52, display: 'block' }}>暂无数据</span>}>
+              {useCase.customerPainPoints}
+            </MarkdownText>
           </div>
 
           {/* 切入人群卡片 */}
@@ -160,15 +160,14 @@ const UseCaseDetail: React.FC = () => {
               </div>
               <h3 style={{ margin: 0, fontSize: 22, fontWeight: 600 }}>切入人群</h3>
             </div>
-            <div style={{ 
+            <MarkdownText style={{ 
               paddingLeft: 52,
               fontSize: 16, 
               lineHeight: 1.8, 
               color: '#1d1d1f',
-              whiteSpace: 'pre-wrap'
-            }}>
-              {useCase.targetAudience || <span style={{ color: '#86868b', fontStyle: 'italic' }}>暂无数据</span>}
-            </div>
+            }} fallback={<span style={{ color: '#86868b', fontStyle: 'italic', paddingLeft: 52, display: 'block' }}>暂无数据</span>}>
+              {useCase.targetAudience}
+            </MarkdownText>
           </div>
 
           {/* 沟通话术 - 引用框样式 */}
@@ -196,15 +195,14 @@ const UseCaseDetail: React.FC = () => {
               borderLeft: '4px solid #fa709a',
               boxShadow: '0 2px 8px rgba(250, 112, 154, 0.1)'
             }}>
-              <div style={{ 
+              <MarkdownText style={{ 
                 fontSize: 16, 
                 lineHeight: 1.8, 
                 color: '#1d1d1f',
-                whiteSpace: 'pre-wrap',
                 fontStyle: 'italic'
-              }}>
-                {useCase.communicationScript || <span style={{ color: '#86868b' }}>暂无数据</span>}
-              </div>
+              }} fallback={<span style={{ color: '#86868b' }}>暂无数据</span>}>
+                {useCase.communicationScript}
+              </MarkdownText>
             </div>
           </div>
 

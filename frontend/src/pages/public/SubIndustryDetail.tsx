@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { Layout, Typography, Spin, message, Button } from 'antd'
 import { ArrowLeftOutlined, FileTextOutlined } from '@ant-design/icons'
 import { publicService, PublicUseCase, PublicSubIndustry } from '../../services/publicService'
+import MarkdownText from '../../components/MarkdownText'
 
 const { Content } = Layout
 const { Title } = Typography
@@ -70,13 +71,13 @@ const SubIndustryDetail: React.FC = () => {
               <h2 style={{ margin: 0, color: '#1d1d1f', fontSize: 30, fontWeight: 600, marginBottom: 16 }}>
                 {subIndustry.name}
               </h2>
-              <p style={{ color: '#6e6e73', fontSize: 16, lineHeight: 1.8, margin: 0, marginBottom: 8 }}>
+              <MarkdownText style={{ color: '#6e6e73', fontSize: 16, lineHeight: 1.8 }}>
                 {subIndustry.definition}
-              </p>
+              </MarkdownText>
               {subIndustry.definitionCn && (
-                <p style={{ color: '#6e6e73', fontSize: 16, lineHeight: 1.8, margin: 0 }}>
+                <MarkdownText style={{ color: '#6e6e73', fontSize: 16, lineHeight: 1.8, marginTop: 8 }}>
                   {subIndustry.definitionCn}
-                </p>
+                </MarkdownText>
               )}
             </div>
           )}
@@ -118,7 +119,7 @@ const SubIndustryDetail: React.FC = () => {
                     {useCase.name}
                   </div>
                   <div
-                    className="public-detail-secondary"
+                    className="public-detail-secondary md-text-compact"
                     style={{
                       fontSize: 15,
                       lineHeight: '1.6',
@@ -129,7 +130,7 @@ const SubIndustryDetail: React.FC = () => {
                       marginBottom: 16,
                     }}
                   >
-                    {useCase.businessScenario || useCase.description}
+                    <MarkdownText>{useCase.businessScenario || useCase.description}</MarkdownText>
                   </div>
                   {useCase.targetAudience && (
                     <>
@@ -143,7 +144,7 @@ const SubIndustryDetail: React.FC = () => {
                         lineHeight: '1.5',
                       }}>
                         <span style={{ fontWeight: 600, color: '#1d1d1f' }}>切入人群：</span>
-                        {useCase.targetAudience}
+                        <MarkdownText className="md-text-compact" style={{ display: 'inline' }}>{useCase.targetAudience}</MarkdownText>
                       </div>
                     </>
                   )}
