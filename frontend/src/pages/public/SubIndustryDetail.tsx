@@ -103,7 +103,7 @@ const SubIndustryDetail: React.FC = () => {
               </div>
             </div>
           ) : (
-            <div className="responsive-grid-auto">
+            <div className="responsive-grid-max-3">
               {useCases.map((useCase) => (
                 <div
                   key={useCase.id}
