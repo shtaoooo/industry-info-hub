@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { ConfigProvider } from 'antd'
 import zhCN from 'antd/locale/zh_CN'
 import { AuthProvider } from './contexts/AuthContext'
@@ -25,8 +25,16 @@ import NewsListPage from './pages/public/NewsListPage'
 import BlogsListPage from './pages/public/BlogsListPage'
 import AdminLayout from './components/AdminLayout'
 
+// 去掉URL末尾的trailing slash，Amplify会在URL末尾加/导致React Router匹配失败
+function TrailingSlashRedirect() {
+  const location = useLocation()
+  if (location.pathname !== '/' && location.pathname.endsWith('/')) {
+    return <Navigate to={location.pathname.slice(0, -1) + location.search + location.hash} replace />
+  }
+  return null
+}
+
 function App() {
-  console.log('=== App组件渲染, pathname:', window.location.pathname, '===')
   return (
     <ConfigProvider
       locale={zhCN}
@@ -46,6 +54,7 @@ function App() {
     >
       <Router>
         <AuthProvider>
+          <TrailingSlashRedirect />
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/unauthorized" element={<UnauthorizedPage />} />
@@ -155,7 +164,7 @@ function App() {
             <Route path="/public/blogs/:id" element={<BlogDetail />} />
             <Route path="/public/industries/:id/news" element={<NewsListPage />} />
             <Route path="/public/industries/:id/blogs" element={<BlogsListPage />} />
-            <Route path="*" element={(() => { console.log('=== 匹配到catch-all路由, pathname:', window.location.pathname, '==='); return <Navigate to="/" replace />; })()} />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </AuthProvider>
       </Router>
