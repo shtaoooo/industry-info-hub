@@ -82,10 +82,20 @@ async function handleSearch(event: APIGatewayProxyEvent, user: any): Promise<API
       return errorResponse('CONFIGURATION_ERROR', 'Bedrock Agent 未配置', 500)
     }
 
-    // Build prompt for agent
-    const prompt = `你是一个专业的新闻编辑助手。请帮我搜索关于"${query}"的最新新闻，行业背景是"${industryName}"。
+    // Build prompt for agent with clear instructions
+    const prompt = `你是一个专业的新闻编辑助手。用户想要搜索关于"${query}"的最新新闻，行业背景是"${industryName}"。
 
-请使用 searchGoogleNews 工具搜索相关新闻，然后：
+你有以下工具可以使用：
+1. searchGoogleNews - 从 Google News 搜索新闻（最常用，覆盖面广）
+2. fetchRssFeed - 从特定 RSS feed URL 获取新闻（当用户指定了特定来源时使用）
+3. searchMultipleSources - 同时搜索 Google News 和多个 RSS feeds（当需要综合多个来源时使用）
+
+请根据用户需求选择合适的工具：
+- 如果用户只是想搜索某个关键词的新闻，使用 searchGoogleNews
+- 如果用户提到了特定的新闻网站或 RSS 源，使用 fetchRssFeed
+- 如果用户想要更全面的覆盖，使用 searchMultipleSources
+
+搜索完成后，请：
 1. 筛选出与"${query}"最相关的新闻（最多10条）
 2. 对每条新闻写一个200字左右的中文概括摘要
 3. 提取标题、链接、作者、发布时间

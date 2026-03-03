@@ -91,7 +91,6 @@ async function searchGoogleNews(keyword: string): Promise<string> {
   try {
     console.log(`[ACTION] searchGoogleNews called with keyword: ${keyword}`)
 
-    // Build Google News RSS URL
     const encodedQuery = encodeURIComponent(keyword)
     const googleNewsUrl = `https://news.google.com/rss/search?q=${encodedQuery}&hl=zh-CN&gl=CN&ceid=CN:zh-Hans`
 
@@ -112,7 +111,6 @@ async function searchGoogleNews(keyword: string): Promise<string> {
 
     console.log(`[ACTION] Fetched ${rawContent.length} bytes`)
 
-    // Parse RSS
     const items = parseRssItems(rawContent)
     console.log(`[ACTION] Parsed ${items.length} news items`)
 
@@ -120,14 +118,119 @@ async function searchGoogleNews(keyword: string): Promise<string> {
       return JSON.stringify({ success: false, message: '未找到相关新闻', items: [] })
     }
 
-    // Return structured data for agent to process
     return JSON.stringify({
       success: true,
-      message: `找到 ${items.length} 条新闻`,
-      items: items.slice(0, 20), // Limit to 20 items
+      source: 'Google News',
+      message: `从 Google News 找到 ${items.length} 条新闻`,
+      items: items.slice(0, 20),
     })
   } catch (error: any) {
     console.error('[ACTION] searchGoogleNews error:', error)
+    return JSON.stringify({
+      success: false,
+      source: 'Google News',
+      message: `搜索失败: ${error.message}`,
+      items: [],
+    })
+  }
+}
+
+/**
+ * Fetch RSS feed from custom URL
+ */
+async function fetchRssFeed(url: string): Promise<string> {
+  try {
+    console.log(`[ACTION] fetchRssFeed called with url: ${url}`)
+
+    const headers = {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      Accept: 'application/rss+xml,application/xml;q=0.9,*/*;q=0.8',
+      'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+    }
+
+    const rawContent = await httpGet(url, headers)
+
+    if (!rawContent || rawContent.length < 100) {
+      console.log(`[ACTION] Content too short: ${rawContent.length} bytes`)
+      return JSON.stringify({ success: false, message: '无法获取 RSS 内容', items: [] })
+    }
+
+    console.log(`[ACTION] Fetched ${rawContent.length} bytes from ${url}`)
+
+    const items = parseRssItems(rawContent)
+    console.log(`[ACTION] Parsed ${items.length} items from RSS feed`)
+
+    if (items.length === 0) {
+      return JSON.stringify({ success: false, message: 'RSS feed 中没有内容', items: [] })
+    }
+
+    return JSON.stringify({
+      success: true,
+      source: url,
+      message: `从 RSS feed 找到 ${items.length} 条内容`,
+      items: items.slice(0, 20),
+    })
+  } catch (error: any) {
+    console.error('[ACTION] fetchRssFeed error:', error)
+    return JSON.stringify({
+      success: false,
+      source: url,
+      message: `获取失败: ${error.message}`,
+      items: [],
+    })
+  }
+}
+
+/**
+ * Search multiple news sources (combines Google News + custom RSS feeds)
+ */
+async function searchMultipleSources(keyword: string, rssFeedUrls?: string[]): Promise<string> {
+  try {
+    console.log(`[ACTION] searchMultipleSources called with keyword: ${keyword}, feeds: ${rssFeedUrls?.length || 0}`)
+
+    const results: any[] = []
+
+    // Always search Google News
+    const googleResult = await searchGoogleNews(keyword)
+    const googleData = JSON.parse(googleResult)
+    if (googleData.success && googleData.items.length > 0) {
+      results.push(...googleData.items.map((item: any) => ({ ...item, source: 'Google News' })))
+    }
+
+    // Search custom RSS feeds if provided
+    if (rssFeedUrls && rssFeedUrls.length > 0) {
+      for (const url of rssFeedUrls.slice(0, 3)) {
+        // Limit to 3 custom feeds
+        const rssResult = await fetchRssFeed(url)
+        const rssData = JSON.parse(rssResult)
+        if (rssData.success && rssData.items.length > 0) {
+          results.push(...rssData.items.map((item: any) => ({ ...item, customSource: url })))
+        }
+      }
+    }
+
+    if (results.length === 0) {
+      return JSON.stringify({
+        success: false,
+        message: '所有来源都未找到相关新闻',
+        items: [],
+      })
+    }
+
+    // Sort by date (newest first) and limit to 30 items
+    results.sort((a, b) => {
+      const dateA = new Date(a.pubDate || 0).getTime()
+      const dateB = new Date(b.pubDate || 0).getTime()
+      return dateB - dateA
+    })
+
+    return JSON.stringify({
+      success: true,
+      message: `从 ${rssFeedUrls ? rssFeedUrls.length + 1 : 1} 个来源找到 ${results.length} 条新闻`,
+      items: results.slice(0, 30),
+    })
+  } catch (error: any) {
+    console.error('[ACTION] searchMultipleSources error:', error)
     return JSON.stringify({
       success: false,
       message: `搜索失败: ${error.message}`,
@@ -138,7 +241,7 @@ async function searchGoogleNews(keyword: string): Promise<string> {
 
 /**
  * Lambda handler for Bedrock Agent Action Group
- * Handles the action group invocation format
+ * Handles multiple actions for news search
  */
 export async function handler(event: any): Promise<any> {
   console.log('[ACTION GROUP] Event:', JSON.stringify(event, null, 2))
@@ -150,7 +253,7 @@ export async function handler(event: any): Promise<any> {
   console.log(`[ACTION GROUP] Action: ${actionGroup}, Path: ${apiPath}`)
 
   try {
-    // Handle searchGoogleNews action
+    // Action 1: Search Google News
     if (apiPath === '/searchGoogleNews') {
       const keywordParam = parameters.find((p: any) => p.name === 'keyword')
       const keyword = keywordParam?.value || ''
@@ -173,6 +276,89 @@ export async function handler(event: any): Promise<any> {
       }
 
       const result = await searchGoogleNews(keyword)
+
+      return {
+        messageVersion: '1.0',
+        response: {
+          actionGroup,
+          apiPath,
+          httpMethod: 'POST',
+          httpStatusCode: 200,
+          responseBody: {
+            'application/json': {
+              body: result,
+            },
+          },
+        },
+      }
+    }
+
+    // Action 2: Fetch custom RSS feed
+    if (apiPath === '/fetchRssFeed') {
+      const urlParam = parameters.find((p: any) => p.name === 'url')
+      const url = urlParam?.value || ''
+
+      if (!url) {
+        return {
+          messageVersion: '1.0',
+          response: {
+            actionGroup,
+            apiPath,
+            httpMethod: 'POST',
+            httpStatusCode: 400,
+            responseBody: {
+              'application/json': {
+                body: JSON.stringify({ success: false, message: '缺少 url 参数', items: [] }),
+              },
+            },
+          },
+        }
+      }
+
+      const result = await fetchRssFeed(url)
+
+      return {
+        messageVersion: '1.0',
+        response: {
+          actionGroup,
+          apiPath,
+          httpMethod: 'POST',
+          httpStatusCode: 200,
+          responseBody: {
+            'application/json': {
+              body: result,
+            },
+          },
+        },
+      }
+    }
+
+    // Action 3: Search multiple sources
+    if (apiPath === '/searchMultipleSources') {
+      const keywordParam = parameters.find((p: any) => p.name === 'keyword')
+      const rssFeedsParam = parameters.find((p: any) => p.name === 'rssFeedUrls')
+
+      const keyword = keywordParam?.value || ''
+      const rssFeedUrls = rssFeedsParam?.value ? JSON.parse(rssFeedsParam.value) : []
+
+      if (!keyword) {
+        return {
+          messageVersion: '1.0',
+          response: {
+            actionGroup,
+            apiPath,
+            httpMethod: 'POST',
+            httpStatusCode: 400,
+            responseBody: {
+              'application/json': {
+                body: JSON.stringify({ success: false, message: '缺少 keyword 参数', items: [] }),
+              },
+            },
+          },
+        }
+      }
+
+      const result = await searchMultipleSources(keyword, rssFeedUrls)
 
       return {
         messageVersion: '1.0',

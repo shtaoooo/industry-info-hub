@@ -3,13 +3,13 @@
   "info": {
     "title": "News Search Action Group API",
     "version": "1.0.0",
-    "description": "API for searching Google News RSS"
+    "description": "API for searching news from multiple sources including Google News and custom RSS feeds"
   },
   "paths": {
     "/searchGoogleNews": {
       "post": {
         "summary": "Search Google News by keyword",
-        "description": "Searches Google News RSS feed for articles matching the given keyword and returns structured news data",
+        "description": "Searches Google News RSS feed for articles matching the given keyword. Use this when you need general news coverage from Google News.",
         "operationId": "searchGoogleNews",
         "requestBody": {
           "required": true,
@@ -30,53 +30,146 @@
         },
         "responses": {
           "200": {
-            "description": "Successful response with news items",
+            "description": "Successful response with news items from Google News",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "description": "Whether the search was successful"
-                    },
-                    "message": {
-                      "type": "string",
-                      "description": "Status message"
-                    },
-                    "items": {
-                      "type": "array",
-                      "description": "Array of news items found",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "title": {
-                            "type": "string",
-                            "description": "News article title"
-                          },
-                          "link": {
-                            "type": "string",
-                            "description": "URL to the full article"
-                          },
-                          "description": {
-                            "type": "string",
-                            "description": "Brief description or excerpt"
-                          },
-                          "pubDate": {
-                            "type": "string",
-                            "description": "Publication date"
-                          },
-                          "source": {
-                            "type": "string",
-                            "description": "News source name"
-                          }
-                        }
-                      }
-                    }
-                  }
+                  "$ref": "#/components/schemas/NewsResponse"
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/fetchRssFeed": {
+      "post": {
+        "summary": "Fetch news from a specific RSS feed URL",
+        "description": "Fetches and parses news from a custom RSS feed URL. Use this when you have a specific news source URL to fetch from.",
+        "operationId": "fetchRssFeed",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "description": "The RSS feed URL to fetch news from (e.g., https://feeds.bbci.co.uk/news/rss.xml)"
+                  }
+                },
+                "required": ["url"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response with news items from the RSS feed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NewsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/searchMultipleSources": {
+      "post": {
+        "summary": "Search news from multiple sources simultaneously",
+        "description": "Searches Google News and optionally multiple custom RSS feeds, then combines and sorts results. Use this when you want comprehensive coverage from multiple sources.",
+        "operationId": "searchMultipleSources",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "keyword": {
+                    "type": "string",
+                    "description": "The search keyword or phrase"
+                  },
+                  "rssFeedUrls": {
+                    "type": "array",
+                    "description": "Optional array of RSS feed URLs to search in addition to Google News",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": ["keyword"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response with combined news items from all sources",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NewsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "NewsResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "Whether the search was successful"
+          },
+          "source": {
+            "type": "string",
+            "description": "The source of the news (e.g., 'Google News', RSS URL)"
+          },
+          "message": {
+            "type": "string",
+            "description": "Status message"
+          },
+          "items": {
+            "type": "array",
+            "description": "Array of news items found",
+            "items": {
+              "$ref": "#/components/schemas/NewsItem"
+            }
+          }
+        }
+      },
+      "NewsItem": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "News article title"
+          },
+          "link": {
+            "type": "string",
+            "description": "URL to the full article"
+          },
+          "description": {
+            "type": "string",
+            "description": "Brief description or excerpt of the article"
+          },
+          "pubDate": {
+            "type": "string",
+            "description": "Publication date in RFC 822 format"
+          },
+          "source": {
+            "type": "string",
+            "description": "News source name or publisher"
           }
         }
       }
