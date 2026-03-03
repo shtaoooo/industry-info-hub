@@ -11,6 +11,7 @@ import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as amplify from 'aws-cdk-lib/aws-amplify';
+import * as bedrock from 'aws-cdk-lib/aws-bedrock';
 import * as path from 'path';
 
 export class IndustryPortalStack extends cdk.Stack {
@@ -277,7 +278,131 @@ export class IndustryPortalStack extends cdk.Stack {
     const blogsManagementFn = createFunction('BlogsManagement', 'blogsManagement');
     const accountsManagementFn = createFunction('AccountsManagement', 'accountsManagement');
     const copilotAgentFn = createFunction('CopilotAgent', 'copilotAgent', 60, 1024);
-    const newsAgentFn = createFunction('NewsAgent', 'newsAgent', 120, 1024);
+    const newsAgentActionGroupFn = createFunction('NewsAgentActionGroup', 'newsAgentActionGroup', 30, 512);
+    const newsAgentOrchestratorFn = createFunction('NewsAgentOrchestrator', 'newsAgentOrchestrator', 120, 1024);
+
+    // Bedrock Agent for News Search
+    // Create IAM role for Bedrock Agent
+    const bedrockAgentRole = new iam.Role(this, 'BedrockAgentRole', {
+      assumedBy: new iam.ServicePrincipal('bedrock.amazonaws.com'),
+      description: 'Role for Bedrock News Agent',
+    });
+
+    // Grant Bedrock Agent permission to invoke the action group Lambda
+    newsAgentActionGroupFn.grantInvoke(bedrockAgentRole);
+
+    // Grant Bedrock Agent permission to invoke foundation models
+    bedrockAgentRole.addToPolicy(new iam.PolicyStatement({
+      actions: ['bedrock:InvokeModel'],
+      resources: ['*'],
+    }));
+
+    // Create Bedrock Agent using L1 construct (CfnAgent)
+    const newsAgent = new bedrock.CfnAgent(this, 'NewsAgent', {
+      agentName: 'IndustryPortalNewsAgent',
+      agentResourceRoleArn: bedrockAgentRole.roleArn,
+      foundationModel: 'anthropic.claude-3-sonnet-20240229-v1:0',
+      instruction: `你是一个专业的新闻编辑助手。你的任务是帮助用户搜索和整理新闻。
+
+你有一个工具 searchGoogleNews 可以搜索 Google News。当用户要求搜索新闻时：
+1. 使用 searchGoogleNews 工具搜索相关新闻
+2. 分析返回的新闻列表
+3. 筛选出最相关的新闻（最多10条）
+4. 为每条新闻写一个200字左右的中文概括摘要
+5. 按照用户要求的JSON格式输出结果
+
+重要规则：
+- 摘要要用中文，简洁清晰
+- 保留原文链接和来源信息
+- 如果没有发布时间，使用当前日期
+- 严格按照用户要求的格式输出`,
+      description: 'Agent for searching and summarizing news from Google News RSS',
+      actionGroups: [
+        {
+          actionGroupName: 'NewsSearchActions',
+          actionGroupExecutor: {
+            lambda: newsAgentActionGroupFn.functionArn,
+          },
+          apiSchema: {
+            payload: JSON.stringify({
+              openapi: '3.0.0',
+              info: {
+                title: 'News Search Action Group API',
+                version: '1.0.0',
+                description: 'API for searching Google News RSS',
+              },
+              paths: {
+                '/searchGoogleNews': {
+                  post: {
+                    summary: 'Search Google News by keyword',
+                    description: 'Searches Google News RSS feed for articles matching the given keyword',
+                    operationId: 'searchGoogleNews',
+                    requestBody: {
+                      required: true,
+                      content: {
+                        'application/json': {
+                          schema: {
+                            type: 'object',
+                            properties: {
+                              keyword: {
+                                type: 'string',
+                                description: 'The search keyword or phrase',
+                              },
+                            },
+                            required: ['keyword'],
+                          },
+                        },
+                      },
+                    },
+                    responses: {
+                      '200': {
+                        description: 'Successful response with news items',
+                        content: {
+                          'application/json': {
+                            schema: {
+                              type: 'object',
+                              properties: {
+                                success: { type: 'boolean' },
+                                message: { type: 'string' },
+                                items: {
+                                  type: 'array',
+                                  items: {
+                                    type: 'object',
+                                    properties: {
+                                      title: { type: 'string' },
+                                      link: { type: 'string' },
+                                      description: { type: 'string' },
+                                      pubDate: { type: 'string' },
+                                      source: { type: 'string' },
+                                    },
+                                  },
+                                },
+                              },
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            }),
+          },
+          description: 'Action group for searching Google News',
+        },
+      ],
+    });
+
+    // Create Agent Alias
+    const newsAgentAlias = new bedrock.CfnAgentAlias(this, 'NewsAgentAlias', {
+      agentId: newsAgent.attrAgentId,
+      agentAliasName: 'prod',
+      description: 'Production alias for News Agent',
+    });
+
+    // Add agent ID and alias to orchestrator Lambda environment
+    newsAgentOrchestratorFn.addEnvironment('NEWS_AGENT_ID', newsAgent.attrAgentId);
+    newsAgentOrchestratorFn.addEnvironment('NEWS_AGENT_ALIAS_ID', newsAgentAlias.attrAgentAliasId);
 
     // Grant DynamoDB permissions
     industriesTable.grantReadWriteData(industryManagementFn);
@@ -337,12 +462,11 @@ export class IndustryPortalStack extends cdk.Stack {
       resources: ['*'],
     }));
 
-    // News Agent permissions
-    industriesTable.grantReadData(newsAgentFn);
-    newsFeedsTable.grantReadData(newsAgentFn);
-    newsAgentFn.addToRolePolicy(new iam.PolicyStatement({
-      actions: ['bedrock:InvokeModel'],
-      resources: ['*'],
+    // News Agent Orchestrator permissions
+    industriesTable.grantReadData(newsAgentOrchestratorFn);
+    newsAgentOrchestratorFn.addToRolePolicy(new iam.PolicyStatement({
+      actions: ['bedrock:InvokeAgent'],
+      resources: [newsAgent.attrAgentArn],
     }));
 
     // Grant S3 permissions
@@ -496,7 +620,7 @@ export class IndustryPortalStack extends cdk.Stack {
     addRoute('/public/copilot/chat', apigatewayv2.HttpMethod.POST, copilotAgentFn);
 
     // News Agent route
-    addRoute('/admin/news-agent/search', apigatewayv2.HttpMethod.POST, newsAgentFn);
+    addRoute('/admin/news-agent/search', apigatewayv2.HttpMethod.POST, newsAgentOrchestratorFn);
 
     // CloudFront OAI for S3 (commented out - not using CloudFront for now)
     // const oai = new cloudfront.OriginAccessIdentity(this, 'OAI', {
