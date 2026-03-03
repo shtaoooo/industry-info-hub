@@ -1,6 +1,6 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
 import { BedrockRuntimeClient, InvokeModelCommand } from '@aws-sdk/client-bedrock-runtime'
-import { QueryCommand, ScanCommand } from '@aws-sdk/lib-dynamodb'
+import { ScanCommand } from '@aws-sdk/lib-dynamodb'
 import { successResponse, errorResponse } from '../utils/response'
 import { docClient, TABLE_NAMES } from '../utils/dynamodb'
 import { getUserFromEvent, hasIndustryAccess } from '../utils/auth'
@@ -97,22 +97,6 @@ function formatFeedItems(items: Array<{ title: string; link: string; description
   return items.map((item, i) => 
     `[${i + 1}] 标题: ${item.title}\n链接: ${item.link}\n时间: ${item.pubDate}\n作者: ${item.author}\n内容: ${item.description}`
   ).join('\n\n')
-}
-
-/**
- * Fetch news feeds for an industry from DynamoDB
- */
-async function getNewsFeeds(industryId: string): Promise<Array<{ name: string; url: string }>> {
-  const result = await docClient.send(
-    new QueryCommand({
-      TableName: TABLE_NAMES.NEWS_FEEDS,
-      KeyConditionExpression: 'PK = :pk',
-      ExpressionAttributeValues: {
-        ':pk': `INDUSTRY#${industryId}`,
-      },
-    })
-  )
-  return (result.Items || []).map((item) => ({ name: item.name, url: item.url }))
 }
 
 /**
@@ -242,7 +226,7 @@ ${rssHint}
 }
 
 /**
- * Handle news search request
+ * Handle news search request using Google News RSS
  * POST /admin/news-agent/search
  */
 async function handleSearch(event: APIGatewayProxyEvent, user: any): Promise<APIGatewayProxyResult> {
@@ -269,33 +253,30 @@ async function handleSearch(event: APIGatewayProxyEvent, user: any): Promise<API
     )
     const industryName = industryResult.Items?.[0]?.name || '未知行业'
 
-    // Get news feeds for this industry
-    const feeds = await getNewsFeeds(industryId)
-    console.log(`[AGENT] Industry: ${industryName} (${industryId}), Query: ${query}, Feeds count: ${feeds.length}`)
-    feeds.forEach((f) => console.log(`[AGENT] Feed: ${f.name} -> ${f.url}`))
+    console.log(`[AGENT] Industry: ${industryName} (${industryId}), Query: ${query}`)
 
-    if (feeds.length === 0) {
-      return successResponse({ news: [], message: '该行业暂无配置订阅源，请先在设置中添加订阅源' })
-    }
+    // Build Google News RSS URL with query
+    // Format: https://news.google.com/rss/search?q={query}&hl=zh-CN&gl=CN&ceid=CN:zh-Hans
+    const encodedQuery = encodeURIComponent(query)
+    const googleNewsUrl = `https://news.google.com/rss/search?q=${encodedQuery}&hl=zh-CN&gl=CN&ceid=CN:zh-Hans`
+    
+    console.log(`[AGENT] Fetching Google News RSS: ${googleNewsUrl}`)
 
-    // Fetch content from each feed (parallel, max 5)
-    const feedsToFetch = feeds.slice(0, 5)
-    const feedContents = await Promise.all(
-      feedsToFetch.map(async (feed) => {
-        const { content, isRss } = await fetchFeedContent(feed.url)
-        return { name: feed.name, url: feed.url, content, isRss }
+    // Fetch Google News RSS feed
+    const { content, isRss } = await fetchFeedContent(googleNewsUrl)
+    
+    if (!content || content.length < 100) {
+      console.log(`[AGENT] Failed to fetch Google News RSS or content too short: ${content.length} chars`)
+      return successResponse({ 
+        news: [], 
+        message: '无法从 Google News 获取新闻，请稍后重试或更换关键词' 
       })
-    )
-
-    const validFeeds = feedContents.filter((f) => f.content.length > 50)
-    console.log(`[AGENT] Fetched ${feedContents.length} feeds, ${validFeeds.length} have valid content`)
-    feedContents.forEach((f) => console.log(`[AGENT] Feed: ${f.name} - type: ${f.isRss ? 'RSS' : 'HTML'}, length: ${f.content.length}`))
-
-    if (validFeeds.length === 0) {
-      return successResponse({ news: [], message: '无法从订阅源获取有效内容，请检查订阅源链接是否可访问。建议使用RSS订阅源链接（通常以/feed/或/rss结尾）' })
     }
+
+    console.log(`[AGENT] Fetched Google News RSS - type: ${isRss ? 'RSS' : 'HTML'}, length: ${content.length}`)
 
     // Use Bedrock to extract and summarize news
+    const feedContents = [{ name: 'Google News', url: googleNewsUrl, content, isRss }]
     const resultText = await extractNewsFromContent(feedContents, query, industryName)
     console.log(`[AGENT] Bedrock response length: ${resultText.length}, Preview: ${resultText.substring(0, 500)}`)
 
@@ -332,7 +313,7 @@ async function handleSearch(event: APIGatewayProxyEvent, user: any): Promise<API
       console.log(`[AGENT] Found ${parsed.news.length} news items`)
       
       if (parsed.news.length === 0) {
-        return successResponse({ news: [], message: '订阅源中未找到与关键词相关的新闻，请尝试其他关键词或检查订阅源内容' })
+        return successResponse({ news: [], message: 'Google News 中未找到与关键词相关的新闻，请尝试其他关键词' })
       }
       
       return successResponse(parsed)
