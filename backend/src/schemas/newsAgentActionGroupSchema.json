@@ -1,0 +1,85 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "News Search Action Group API",
+    "version": "1.0.0",
+    "description": "API for searching Google News RSS"
+  },
+  "paths": {
+    "/searchGoogleNews": {
+      "post": {
+        "summary": "Search Google News by keyword",
+        "description": "Searches Google News RSS feed for articles matching the given keyword and returns structured news data",
+        "operationId": "searchGoogleNews",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "keyword": {
+                    "type": "string",
+                    "description": "The search keyword or phrase to find news articles about"
+                  }
+                },
+                "required": ["keyword"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response with news items",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "description": "Whether the search was successful"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Status message"
+                    },
+                    "items": {
+                      "type": "array",
+                      "description": "Array of news items found",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "title": {
+                            "type": "string",
+                            "description": "News article title"
+                          },
+                          "link": {
+                            "type": "string",
+                            "description": "URL to the full article"
+                          },
+                          "description": {
+                            "type": "string",
+                            "description": "Brief description or excerpt"
+                          },
+                          "pubDate": {
+                            "type": "string",
+                            "description": "Publication date"
+                          },
+                          "source": {
+                            "type": "string",
+                            "description": "News source name"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
