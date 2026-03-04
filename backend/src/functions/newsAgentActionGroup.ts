@@ -352,9 +352,16 @@ export async function handler(event: any): Promise<any> {
 
   const actionGroup = event.actionGroup
   const apiPath = event.apiPath
-  const parameters = event.parameters || []
+  
+  // Extract parameters from requestBody if available, otherwise use parameters array
+  let parameters = event.parameters || []
+  
+  if (event.requestBody?.content?.['application/json']?.properties) {
+    parameters = event.requestBody.content['application/json'].properties
+  }
 
   console.log(`[ACTION GROUP] Action: ${actionGroup}, Path: ${apiPath}`)
+  console.log(`[ACTION GROUP] Parameters:`, JSON.stringify(parameters, null, 2))
 
   try {
     // Action 1: Search Google News
