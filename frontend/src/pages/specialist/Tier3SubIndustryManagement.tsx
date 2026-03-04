@@ -71,6 +71,8 @@ const Tier3SubIndustryManagement: React.FC = () => {
       parentSubIndustryId: subIndustry.parentSubIndustryId,
       name: subIndustry.name,
       definitionCn: subIndustry.definitionCn || subIndustry.definition || '',
+      typicalGlobalCompanies: subIndustry.typicalGlobalCompanies?.join('\n') || '',
+      typicalChineseCompanies: subIndustry.typicalChineseCompanies?.join('\n') || '',
     })
     setModalVisible(true)
   }
@@ -80,11 +82,28 @@ const Tier3SubIndustryManagement: React.FC = () => {
       const values = await form.validateFields()
       setSubmitting(true)
 
+      // Parse company lists from textarea (one per line)
+      const typicalGlobalCompanies = values.typicalGlobalCompanies
+        ? values.typicalGlobalCompanies
+            .split('\n')
+            .map((c: string) => c.trim())
+            .filter((c: string) => c.length > 0)
+        : []
+
+      const typicalChineseCompanies = values.typicalChineseCompanies
+        ? values.typicalChineseCompanies
+            .split('\n')
+            .map((c: string) => c.trim())
+            .filter((c: string) => c.length > 0)
+        : []
+
       if (editingSubIndustry) {
         const updateData: UpdateSubIndustryRequest = {
           name: values.name,
           definition: values.definitionCn, // 使用中文定义作为主定义
           definitionCn: values.definitionCn,
+          typicalGlobalCompanies,
+          typicalChineseCompanies,
         }
         await subIndustryService.update(editingSubIndustry.id, updateData)
         message.success('3级子行业更新成功')
@@ -101,8 +120,8 @@ const Tier3SubIndustryManagement: React.FC = () => {
           name: values.name,
           definition: values.definitionCn, // 使用中文定义作为主定义
           definitionCn: values.definitionCn,
-          typicalGlobalCompanies: [],
-          typicalChineseCompanies: [],
+          typicalGlobalCompanies,
+          typicalChineseCompanies,
           level: 'Tier3',
           parentSubIndustryId: values.parentSubIndustryId,
         }
@@ -264,6 +283,12 @@ const Tier3SubIndustryManagement: React.FC = () => {
             ]}
           >
             <TextArea rows={4} placeholder="请输入定义" />
+          </Form.Item>
+          <Form.Item name="typicalGlobalCompanies" label="典型国外企业" tooltip="每行输入一个企业名称">
+            <TextArea rows={3} placeholder="每行输入一个企业名称，例如：&#10;Apple&#10;Microsoft&#10;Google" />
+          </Form.Item>
+          <Form.Item name="typicalChineseCompanies" label="典型国内企业" tooltip="每行输入一个企业名称">
+            <TextArea rows={3} placeholder="每行输入一个企业名称，例如：&#10;华为&#10;腾讯&#10;阿里巴巴" />
           </Form.Item>
         </Form>
       </Modal>
