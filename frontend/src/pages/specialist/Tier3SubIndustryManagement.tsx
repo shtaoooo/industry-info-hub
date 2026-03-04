@@ -11,12 +11,15 @@ const { Option } = Select
 
 const Tier3SubIndustryManagement: React.FC = () => {
   const [tier3SubIndustries, setTier3SubIndustries] = useState<SubIndustry[]>([])
+  const [filteredTier3SubIndustries, setFilteredTier3SubIndustries] = useState<SubIndustry[]>([])
   const [tier2SubIndustries, setTier2SubIndustries] = useState<SubIndustry[]>([])
   const [industries, setIndustries] = useState<Industry[]>([])
   const [loading, setLoading] = useState(false)
   const [modalVisible, setModalVisible] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [editingSubIndustry, setEditingSubIndustry] = useState<SubIndustry | null>(null)
+  const [selectedIndustryFilter, setSelectedIndustryFilter] = useState<string | undefined>(undefined)
+  const [selectedTier2Filter, setSelectedTier2Filter] = useState<string | undefined>(undefined)
   const [form] = Form.useForm()
 
   const fetchSubIndustries = useCallback(async () => {
@@ -29,7 +32,26 @@ const Tier3SubIndustryManagement: React.FC = () => {
       const tier2 = data.filter((si) =>
         si.level === 'Tier2-individual' || si.level === 'Tier2-Group' || (!si.level && !si.parentSubIndustryId)
       )
+      
+      // 排序：按所属行业、所属2级子行业、3级子行业名称首字母排序
+      tier3.sort((a, b) => {
+        const industryA = getIndustryName(a.industryId)
+        const industryB = getIndustryName(b.industryId)
+        if (industryA !== industryB) {
+          return industryA.localeCompare(industryB, 'zh-CN')
+        }
+        
+        const parentA = getParentSubIndustryName(a.parentSubIndustryId)
+        const parentB = getParentSubIndustryName(b.parentSubIndustryId)
+        if (parentA !== parentB) {
+          return parentA.localeCompare(parentB, 'zh-CN')
+        }
+        
+        return a.name.localeCompare(b.name, 'zh-CN')
+      })
+      
       setTier3SubIndustries(tier3)
+      setFilteredTier3SubIndustries(tier3)
       setTier2SubIndustries(tier2)
     } catch (error: any) {
       message.error(error.message || '获取子行业列表失败')
@@ -51,6 +73,35 @@ const Tier3SubIndustryManagement: React.FC = () => {
     fetchSubIndustries()
     fetchIndustries()
   }, [fetchSubIndustries, fetchIndustries])
+
+  // 筛选逻辑
+  useEffect(() => {
+    let filtered = [...tier3SubIndustries]
+    
+    if (selectedIndustryFilter) {
+      filtered = filtered.filter(si => si.industryId === selectedIndustryFilter)
+    }
+    
+    if (selectedTier2Filter) {
+      filtered = filtered.filter(si => si.parentSubIndustryId === selectedTier2Filter)
+    }
+    
+    setFilteredTier3SubIndustries(filtered)
+  }, [selectedIndustryFilter, selectedTier2Filter, tier3SubIndustries])
+
+  const handleIndustryFilterChange = (value: string | undefined) => {
+    setSelectedIndustryFilter(value)
+    setSelectedTier2Filter(undefined) // 重置2级子行业筛选
+  }
+
+  const handleTier2FilterChange = (value: string | undefined) => {
+    setSelectedTier2Filter(value)
+  }
+
+  // 获取可用的2级子行业选项（基于选中的行业）
+  const availableTier2Options = selectedIndustryFilter
+    ? tier2SubIndustries.filter(si => si.industryId === selectedIndustryFilter)
+    : tier2SubIndustries
 
   const handleCreate = () => {
     setEditingSubIndustry(null)
@@ -113,7 +164,7 @@ const Tier3SubIndustryManagement: React.FC = () => {
         const createData: CreateSubIndustryRequest = {
           industryId: parentSubIndustry.industryId,
           name: values.name,
-          definition: values.definitionCn, // 使用中文定义作为主定义
+          definition: undefined, // 英文定义保持 null/undefined
           definitionCn: values.definitionCn,
           typicalGlobalCompanies,
           typicalChineseCompanies,
@@ -222,9 +273,40 @@ const Tier3SubIndustryManagement: React.FC = () => {
         </Button>
       </div>
 
+      {/* 筛选器 */}
+      <div style={{ marginBottom: 16, display: 'flex', gap: 16 }}>
+        <Select
+          placeholder="筛选所属行业"
+          style={{ width: 200 }}
+          allowClear
+          value={selectedIndustryFilter}
+          onChange={handleIndustryFilterChange}
+        >
+          {industries.map((industry) => (
+            <Option key={industry.id} value={industry.id}>
+              {industry.name}
+            </Option>
+          ))}
+        </Select>
+        <Select
+          placeholder="筛选所属2级子行业"
+          style={{ width: 250 }}
+          allowClear
+          value={selectedTier2Filter}
+          onChange={handleTier2FilterChange}
+          disabled={!selectedIndustryFilter}
+        >
+          {availableTier2Options.map((subIndustry) => (
+            <Option key={subIndustry.id} value={subIndustry.id}>
+              {subIndustry.name}
+            </Option>
+          ))}
+        </Select>
+      </div>
+
       <Table
         columns={columns}
-        dataSource={tier3SubIndustries}
+        dataSource={filteredTier3SubIndustries}
         rowKey="id"
         loading={loading}
         pagination={{ pageSize: 10, showTotal: (total) => `共 ${total} 条` }}
