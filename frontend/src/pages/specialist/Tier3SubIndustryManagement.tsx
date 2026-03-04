@@ -70,8 +70,7 @@ const Tier3SubIndustryManagement: React.FC = () => {
     form.setFieldsValue({
       parentSubIndustryId: subIndustry.parentSubIndustryId,
       name: subIndustry.name,
-      definition: subIndustry.definition,
-      definitionCn: subIndustry.definitionCn || '',
+      definitionCn: subIndustry.definitionCn || subIndustry.definition || '',
     })
     setModalVisible(true)
   }
@@ -84,7 +83,7 @@ const Tier3SubIndustryManagement: React.FC = () => {
       if (editingSubIndustry) {
         const updateData: UpdateSubIndustryRequest = {
           name: values.name,
-          definition: values.definition,
+          definition: values.definitionCn, // 使用中文定义作为主定义
           definitionCn: values.definitionCn,
         }
         await subIndustryService.update(editingSubIndustry.id, updateData)
@@ -100,7 +99,7 @@ const Tier3SubIndustryManagement: React.FC = () => {
         const createData: CreateSubIndustryRequest = {
           industryId: parentSubIndustry.industryId,
           name: values.name,
-          definition: values.definition,
+          definition: values.definitionCn, // 使用中文定义作为主定义
           definitionCn: values.definitionCn,
           typicalGlobalCompanies: [],
           typicalChineseCompanies: [],
@@ -257,21 +256,14 @@ const Tier3SubIndustryManagement: React.FC = () => {
             <Input placeholder="请输入3级子行业名称" />
           </Form.Item>
           <Form.Item
-            name="definition"
-            label="定义（英文）"
+            name="definitionCn"
+            label="定义"
             rules={[
               { required: true, message: '请输入定义' },
               { max: 1000, message: '定义不能超过1000个字符' },
             ]}
           >
-            <TextArea rows={4} placeholder="请输入定义（英文）" />
-          </Form.Item>
-          <Form.Item
-            name="definitionCn"
-            label="定义（中文）"
-            rules={[{ max: 1000, message: '定义不能超过1000个字符' }]}
-          >
-            <TextArea rows={4} placeholder="请输入定义（中文）" />
+            <TextArea rows={4} placeholder="请输入定义" />
           </Form.Item>
         </Form>
       </Modal>
