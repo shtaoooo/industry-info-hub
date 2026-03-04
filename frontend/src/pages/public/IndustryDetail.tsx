@@ -247,15 +247,36 @@ const IndustryDetail: React.FC = () => {
                               fontSize: 15,
                               fontWeight: 600,
                               color: '#1d1d1f',
-                              display: '-webkit-box',
-                              WebkitLineClamp: 5,
-                              WebkitBoxOrient: 'vertical',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
                               lineHeight: 1.5,
                             }}
                           >
-                            {subIndustry.name}
+                            <div
+                              style={{
+                                display: '-webkit-box',
+                                WebkitLineClamp: 5,
+                                WebkitBoxOrient: 'vertical',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                marginBottom: 4,
+                              }}
+                            >
+                              {subIndustry.name}
+                            </div>
+                            {typeof subIndustry.priority === 'number' && (
+                              <div style={{ fontSize: 12 }}>
+                                {Array.from({ length: 5 }, (_, i) => (
+                                  <span
+                                    key={i}
+                                    style={{
+                                      color: i < (subIndustry.priority ?? 0) ? '#ffb800' : '#d2d2d7',
+                                      marginRight: 1,
+                                    }}
+                                  >
+                                    ⭐
+                                  </span>
+                                ))}
+                              </div>
+                            )}
                           </div>
                           <div
                             style={{
@@ -385,16 +406,13 @@ const IndustryDetail: React.FC = () => {
                                     <span
                                       key={i}
                                       style={{
-                                        color: i < tier3.priority ? '#ffb800' : '#d2d2d7',
+                                        color: i < (tier3.priority ?? 0) ? '#ffb800' : '#d2d2d7',
                                         marginRight: 1,
                                       }}
                                     >
                                       ⭐
                                     </span>
                                   ))}
-                                  <span style={{ marginLeft: 4, fontSize: 10, color: '#86868b' }}>
-                                    (P: {tier3.priority})
-                                  </span>
                                 </div>
                               )}
                             </div>
