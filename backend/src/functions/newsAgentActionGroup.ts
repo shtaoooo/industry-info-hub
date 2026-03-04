@@ -182,8 +182,112 @@ async function fetchRssFeed(url: string): Promise<string> {
 }
 
 /**
- * Search multiple news sources (combines Google News + custom RSS feeds)
+ * Search Google News with multiple keywords and optional date filtering
  */
+async function searchGoogleNewsAdvanced(
+  keywords: string[],
+  daysBack?: number
+): Promise<string> {
+  try {
+    console.log(`[ACTION] searchGoogleNewsAdvanced called with keywords: ${keywords.join(', ')}, daysBack: ${daysBack || 'all'}`)
+
+    const allResults: any[] = []
+    const seenUrls = new Set<string>()
+
+    // Search for each keyword
+    for (const keyword of keywords.slice(0, 5)) {
+      // Limit to 5 keywords
+      const encodedQuery = encodeURIComponent(keyword)
+      
+      // Google News RSS supports 'when' parameter for time filtering
+      // when=7d means last 7 days, when=1h means last hour, etc.
+      let googleNewsUrl = `https://news.google.com/rss/search?q=${encodedQuery}&hl=zh-CN&gl=CN&ceid=CN:zh-Hans`
+      
+      // Add time filter if specified
+      if (daysBack && daysBack > 0) {
+        googleNewsUrl += `&when=${daysBack}d`
+      }
+
+      console.log(`[ACTION] Fetching: ${googleNewsUrl}`)
+
+      const headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        Accept: 'application/rss+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+      }
+
+      try {
+        const rawContent = await httpGet(googleNewsUrl, headers)
+
+        if (rawContent && rawContent.length > 100) {
+          const items = parseRssItems(rawContent)
+          console.log(`[ACTION] Keyword "${keyword}": found ${items.length} items`)
+
+          // Deduplicate by URL
+          for (const item of items) {
+            if (!seenUrls.has(item.link)) {
+              seenUrls.add(item.link)
+              allResults.push({
+                ...item,
+                searchKeyword: keyword,
+                source: 'Google News',
+              })
+            }
+          }
+        }
+      } catch (error: any) {
+        console.error(`[ACTION] Failed to fetch keyword "${keyword}":`, error.message)
+        // Continue with other keywords
+      }
+    }
+
+    // Additional date filtering on client side if needed
+    if (daysBack && daysBack > 0) {
+      const cutoffDate = new Date()
+      cutoffDate.setDate(cutoffDate.getDate() - daysBack)
+
+      const filtered = allResults.filter((item) => {
+        if (!item.pubDate) return true // Keep items without date
+        const itemDate = new Date(item.pubDate)
+        return itemDate >= cutoffDate
+      })
+
+      console.log(`[ACTION] Date filtered: ${allResults.length} -> ${filtered.length} items`)
+      allResults.length = 0
+      allResults.push(...filtered)
+    }
+
+    // Sort by date (newest first)
+    allResults.sort((a, b) => {
+      const dateA = new Date(a.pubDate || 0).getTime()
+      const dateB = new Date(b.pubDate || 0).getTime()
+      return dateB - dateA
+    })
+
+    if (allResults.length === 0) {
+      return JSON.stringify({
+        success: false,
+        message: `未找到关于 ${keywords.join('、')} 的新闻`,
+        items: [],
+      })
+    }
+
+    return JSON.stringify({
+      success: true,
+      source: 'Google News',
+      message: `从 Google News 找到 ${allResults.length} 条相关新闻（搜索关键词: ${keywords.join('、')}）`,
+      items: allResults.slice(0, 30),
+    })
+  } catch (error: any) {
+    console.error('[ACTION] searchGoogleNewsAdvanced error:', error)
+    return JSON.stringify({
+      success: false,
+      source: 'Google News',
+      message: `搜索失败: ${error.message}`,
+      items: [],
+    })
+  }
+}
 async function searchMultipleSources(keyword: string, rssFeedUrls?: string[]): Promise<string> {
   try {
     console.log(`[ACTION] searchMultipleSources called with keyword: ${keyword}, feeds: ${rssFeedUrls?.length || 0}`)
@@ -333,7 +437,50 @@ export async function handler(event: any): Promise<any> {
       }
     }
 
-    // Action 3: Search multiple sources
+    // Action 3: Search Google News with multiple keywords and date filter
+    if (apiPath === '/searchGoogleNewsAdvanced') {
+      const keywordsParam = parameters.find((p: any) => p.name === 'keywords')
+      const daysBackParam = parameters.find((p: any) => p.name === 'daysBack')
+
+      const keywords = keywordsParam?.value ? JSON.parse(keywordsParam.value) : []
+      const daysBack = daysBackParam?.value ? parseInt(daysBackParam.value) : undefined
+
+      if (!keywords || keywords.length === 0) {
+        return {
+          messageVersion: '1.0',
+          response: {
+            actionGroup,
+            apiPath,
+            httpMethod: 'POST',
+            httpStatusCode: 400,
+            responseBody: {
+              'application/json': {
+                body: JSON.stringify({ success: false, message: '缺少 keywords 参数', items: [] }),
+              },
+            },
+          },
+        }
+      }
+
+      const result = await searchGoogleNewsAdvanced(keywords, daysBack)
+
+      return {
+        messageVersion: '1.0',
+        response: {
+          actionGroup,
+          apiPath,
+          httpMethod: 'POST',
+          httpStatusCode: 200,
+          responseBody: {
+            'application/json': {
+              body: result,
+            },
+          },
+        },
+      }
+    }
+
+    // Action 4: Search multiple sources
     if (apiPath === '/searchMultipleSources') {
       const keywordParam = parameters.find((p: any) => p.name === 'keyword')
       const rssFeedsParam = parameters.find((p: any) => p.name === 'rssFeedUrls')

@@ -86,14 +86,23 @@ async function handleSearch(event: APIGatewayProxyEvent, user: any): Promise<API
     const prompt = `你是一个专业的新闻编辑助手。用户想要搜索关于"${query}"的最新新闻，行业背景是"${industryName}"。
 
 你有以下工具可以使用：
-1. searchGoogleNews - 从 Google News 搜索新闻（最常用，覆盖面广）
-2. fetchRssFeed - 从特定 RSS feed URL 获取新闻（当用户指定了特定来源时使用）
-3. searchMultipleSources - 同时搜索 Google News 和多个 RSS feeds（当需要综合多个来源时使用）
+1. searchGoogleNews(keyword) - 搜索单个关键词的 Google News（简单搜索）
+2. searchGoogleNewsAdvanced(keywords[], daysBack?) - 搜索多个关键词并支持时间过滤（高级搜索）
+   - keywords: 关键词数组，例如 ["油气 数字化", "油气 信息化", "OSDU"]
+   - daysBack: 可选，搜索过去N天的新闻，例如 10 表示过去10天
+3. fetchRssFeed(url) - 从特定 RSS feed URL 获取新闻
+4. searchMultipleSources(keyword, rssFeedUrls[]) - 综合 Google News 和多个 RSS feeds
 
-请根据用户需求选择合适的工具：
-- 如果用户只是想搜索某个关键词的新闻，使用 searchGoogleNews
-- 如果用户提到了特定的新闻网站或 RSS 源，使用 fetchRssFeed
-- 如果用户想要更全面的覆盖，使用 searchMultipleSources
+**工具选择指南**：
+- 如果用户提到"过去X天"、"最近X天"、"X天内"，使用 searchGoogleNewsAdvanced 并设置 daysBack
+- 如果用户提到多个关键词或主题（如"数字化、信息化、智能化"），使用 searchGoogleNewsAdvanced 并传入多个关键词
+- 如果只是简单的单关键词搜索，使用 searchGoogleNews
+- 如果用户指定了特定网站或 RSS 源，使用 fetchRssFeed
+
+**重要**：分析用户请求"${query}"，识别：
+- 是否有时间限制？（提取天数）
+- 有几个关键词或主题？（拆分成数组）
+- 是否需要特定来源？
 
 搜索完成后，请：
 1. 筛选出与"${query}"最相关的新闻（最多10条）

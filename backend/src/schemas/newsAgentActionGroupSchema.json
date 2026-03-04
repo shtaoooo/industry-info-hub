@@ -8,8 +8,8 @@
   "paths": {
     "/searchGoogleNews": {
       "post": {
-        "summary": "Search Google News by keyword",
-        "description": "Searches Google News RSS feed for articles matching the given keyword. Use this when you need general news coverage from Google News.",
+        "summary": "Search Google News by single keyword",
+        "description": "Searches Google News RSS feed for articles matching the given keyword. Use this for simple single-keyword searches.",
         "operationId": "searchGoogleNews",
         "requestBody": {
           "required": true,
@@ -31,6 +31,51 @@
         "responses": {
           "200": {
             "description": "Successful response with news items from Google News",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NewsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/searchGoogleNewsAdvanced": {
+      "post": {
+        "summary": "Search Google News with multiple keywords and date filtering",
+        "description": "Searches Google News for multiple keywords simultaneously with optional date range filtering. Use this when user specifies multiple search terms or wants news from a specific time period (e.g., 'last 7 days', 'past 10 days'). Results are deduplicated and sorted by date.",
+        "operationId": "searchGoogleNewsAdvanced",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "keywords": {
+                    "type": "array",
+                    "description": "Array of search keywords or phrases. Each keyword will be searched separately and results will be combined and deduplicated.",
+                    "items": {
+                      "type": "string"
+                    },
+                    "example": ["油气 数字化", "油气 信息化", "OSDU"]
+                  },
+                  "daysBack": {
+                    "type": "integer",
+                    "description": "Optional number of days to look back. For example, 7 means last 7 days, 10 means last 10 days. If not specified, searches all available news.",
+                    "example": 10
+                  }
+                },
+                "required": ["keywords"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response with deduplicated news items from all keywords",
             "content": {
               "application/json": {
                 "schema": {
