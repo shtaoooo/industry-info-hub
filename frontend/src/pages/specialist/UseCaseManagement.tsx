@@ -317,7 +317,6 @@ const UseCaseManagement: React.FC = () => {
           >
             <Select 
               placeholder="请选择Tier2子行业" 
-              disabled={!!editingUseCase}
               onChange={handleTier2Change}
             >
               {subIndustries
