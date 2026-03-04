@@ -305,7 +305,7 @@ export class IndustryPortalStack extends cdk.Stack {
     const newsAgent = new bedrock.CfnAgent(this, 'BedrockNewsAgent', {
       agentName: 'IndustryPortalNewsAgent',
       agentResourceRoleArn: bedrockAgentRole.roleArn,
-      foundationModel: 'anthropic.claude-3-sonnet-20240229-v1:0',
+      foundationModel: 'amazon.nova-premier-v1:0',
       instruction: `你是一个专业的新闻编辑助手。你的任务是帮助用户搜索和整理新闻。
 
 你有以下工具可以使用：
