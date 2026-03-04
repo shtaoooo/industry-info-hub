@@ -338,7 +338,10 @@ const IndustryDetail: React.FC = () => {
                           animation: 'slideDown 0.3s ease',
                         }}
                       >
-                        {tier3ByParent[subIndustry.id].map((tier3) => (
+                        {tier3ByParent[subIndustry.id].map((tier3) => {
+                          // Debug: log tier3 data
+                          console.log('Tier3 SubIndustry:', tier3.name, 'Priority:', tier3.priority, 'Type:', typeof tier3.priority)
+                          return (
                           <div
                             key={tier3.id}
                             onClick={() => handleSubIndustryClick(tier3.id)}
@@ -376,19 +379,22 @@ const IndustryDetail: React.FC = () => {
                               >
                                 {tier3.name}
                               </div>
-                              {tier3.priority && (
+                              {typeof tier3.priority === 'number' && (
                                 <div style={{ fontSize: 12 }}>
                                   {Array.from({ length: 5 }, (_, i) => (
                                     <span
                                       key={i}
                                       style={{
-                                        color: i < (tier3.priority || 0) ? '#ffb800' : '#d2d2d7',
+                                        color: i < tier3.priority ? '#ffb800' : '#d2d2d7',
                                         marginRight: 1,
                                       }}
                                     >
                                       ⭐
                                     </span>
                                   ))}
+                                  <span style={{ marginLeft: 4, fontSize: 10, color: '#86868b' }}>
+                                    (P: {tier3.priority})
+                                  </span>
                                 </div>
                               )}
                             </div>
@@ -444,7 +450,8 @@ const IndustryDetail: React.FC = () => {
                                 : '-'}
                             </div>
                           </div>
-                        ))}
+                          )
+                        })}
                       </div>
                     )}
                   </React.Fragment>
