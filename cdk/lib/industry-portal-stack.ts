@@ -420,7 +420,10 @@ export class IndustryPortalStack extends cdk.Stack {
     industriesTable.grantReadData(newsAgentOrchestratorFn);
     newsAgentOrchestratorFn.addToRolePolicy(new iam.PolicyStatement({
       actions: ['bedrock:InvokeAgent'],
-      resources: [newsAgent.attrAgentArn],
+      resources: [
+        newsAgent.attrAgentArn,
+        `${newsAgent.attrAgentArn}/*`, // Allow access to all agent aliases
+      ],
     }));
 
     // Grant S3 permissions
