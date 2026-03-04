@@ -449,7 +449,20 @@ export async function handler(event: any): Promise<any> {
       const keywordsParam = parameters.find((p: any) => p.name === 'keywords')
       const daysBackParam = parameters.find((p: any) => p.name === 'daysBack')
 
-      const keywords = keywordsParam?.value ? JSON.parse(keywordsParam.value) : []
+      // Parse keywords - Bedrock Agent sends array as string like "[item1, item2, item3]"
+      let keywords: string[] = []
+      if (keywordsParam?.value) {
+        const keywordsStr = keywordsParam.value.trim()
+        if (keywordsStr.startsWith('[') && keywordsStr.endsWith(']')) {
+          // Remove brackets and split by comma
+          const inner = keywordsStr.slice(1, -1)
+          keywords = inner.split(',').map((k: string) => k.trim()).filter((k: string) => k.length > 0)
+        } else {
+          // Single keyword
+          keywords = [keywordsStr]
+        }
+      }
+      
       const daysBack = daysBackParam?.value ? parseInt(daysBackParam.value) : undefined
 
       if (!keywords || keywords.length === 0) {
@@ -493,7 +506,18 @@ export async function handler(event: any): Promise<any> {
       const rssFeedsParam = parameters.find((p: any) => p.name === 'rssFeedUrls')
 
       const keyword = keywordParam?.value || ''
-      const rssFeedUrls = rssFeedsParam?.value ? JSON.parse(rssFeedsParam.value) : []
+      
+      // Parse RSS feed URLs - same format as keywords
+      let rssFeedUrls: string[] = []
+      if (rssFeedsParam?.value) {
+        const feedsStr = rssFeedsParam.value.trim()
+        if (feedsStr.startsWith('[') && feedsStr.endsWith(']')) {
+          const inner = feedsStr.slice(1, -1)
+          rssFeedUrls = inner.split(',').map((url: string) => url.trim()).filter((url: string) => url.length > 0)
+        } else {
+          rssFeedUrls = [feedsStr]
+        }
+      }
 
       if (!keyword) {
         return {
