@@ -361,15 +361,36 @@ const IndustryDetail: React.FC = () => {
                                 fontSize: 14,
                                 fontWeight: 500,
                                 color: '#1d1d1f',
-                                display: '-webkit-box',
-                                WebkitLineClamp: 4,
-                                WebkitBoxOrient: 'vertical',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
                                 lineHeight: 1.5,
                               }}
                             >
-                              {tier3.name}
+                              <div
+                                style={{
+                                  display: '-webkit-box',
+                                  WebkitLineClamp: 3,
+                                  WebkitBoxOrient: 'vertical',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  marginBottom: 4,
+                                }}
+                              >
+                                {tier3.name}
+                              </div>
+                              {tier3.priority && (
+                                <div style={{ fontSize: 12 }}>
+                                  {Array.from({ length: 5 }, (_, i) => (
+                                    <span
+                                      key={i}
+                                      style={{
+                                        color: i < (tier3.priority || 0) ? '#ffb800' : '#d2d2d7',
+                                        marginRight: 1,
+                                      }}
+                                    >
+                                      ⭐
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                             <div
                               style={{

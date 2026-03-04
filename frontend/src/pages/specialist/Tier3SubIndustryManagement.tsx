@@ -19,28 +19,22 @@ const Tier3SubIndustryManagement: React.FC = () => {
   const [editingSubIndustry, setEditingSubIndustry] = useState<SubIndustry | null>(null)
   const [form] = Form.useForm()
 
-  const fetchTier3SubIndustries = useCallback(async () => {
+  const fetchSubIndustries = useCallback(async () => {
     setLoading(true)
     try {
       const data = await subIndustryService.list()
-      // Filter only Tier3 sub-industries
-      const tier3 = data.filter((si) => si.level === 'Tier3')
+      // 兼容后端不返回level字段的情况：用parentSubIndustryId判断层级
+      // 有parentSubIndustryId的是Tier3，没有的是Tier2
+      const tier3 = data.filter((si) => si.level === 'Tier3' || si.parentSubIndustryId)
+      const tier2 = data.filter((si) =>
+        si.level === 'Tier2-individual' || si.level === 'Tier2-Group' || (!si.level && !si.parentSubIndustryId)
+      )
       setTier3SubIndustries(tier3)
-    } catch (error: any) {
-      message.error(error.message || '获取3级子行业列表失败')
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  const fetchTier2SubIndustries = useCallback(async () => {
-    try {
-      const data = await subIndustryService.list()
-      // Filter Tier2 sub-industries (both individual and group)
-      const tier2 = data.filter((si) => si.level === 'Tier2-individual' || si.level === 'Tier2-Group')
       setTier2SubIndustries(tier2)
     } catch (error: any) {
-      message.error(error.message || '获取2级子行业列表失败')
+      message.error(error.message || '获取子行业列表失败')
+    } finally {
+      setLoading(false)
     }
   }, [])
 
@@ -54,10 +48,9 @@ const Tier3SubIndustryManagement: React.FC = () => {
   }, [])
 
   useEffect(() => {
-    fetchTier3SubIndustries()
-    fetchTier2SubIndustries()
+    fetchSubIndustries()
     fetchIndustries()
-  }, [fetchTier3SubIndustries, fetchTier2SubIndustries, fetchIndustries])
+  }, [fetchSubIndustries, fetchIndustries])
 
   const handleCreate = () => {
     setEditingSubIndustry(null)
@@ -73,6 +66,7 @@ const Tier3SubIndustryManagement: React.FC = () => {
       definitionCn: subIndustry.definitionCn || subIndustry.definition || '',
       typicalGlobalCompanies: subIndustry.typicalGlobalCompanies?.join('\n') || '',
       typicalChineseCompanies: subIndustry.typicalChineseCompanies?.join('\n') || '',
+      priority: subIndustry.priority || 3,
     })
     setModalVisible(true)
   }
@@ -104,6 +98,7 @@ const Tier3SubIndustryManagement: React.FC = () => {
           definitionCn: values.definitionCn,
           typicalGlobalCompanies,
           typicalChineseCompanies,
+          priority: values.priority || 3,
         }
         await subIndustryService.update(editingSubIndustry.id, updateData)
         message.success('3级子行业更新成功')
@@ -124,6 +119,7 @@ const Tier3SubIndustryManagement: React.FC = () => {
           typicalChineseCompanies,
           level: 'Tier3',
           parentSubIndustryId: values.parentSubIndustryId,
+          priority: values.priority || 3,
         }
         await subIndustryService.create(createData)
         message.success('3级子行业创建成功')
@@ -132,8 +128,7 @@ const Tier3SubIndustryManagement: React.FC = () => {
       setModalVisible(false)
       form.resetFields()
       setEditingSubIndustry(null)
-      await fetchTier3SubIndustries()
-      await fetchTier2SubIndustries() // Refresh to see updated Tier2-Group status
+      await fetchSubIndustries()
     } catch (error: any) {
       if (error.errorFields) return
       message.error(error.message || '操作失败')
@@ -146,7 +141,7 @@ const Tier3SubIndustryManagement: React.FC = () => {
     try {
       await subIndustryService.delete(id)
       message.success('3级子行业删除成功')
-      await fetchTier3SubIndustries()
+      await fetchSubIndustries()
     } catch (error: any) {
       message.error(error.message || '删除失败')
     }
@@ -289,6 +284,21 @@ const Tier3SubIndustryManagement: React.FC = () => {
           </Form.Item>
           <Form.Item name="typicalChineseCompanies" label="典型国内企业" tooltip="每行输入一个企业名称">
             <TextArea rows={3} placeholder="每行输入一个企业名称，例如：&#10;华为&#10;腾讯&#10;阿里巴巴" />
+          </Form.Item>
+          <Form.Item
+            name="priority"
+            label="优先级"
+            rules={[{ required: true, message: '请选择优先级' }]}
+            initialValue={3}
+            tooltip="1-5星，数字越大优先级越高"
+          >
+            <Select placeholder="请选择优先级">
+              <Option value={1}>⭐ 1星</Option>
+              <Option value={2}>⭐⭐ 2星</Option>
+              <Option value={3}>⭐⭐⭐ 3星</Option>
+              <Option value={4}>⭐⭐⭐⭐ 4星</Option>
+              <Option value={5}>⭐⭐⭐⭐⭐ 5星</Option>
+            </Select>
           </Form.Item>
         </Form>
       </Modal>
