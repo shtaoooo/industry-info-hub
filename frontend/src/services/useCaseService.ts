@@ -13,6 +13,7 @@ export interface CreateUseCaseRequest {
 }
 
 export interface UpdateUseCaseRequest {
+  subIndustryId?: string
   name?: string
   description?: string
   businessScenario?: string

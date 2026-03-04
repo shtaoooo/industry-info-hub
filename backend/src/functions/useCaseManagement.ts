@@ -327,7 +327,7 @@ export async function updateUseCase(event: APIGatewayProxyEvent): Promise<APIGat
     }
 
     const body = JSON.parse(event.body || '{}')
-    const { name, description, businessScenario, customerPainPoints, targetAudience, communicationScript, recommendationScore } = body
+    const { name, description, businessScenario, customerPainPoints, targetAudience, communicationScript, recommendationScore, subIndustryId: newSubIndustryId } = body
 
     if (name !== undefined && (typeof name !== 'string' || name.trim().length === 0)) {
       return errorResponse('VALIDATION_ERROR', '用例名称不能为空', 400, { field: 'name', constraint: 'required' })
@@ -347,11 +347,50 @@ export async function updateUseCase(event: APIGatewayProxyEvent): Promise<APIGat
       validatedScore = score
     }
 
+    // Determine final subIndustryId and industryId
+    let finalSubIndustryId = existingSubIndustryId
+    let finalIndustryId = existingUseCase.industryId
+    let subIndustryChanged = false
+
+    if (newSubIndustryId && newSubIndustryId !== existingSubIndustryId) {
+      // Validate new subIndustry exists and get its industryId
+      let newSubIndustry: any = null
+      for (const industry of industries.Items || []) {
+        const result = await docClient.send(
+          new GetCommand({
+            TableName: TABLE_NAMES.SUB_INDUSTRIES,
+            Key: {
+              PK: `INDUSTRY#${industry.id}`,
+              SK: `SUBINDUSTRY#${newSubIndustryId}`,
+            },
+          })
+        )
+        if (result.Item) {
+          newSubIndustry = result.Item
+          finalIndustryId = industry.id
+          break
+        }
+      }
+
+      if (!newSubIndustry) {
+        return errorResponse('NOT_FOUND', '新的子行业不存在', 404)
+      }
+
+      // Check if user has access to new subIndustry
+      const newAccessCheck = await checkSubIndustryAccess(user, newSubIndustryId)
+      if (!newAccessCheck.hasAccess) {
+        return errorResponse('FORBIDDEN', '您没有权限将用例移动到该子行业', 403)
+      }
+
+      finalSubIndustryId = newSubIndustryId
+      subIndustryChanged = true
+    }
+
     const now = new Date().toISOString()
     const updated: UseCase = {
       id: useCaseId,
-      subIndustryId: existingSubIndustryId,
-      industryId: existingUseCase.industryId,
+      subIndustryId: finalSubIndustryId,
+      industryId: finalIndustryId,
       name: name !== undefined ? name.trim() : existingUseCase.name,
       description: description !== undefined ? description.trim() : existingUseCase.description,
       businessScenario: businessScenario !== undefined 
@@ -373,16 +412,43 @@ export async function updateUseCase(event: APIGatewayProxyEvent): Promise<APIGat
       createdBy: existingUseCase.createdBy,
     }
 
-    await docClient.send(
-      new PutCommand({
-        TableName: TABLE_NAMES.USE_CASES,
-        Item: {
-          PK: `SUBINDUSTRY#${existingSubIndustryId}`,
-          SK: `USECASE#${useCaseId}`,
-          ...updated,
-        },
-      })
-    )
+    // If subIndustry changed, delete from old location and create in new location
+    if (subIndustryChanged) {
+      // Delete from old location
+      await docClient.send(
+        new DeleteCommand({
+          TableName: TABLE_NAMES.USE_CASES,
+          Key: {
+            PK: `SUBINDUSTRY#${existingSubIndustryId}`,
+            SK: `USECASE#${useCaseId}`,
+          },
+        })
+      )
+      
+      // Create in new location
+      await docClient.send(
+        new PutCommand({
+          TableName: TABLE_NAMES.USE_CASES,
+          Item: {
+            PK: `SUBINDUSTRY#${finalSubIndustryId}`,
+            SK: `USECASE#${useCaseId}`,
+            ...updated,
+          },
+        })
+      )
+    } else {
+      // Update in same location
+      await docClient.send(
+        new PutCommand({
+          TableName: TABLE_NAMES.USE_CASES,
+          Item: {
+            PK: `SUBINDUSTRY#${existingSubIndustryId}`,
+            SK: `USECASE#${useCaseId}`,
+            ...updated,
+          },
+        })
+      )
+    }
 
     return successResponse(updated)
   } catch (error: any) {

@@ -148,6 +148,7 @@ const UseCaseManagement: React.FC = () => {
 
       if (editingUseCase) {
         const updateData: UpdateUseCaseRequest = {
+          subIndustryId: finalSubIndustryId,
           name: values.name,
           description: values.businessScenario, // 保持向后兼容
           businessScenario: values.businessScenario,
