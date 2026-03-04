@@ -108,6 +108,10 @@ const IndustryDetail: React.FC = () => {
     return acc
   }, {} as Record<string, PublicSubIndustry[]>)
 
+  // Debug: Log tier2 and tier3 data
+  console.log('Tier2 SubIndustries:', tier2SubIndustries)
+  console.log('Tier3 ByParent:', tier3ByParent)
+
   if (loading) {
     return (
       <Layout style={{ minHeight: '100vh', background: '#fbfbfd' }}>
@@ -177,6 +181,11 @@ const IndustryDetail: React.FC = () => {
                 // Show max 3 stacked cards
                 const stackCount = hasTier3Children ? Math.min(tier3ByParent[subIndustry.id].length, 3) : 0
 
+                // Debug log
+                if (hasTier3Children) {
+                  console.log(`SubIndustry ${subIndustry.name}: hasTier3=${hasTier3Children}, stackCount=${stackCount}, isExpanded=${isExpanded}`)
+                }
+
                 return (
                   <React.Fragment key={subIndustry.id}>
                     {/* Tier2 Sub-Industry Card with Stacked Effect */}
@@ -196,7 +205,7 @@ const IndustryDetail: React.FC = () => {
                             left: 0,
                             right: 0,
                             height: '100%',
-                            zIndex: -stackIndex - 1,
+                            zIndex: 0,
                             pointerEvents: 'none',
                             background: '#ffffff',
                             border: '1px solid #d2d2d7',
