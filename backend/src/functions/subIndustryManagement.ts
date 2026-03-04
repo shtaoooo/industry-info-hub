@@ -217,7 +217,7 @@ export async function listSubIndustries(event: APIGatewayProxyEvent): Promise<AP
 export async function createSubIndustry(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   try {
     const user = getUserFromEvent(event)
-    requireRole(user, 'admin')
+    requireRole(user, ['admin', 'specialist'])
 
     const body = JSON.parse(event.body || '{}')
     const { industryId, name, definition, definitionCn, typicalGlobalCompanies, typicalChineseCompanies, priority, level, parentSubIndustryId } = body
@@ -375,7 +375,7 @@ export async function createSubIndustry(event: APIGatewayProxyEvent): Promise<AP
 export async function updateSubIndustry(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   try {
     const user = getUserFromEvent(event)
-    requireRole(user, 'admin')
+    requireRole(user, ['admin', 'specialist'])
 
     const subIndustryId = event.pathParameters?.id
     if (!subIndustryId) {
@@ -488,7 +488,7 @@ export async function updateSubIndustry(event: APIGatewayProxyEvent): Promise<AP
 export async function deleteSubIndustry(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   try {
     const user = getUserFromEvent(event)
-    requireRole(user, 'admin')
+    requireRole(user, ['admin', 'specialist'])
 
     const subIndustryId = event.pathParameters?.id
     if (!subIndustryId) {
