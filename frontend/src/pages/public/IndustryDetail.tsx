@@ -181,44 +181,37 @@ const IndustryDetail: React.FC = () => {
                     <div
                       style={{
                         position: 'relative',
-                        paddingTop: hasTier3Children ? 8 : 0,
+                        marginBottom: hasTier3Children && !isExpanded ? tier3ByParent[subIndustry.id].length * 8 : 0,
                       }}
                     >
-                      {/* Stacked cards background effect - only for Tier2-Group */}
-                      {hasTier3Children && (
-                        <>
-                          <div
-                            style={{
-                              position: 'absolute',
-                              top: 0,
-                              left: 4,
-                              right: 4,
-                              height: '100%',
-                              background: '#ffffff',
-                              border: '1px solid #e8e8ed',
-                              borderRadius: 18,
-                              zIndex: 0,
-                            }}
-                          />
-                          <div
-                            style={{
-                              position: 'absolute',
-                              top: 4,
-                              left: 8,
-                              right: 8,
-                              height: '100%',
-                              background: '#ffffff',
-                              border: '1px solid #e8e8ed',
-                              borderRadius: 18,
-                              zIndex: 1,
-                            }}
-                          />
-                        </>
-                      )}
+                      {/* Stacked cards behind (only when collapsed and has children) */}
+                      {hasTier3Children && !isExpanded && tier3ByParent[subIndustry.id].map((_, stackIndex) => (
+                        <div
+                          key={`stack-${stackIndex}`}
+                          className="apple-card"
+                          style={{
+                            position: 'absolute',
+                            top: (stackIndex + 1) * 8,
+                            left: (stackIndex + 1) * 8,
+                            right: -(stackIndex + 1) * 8,
+                            bottom: -(stackIndex + 1) * 8,
+                            zIndex: -stackIndex - 1,
+                            pointerEvents: 'none',
+                            opacity: 0.6 - stackIndex * 0.15,
+                          }}
+                        />
+                      ))}
 
                       {/* Main Tier2 Card */}
                       <div
                         className="apple-card"
+                        onClick={() => {
+                          if (hasTier3Children) {
+                            toggleTier2Expansion(subIndustry.id, { stopPropagation: () => {} } as React.MouseEvent)
+                          } else {
+                            handleSubIndustryClick(subIndustry.id)
+                          }
+                        }}
                         style={{
                           padding: '24px',
                           cursor: 'pointer',
@@ -229,11 +222,10 @@ const IndustryDetail: React.FC = () => {
                           overflow: 'hidden',
                           transition: 'all 0.3s ease',
                           position: 'relative',
-                          zIndex: 2,
+                          zIndex: 1,
                         }}
                       >
                         <div
-                          onClick={() => handleSubIndustryClick(subIndustry.id)}
                           style={{
                             display: 'flex',
                             alignItems: 'flex-start',
@@ -328,7 +320,10 @@ const IndustryDetail: React.FC = () => {
                         {/* Expand/Collapse Button */}
                         {hasTier3Children && (
                           <div
-                            onClick={(e) => toggleTier2Expansion(subIndustry.id, e)}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              toggleTier2Expansion(subIndustry.id, e)
+                            }}
                             style={{
                               display: 'flex',
                               alignItems: 'center',

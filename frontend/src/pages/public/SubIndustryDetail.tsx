@@ -71,11 +71,13 @@ const SubIndustryDetail: React.FC = () => {
               <h2 style={{ margin: 0, color: '#1d1d1f', fontSize: 30, fontWeight: 600, marginBottom: 16 }}>
                 {subIndustry.name}
               </h2>
-              <MarkdownText style={{ color: '#6e6e73', fontSize: 16, lineHeight: 1.8 }}>
-                {subIndustry.definition}
-              </MarkdownText>
+              {subIndustry.definition && (
+                <MarkdownText style={{ color: '#6e6e73', fontSize: 16, lineHeight: 1.8, marginBottom: subIndustry.definitionCn ? 8 : 0 }}>
+                  {subIndustry.definition}
+                </MarkdownText>
+              )}
               {subIndustry.definitionCn && (
-                <MarkdownText style={{ color: '#6e6e73', fontSize: 16, lineHeight: 1.8, marginTop: 8 }}>
+                <MarkdownText style={{ color: '#6e6e73', fontSize: 16, lineHeight: 1.8 }}>
                   {subIndustry.definitionCn}
                 </MarkdownText>
               )}
