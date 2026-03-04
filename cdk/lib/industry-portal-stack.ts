@@ -305,7 +305,7 @@ export class IndustryPortalStack extends cdk.Stack {
     const newsAgent = new bedrock.CfnAgent(this, 'BedrockNewsAgent', {
       agentName: 'IndustryPortalNewsAgent',
       agentResourceRoleArn: bedrockAgentRole.roleArn,
-      foundationModel: 'amazon.nova-premier-v1:0',
+      foundationModel: 'us.amazon.nova-premier-v1:0', // Use inference profile ID instead of direct model ID
       instruction: `你是一个专业的新闻编辑助手。你的任务是帮助用户搜索和整理新闻。
 
 你有以下工具可以使用：
@@ -345,6 +345,13 @@ export class IndustryPortalStack extends cdk.Stack {
           description: 'Action group for searching news from Google News and RSS feeds',
         },
       ],
+    });
+
+    // Grant Bedrock Agent permission to invoke the action group Lambda
+    newsAgentActionGroupFn.addPermission('AllowBedrockInvoke', {
+      principal: new iam.ServicePrincipal('bedrock.amazonaws.com'),
+      action: 'lambda:InvokeFunction',
+      sourceArn: newsAgent.attrAgentArn,
     });
 
     // Create Agent Alias
