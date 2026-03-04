@@ -170,7 +170,7 @@ const IndustryDetail: React.FC = () => {
               <div style={{ color: '#6e6e73', fontSize: 16 }}>该行业暂无子行业信息</div>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, overflow: 'visible' }}>
               {tier2SubIndustries.map((subIndustry) => {
                 const hasTier3Children = tier3ByParent[subIndustry.id]?.length > 0
                 const isExpanded = expandedTier2.has(subIndustry.id)
@@ -188,7 +188,6 @@ const IndustryDetail: React.FC = () => {
                       {hasTier3Children && !isExpanded && tier3ByParent[subIndustry.id].map((_, stackIndex) => (
                         <div
                           key={`stack-${stackIndex}`}
-                          className="apple-card"
                           style={{
                             position: 'absolute',
                             top: (stackIndex + 1) * 8,
@@ -197,7 +196,10 @@ const IndustryDetail: React.FC = () => {
                             bottom: -(stackIndex + 1) * 8,
                             zIndex: -stackIndex - 1,
                             pointerEvents: 'none',
-                            opacity: 0.6 - stackIndex * 0.15,
+                            background: '#ffffff',
+                            border: '1px solid #d2d2d7',
+                            borderRadius: 18,
+                            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.07)',
                           }}
                         />
                       ))}
