@@ -170,10 +170,12 @@ const IndustryDetail: React.FC = () => {
               <div style={{ color: '#6e6e73', fontSize: 16 }}>该行业暂无子行业信息</div>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, overflow: 'visible' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
               {tier2SubIndustries.map((subIndustry) => {
                 const hasTier3Children = tier3ByParent[subIndustry.id]?.length > 0
                 const isExpanded = expandedTier2.has(subIndustry.id)
+                // Show max 3 stacked cards
+                const stackCount = hasTier3Children ? Math.min(tier3ByParent[subIndustry.id].length, 3) : 0
 
                 return (
                   <React.Fragment key={subIndustry.id}>
@@ -181,19 +183,19 @@ const IndustryDetail: React.FC = () => {
                     <div
                       style={{
                         position: 'relative',
-                        marginBottom: hasTier3Children && !isExpanded ? tier3ByParent[subIndustry.id].length * 8 : 0,
+                        paddingBottom: hasTier3Children && !isExpanded ? stackCount * 6 : 0,
                       }}
                     >
-                      {/* Stacked cards behind (only when collapsed and has children) */}
-                      {hasTier3Children && !isExpanded && tier3ByParent[subIndustry.id].map((_, stackIndex) => (
+                      {/* Stacked cards behind (only when collapsed and has children) - max 3 cards */}
+                      {hasTier3Children && !isExpanded && Array.from({ length: stackCount }).map((_, stackIndex) => (
                         <div
                           key={`stack-${stackIndex}`}
                           style={{
                             position: 'absolute',
-                            top: (stackIndex + 1) * 8,
-                            left: (stackIndex + 1) * 8,
-                            right: -(stackIndex + 1) * 8,
-                            bottom: -(stackIndex + 1) * 8,
+                            top: (stackIndex + 1) * 6,
+                            left: 0,
+                            right: 0,
+                            height: '100%',
                             zIndex: -stackIndex - 1,
                             pointerEvents: 'none',
                             background: '#ffffff',
