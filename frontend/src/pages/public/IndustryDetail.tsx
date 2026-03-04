@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Layout, Spin, message, Button, Empty } from 'antd'
-import { ArrowLeftOutlined, BankOutlined, ApartmentOutlined, LeftOutlined, RightOutlined, DownOutlined, UpOutlined } from '@ant-design/icons'
+import { ArrowLeftOutlined, BankOutlined, ApartmentOutlined, LeftOutlined, RightOutlined } from '@ant-design/icons'
 import { publicService, PublicIndustry, PublicSubIndustry, PublicNews, PublicBlog } from '../../services/publicService'
 
 const { Content } = Layout
@@ -316,40 +316,6 @@ const IndustryDetail: React.FC = () => {
                               : '-'}
                           </div>
                         </div>
-
-                        {/* Expand/Collapse Button */}
-                        {hasTier3Children && (
-                          <div
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              toggleTier2Expansion(subIndustry.id, e)
-                            }}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              width: 32,
-                              height: 32,
-                              borderRadius: 8,
-                              background: '#f5f5f7',
-                              cursor: 'pointer',
-                              transition: 'all 0.2s ease',
-                              flexShrink: 0,
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.background = '#e8e8ed'
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.background = '#f5f5f7'
-                            }}
-                          >
-                            {isExpanded ? (
-                              <UpOutlined style={{ fontSize: 14, color: '#1d1d1f' }} />
-                            ) : (
-                              <DownOutlined style={{ fontSize: 14, color: '#1d1d1f' }} />
-                            )}
-                          </div>
-                        )}
                       </div>
                     </div>
 
@@ -383,7 +349,7 @@ const IndustryDetail: React.FC = () => {
                           >
                             <div
                               style={{
-                                width: '25%',
+                                width: '20%',
                                 fontSize: 14,
                                 fontWeight: 500,
                                 color: '#1d1d1f',
@@ -399,7 +365,7 @@ const IndustryDetail: React.FC = () => {
                             </div>
                             <div
                               style={{
-                                width: '25%',
+                                width: '40%',
                                 fontSize: 13,
                                 color: '#6e6e73',
                                 lineHeight: 1.5,
@@ -414,7 +380,7 @@ const IndustryDetail: React.FC = () => {
                             </div>
                             <div
                               style={{
-                                width: '25%',
+                                width: '20%',
                                 fontSize: 13,
                                 color: '#6e6e73',
                                 lineHeight: 1.5,
@@ -432,7 +398,7 @@ const IndustryDetail: React.FC = () => {
                             </div>
                             <div
                               style={{
-                                width: '25%',
+                                width: '20%',
                                 fontSize: 13,
                                 color: '#6e6e73',
                                 lineHeight: 1.5,
