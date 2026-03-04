@@ -32,6 +32,7 @@ export interface PublicUseCase {
   customerPainPoints?: string
   targetAudience?: string
   communicationScript?: string
+  recommendationScore?: number
   documents?: any[]
   createdAt: string
 }

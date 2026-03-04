@@ -115,8 +115,22 @@ const SubIndustryDetail: React.FC = () => {
                     cursor: 'pointer',
                   }}
                 >
-                  <div style={{ fontSize: 17, fontWeight: 600, marginBottom: 12 }}>
+                  <div style={{ fontSize: 17, fontWeight: 600, marginBottom: 8 }}>
                     {useCase.name}
+                  </div>
+                  {/* Recommendation Score Stars */}
+                  <div style={{ marginBottom: 12, fontSize: 16 }}>
+                    {Array.from({ length: 5 }, (_, i) => (
+                      <span
+                        key={i}
+                        style={{
+                          color: i < (useCase.recommendationScore || 3) ? '#ffb800' : '#d2d2d7',
+                          marginRight: 2,
+                        }}
+                      >
+                        ⭐
+                      </span>
+                    ))}
                   </div>
                   <div
                     className="public-detail-secondary md-text-compact"

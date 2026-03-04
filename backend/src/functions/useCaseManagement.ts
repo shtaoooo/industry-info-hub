@@ -185,7 +185,7 @@ export async function createUseCase(event: APIGatewayProxyEvent): Promise<APIGat
     requireRole(user, ['admin', 'specialist'])
 
     const body = JSON.parse(event.body || '{}')
-    const { subIndustryId, name, description, businessScenario, customerPainPoints, targetAudience, communicationScript } = body
+    const { subIndustryId, name, description, businessScenario, customerPainPoints, targetAudience, communicationScript, recommendationScore } = body
 
     if (!subIndustryId || typeof subIndustryId !== 'string' || subIndustryId.trim().length === 0) {
       return errorResponse('VALIDATION_ERROR', '子行业ID不能为空', 400, { field: 'subIndustryId', constraint: 'required' })
@@ -197,6 +197,16 @@ export async function createUseCase(event: APIGatewayProxyEvent): Promise<APIGat
 
     if (!description || typeof description !== 'string' || description.trim().length === 0) {
       return errorResponse('VALIDATION_ERROR', '用例描述不能为空', 400, { field: 'description', constraint: 'required' })
+    }
+
+    // Validate recommendationScore (1-5)
+    let validatedScore = 3 // Default value
+    if (recommendationScore !== undefined && recommendationScore !== null) {
+      const score = Number(recommendationScore)
+      if (isNaN(score) || score < 1 || score > 5 || !Number.isInteger(score)) {
+        return errorResponse('VALIDATION_ERROR', '推荐指数必须是1-5之间的整数', 400, { field: 'recommendationScore', constraint: 'range' })
+      }
+      validatedScore = score
     }
 
     // Check if user has access to this sub-industry's industry
@@ -218,6 +228,7 @@ export async function createUseCase(event: APIGatewayProxyEvent): Promise<APIGat
       customerPainPoints: customerPainPoints && typeof customerPainPoints === 'string' ? customerPainPoints.trim() : undefined,
       targetAudience: targetAudience && typeof targetAudience === 'string' ? targetAudience.trim() : undefined,
       communicationScript: communicationScript && typeof communicationScript === 'string' ? communicationScript.trim() : undefined,
+      recommendationScore: validatedScore,
       documents: [],
       createdAt: now,
       updatedAt: now,
@@ -316,7 +327,7 @@ export async function updateUseCase(event: APIGatewayProxyEvent): Promise<APIGat
     }
 
     const body = JSON.parse(event.body || '{}')
-    const { name, description, businessScenario, customerPainPoints, targetAudience, communicationScript } = body
+    const { name, description, businessScenario, customerPainPoints, targetAudience, communicationScript, recommendationScore } = body
 
     if (name !== undefined && (typeof name !== 'string' || name.trim().length === 0)) {
       return errorResponse('VALIDATION_ERROR', '用例名称不能为空', 400, { field: 'name', constraint: 'required' })
@@ -324,6 +335,16 @@ export async function updateUseCase(event: APIGatewayProxyEvent): Promise<APIGat
 
     if (description !== undefined && (typeof description !== 'string' || description.trim().length === 0)) {
       return errorResponse('VALIDATION_ERROR', '用例描述不能为空', 400, { field: 'description', constraint: 'required' })
+    }
+
+    // Validate recommendationScore if provided
+    let validatedScore = existingUseCase.recommendationScore || 3
+    if (recommendationScore !== undefined && recommendationScore !== null) {
+      const score = Number(recommendationScore)
+      if (isNaN(score) || score < 1 || score > 5 || !Number.isInteger(score)) {
+        return errorResponse('VALIDATION_ERROR', '推荐指数必须是1-5之间的整数', 400, { field: 'recommendationScore', constraint: 'range' })
+      }
+      validatedScore = score
     }
 
     const now = new Date().toISOString()
@@ -345,6 +366,7 @@ export async function updateUseCase(event: APIGatewayProxyEvent): Promise<APIGat
       communicationScript: communicationScript !== undefined
         ? (communicationScript && typeof communicationScript === 'string' ? communicationScript.trim() : undefined)
         : existingUseCase.communicationScript,
+      recommendationScore: validatedScore,
       documents: existingUseCase.documents || [],
       createdAt: existingUseCase.createdAt,
       updatedAt: now,

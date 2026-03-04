@@ -9,6 +9,7 @@ export interface CreateUseCaseRequest {
   customerPainPoints?: string
   targetAudience?: string
   communicationScript?: string
+  recommendationScore?: number
 }
 
 export interface UpdateUseCaseRequest {
@@ -18,6 +19,7 @@ export interface UpdateUseCaseRequest {
   customerPainPoints?: string
   targetAudience?: string
   communicationScript?: string
+  recommendationScore?: number
 }
 
 export interface UploadDocumentRequest {

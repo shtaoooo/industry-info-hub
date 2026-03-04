@@ -84,6 +84,7 @@ const UseCaseManagement: React.FC = () => {
       customerPainPoints: useCase.customerPainPoints || '',
       targetAudience: useCase.targetAudience || '',
       communicationScript: useCase.communicationScript || '',
+      recommendationScore: useCase.recommendationScore || 3,
     })
     setModalVisible(true)
   }
@@ -101,6 +102,7 @@ const UseCaseManagement: React.FC = () => {
           customerPainPoints: values.customerPainPoints,
           targetAudience: values.targetAudience,
           communicationScript: values.communicationScript,
+          recommendationScore: values.recommendationScore,
         }
         await useCaseService.update(editingUseCase.id, updateData)
         message.success('用例更新成功')
@@ -113,6 +115,7 @@ const UseCaseManagement: React.FC = () => {
           customerPainPoints: values.customerPainPoints,
           targetAudience: values.targetAudience,
           communicationScript: values.communicationScript,
+          recommendationScore: values.recommendationScore,
         }
         await useCaseService.create(createData)
         message.success('用例创建成功')
@@ -292,6 +295,20 @@ const UseCaseManagement: React.FC = () => {
             rules={[{ max: 1000, message: '客户痛点不能超过1000个字符' }]}
           >
             <TextArea rows={4} placeholder="请输入客户痛点" />
+          </Form.Item>
+          <Form.Item
+            name="recommendationScore"
+            label="推荐指数"
+            rules={[{ required: true, message: '请选择推荐指数' }]}
+            initialValue={3}
+          >
+            <Select placeholder="请选择推荐指数">
+              <Option value={5}>⭐⭐⭐⭐⭐ (5星 - 强烈推荐)</Option>
+              <Option value={4}>⭐⭐⭐⭐ (4星 - 推荐)</Option>
+              <Option value={3}>⭐⭐⭐ (3星 - 一般)</Option>
+              <Option value={2}>⭐⭐ (2星 - 较少推荐)</Option>
+              <Option value={1}>⭐ (1星 - 不推荐)</Option>
+            </Select>
           </Form.Item>
           <Form.Item
             name="targetAudience"

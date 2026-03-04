@@ -35,6 +35,7 @@ export interface UseCase {
   customerPainPoints?: string // 客户痛点
   targetAudience?: string // 切入人群
   communicationScript?: string // 沟通话术
+  recommendationScore?: number // 推荐指数 (1-5)
   documents: Document[]
   createdAt: string
   updatedAt: string

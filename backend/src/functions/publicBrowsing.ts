@@ -209,8 +209,17 @@ export async function listUseCases(event: APIGatewayProxyEvent): Promise<APIGate
       customerPainPoints: item.customerPainPoints,
       targetAudience: item.targetAudience,
       communicationScript: item.communicationScript,
+      recommendationScore: item.recommendationScore || 3,
       createdAt: item.createdAt,
     }))
+
+    // Sort by recommendationScore (descending), then by name
+    useCases.sort((a, b) => {
+      if (b.recommendationScore !== a.recommendationScore) {
+        return b.recommendationScore - a.recommendationScore
+      }
+      return a.name.localeCompare(b.name, 'zh-CN')
+    })
 
     return successResponse({
       subIndustry,
