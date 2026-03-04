@@ -19,6 +19,9 @@ export interface PublicSubIndustry {
   typicalGlobalCompanies: string[]
   typicalChineseCompanies: string[]
   priority?: number
+  level?: string
+  parentSubIndustryId?: string
+  childrenIds?: string[]
   createdAt: string
 }
 
