@@ -214,7 +214,7 @@ export async function createSubIndustry(event: APIGatewayProxyEvent): Promise<AP
     requireRole(user, 'admin')
 
     const body = JSON.parse(event.body || '{}')
-    const { industryId, name, definition, definitionCn, typicalGlobalCompanies, typicalChineseCompanies, priority } = body
+    const { industryId, name, definition, definitionCn, typicalGlobalCompanies, typicalChineseCompanies, priority, level, parentSubIndustryId } = body
 
     if (!industryId || typeof industryId !== 'string' || industryId.trim().length === 0) {
       return errorResponse('VALIDATION_ERROR', '行业ID不能为空', 400, { field: 'industryId', constraint: 'required' })
@@ -226,6 +226,41 @@ export async function createSubIndustry(event: APIGatewayProxyEvent): Promise<AP
 
     if (!definition || typeof definition !== 'string' || definition.trim().length === 0) {
       return errorResponse('VALIDATION_ERROR', '子行业定义不能为空', 400, { field: 'definition', constraint: 'required' })
+    }
+
+    // Validate level
+    const validLevels = ['Tier2-individual', 'Tier2-Group', 'Tier3']
+    const subIndustryLevel = level && validLevels.includes(level) ? level : 'Tier2-individual'
+
+    // If Tier3, parentSubIndustryId is required
+    if (subIndustryLevel === 'Tier3') {
+      if (!parentSubIndustryId || typeof parentSubIndustryId !== 'string') {
+        return errorResponse('VALIDATION_ERROR', 'Tier3子行业必须指定父级Tier2子行业', 400, { field: 'parentSubIndustryId', constraint: 'required' })
+      }
+
+      // Check if parent sub-industry exists
+      const parentExists = await docClient.send(
+        new GetCommand({
+          TableName: TABLE_NAMES.SUB_INDUSTRIES,
+          Key: { PK: `INDUSTRY#${industryId}`, SK: `SUBINDUSTRY#${parentSubIndustryId}` },
+        })
+      )
+
+      if (!parentExists.Item) {
+        return errorResponse('NOT_FOUND', '父级Tier2子行业不存在', 404)
+      }
+
+      // Update parent to Tier2-Group
+      await docClient.send(
+        new PutCommand({
+          TableName: TABLE_NAMES.SUB_INDUSTRIES,
+          Item: {
+            ...parentExists.Item,
+            level: 'Tier2-Group',
+            updatedAt: new Date().toISOString(),
+          },
+        })
+      )
     }
 
     // Check if parent industry exists
@@ -252,6 +287,8 @@ export async function createSubIndustry(event: APIGatewayProxyEvent): Promise<AP
       typicalGlobalCompanies: Array.isArray(typicalGlobalCompanies) ? typicalGlobalCompanies : [],
       typicalChineseCompanies: Array.isArray(typicalChineseCompanies) ? typicalChineseCompanies : [],
       priority: typeof priority === 'number' ? priority : undefined,
+      level: subIndustryLevel,
+      parentSubIndustryId: subIndustryLevel === 'Tier3' ? parentSubIndustryId : undefined,
       createdAt: now,
       updatedAt: now,
     }
@@ -363,6 +400,8 @@ export async function updateSubIndustry(event: APIGatewayProxyEvent): Promise<AP
       typicalChineseCompanies:
         typicalChineseCompanies !== undefined ? typicalChineseCompanies : existingSubIndustry.typicalChineseCompanies || [],
       priority: priority !== undefined ? priority : existingSubIndustry.priority,
+      level: existingSubIndustry.level || 'Tier2-individual',
+      parentSubIndustryId: existingSubIndustry.parentSubIndustryId,
       createdAt: existingSubIndustry.createdAt,
       updatedAt: now,
     }

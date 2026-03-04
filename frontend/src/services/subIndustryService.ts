@@ -9,6 +9,8 @@ export interface CreateSubIndustryRequest {
   typicalGlobalCompanies?: string[]
   typicalChineseCompanies?: string[]
   priority?: number
+  level?: string
+  parentSubIndustryId?: string
 }
 
 export interface UpdateSubIndustryRequest {
@@ -26,6 +28,8 @@ export interface MoveSubIndustryRequest {
 
 export const subIndustryService = {
   listAll: () => api.get<SubIndustry[]>('/admin/sub-industries'),
+
+  list: () => api.get<SubIndustry[]>('/admin/sub-industries'),
 
   listByIndustry: (industryId: string) => api.get<SubIndustry[]>(`/admin/industries/${industryId}/sub-industries`),
 

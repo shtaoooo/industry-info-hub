@@ -53,6 +53,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     { key: '/admin/solutions', icon: <BulbOutlined />, label: '解决方案管理', roles: ['admin', 'specialist'] },
     { key: '/admin/users', icon: <TeamOutlined />, label: '用户管理', roles: ['admin'] },
     { key: '/specialist/use-cases', icon: <FileTextOutlined />, label: '用例管理', roles: ['admin', 'specialist'] },
+    { key: '/specialist/tier3-sub-industries', icon: <ApartmentOutlined />, label: '3级子行业管理', roles: ['admin', 'specialist'] },
     { key: '/specialist/mappings', icon: <LinkOutlined />, label: '关联管理', roles: ['admin', 'specialist'] },
     { key: '/specialist/customer-cases', icon: <SolutionOutlined />, label: '客户案例管理', roles: ['admin', 'specialist'] },
     { key: '/specialist/news', icon: <NotificationOutlined />, label: '新闻管理', roles: ['admin', 'specialist'] },

@@ -11,6 +11,7 @@ import SubIndustryManagement from './pages/admin/SubIndustryManagement'
 import SolutionManagement from './pages/admin/SolutionManagement'
 import UserManagement from './pages/admin/UserManagement'
 import UseCaseManagement from './pages/specialist/UseCaseManagement'
+import Tier3SubIndustryManagement from './pages/specialist/Tier3SubIndustryManagement'
 import MappingManagement from './pages/specialist/MappingManagement'
 import CustomerCaseManagement from './pages/specialist/CustomerCaseManagement'
 import NewsManagement from './pages/specialist/NewsManagement'
@@ -112,6 +113,16 @@ function App() {
                 <ProtectedRoute requiredRole={['admin', 'specialist']}>
                   <AdminLayout>
                     <UseCaseManagement />
+                  </AdminLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/specialist/tier3-sub-industries"
+              element={
+                <ProtectedRoute requiredRole={['admin', 'specialist']}>
+                  <AdminLayout>
+                    <Tier3SubIndustryManagement />
                   </AdminLayout>
                 </ProtectedRoute>
               }

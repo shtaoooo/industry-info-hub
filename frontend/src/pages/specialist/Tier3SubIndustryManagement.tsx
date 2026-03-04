@@ -1,0 +1,282 @@
+import React, { useState, useEffect, useCallback } from 'react'
+import { Card, Table, Button, Modal, Form, Input, Select, message, Space, Popconfirm, Typography } from 'antd'
+import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
+import { subIndustryService, CreateSubIndustryRequest, UpdateSubIndustryRequest } from '../../services/subIndustryService'
+import { industryService } from '../../services/industryService'
+import { SubIndustry, Industry } from '../../types'
+
+const { Title } = Typography
+const { TextArea } = Input
+const { Option } = Select
+
+const Tier3SubIndustryManagement: React.FC = () => {
+  const [tier3SubIndustries, setTier3SubIndustries] = useState<SubIndustry[]>([])
+  const [tier2SubIndustries, setTier2SubIndustries] = useState<SubIndustry[]>([])
+  const [industries, setIndustries] = useState<Industry[]>([])
+  const [loading, setLoading] = useState(false)
+  const [modalVisible, setModalVisible] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [editingSubIndustry, setEditingSubIndustry] = useState<SubIndustry | null>(null)
+  const [form] = Form.useForm()
+
+  const fetchTier3SubIndustries = useCallback(async () => {
+    setLoading(true)
+    try {
+      const data = await subIndustryService.list()
+      // Filter only Tier3 sub-industries
+      const tier3 = data.filter((si) => si.level === 'Tier3')
+      setTier3SubIndustries(tier3)
+    } catch (error: any) {
+      message.error(error.message || '获取3级子行业列表失败')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  const fetchTier2SubIndustries = useCallback(async () => {
+    try {
+      const data = await subIndustryService.list()
+      // Filter Tier2 sub-industries (both individual and group)
+      const tier2 = data.filter((si) => si.level === 'Tier2-individual' || si.level === 'Tier2-Group')
+      setTier2SubIndustries(tier2)
+    } catch (error: any) {
+      message.error(error.message || '获取2级子行业列表失败')
+    }
+  }, [])
+
+  const fetchIndustries = useCallback(async () => {
+    try {
+      const data = await industryService.list()
+      setIndustries(data)
+    } catch (error: any) {
+      message.error(error.message || '获取行业列表失败')
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchTier3SubIndustries()
+    fetchTier2SubIndustries()
+    fetchIndustries()
+  }, [fetchTier3SubIndustries, fetchTier2SubIndustries, fetchIndustries])
+
+  const handleCreate = () => {
+    setEditingSubIndustry(null)
+    form.resetFields()
+    setModalVisible(true)
+  }
+
+  const handleEdit = (subIndustry: SubIndustry) => {
+    setEditingSubIndustry(subIndustry)
+    form.setFieldsValue({
+      parentSubIndustryId: subIndustry.parentSubIndustryId,
+      name: subIndustry.name,
+      definition: subIndustry.definition,
+      definitionCn: subIndustry.definitionCn || '',
+    })
+    setModalVisible(true)
+  }
+
+  const handleSubmit = async () => {
+    try {
+      const values = await form.validateFields()
+      setSubmitting(true)
+
+      if (editingSubIndustry) {
+        const updateData: UpdateSubIndustryRequest = {
+          name: values.name,
+          definition: values.definition,
+          definitionCn: values.definitionCn,
+        }
+        await subIndustryService.update(editingSubIndustry.id, updateData)
+        message.success('3级子行业更新成功')
+      } else {
+        // Get parent sub-industry to determine industryId
+        const parentSubIndustry = tier2SubIndustries.find((si) => si.id === values.parentSubIndustryId)
+        if (!parentSubIndustry) {
+          message.error('未找到父级2级子行业')
+          return
+        }
+
+        const createData: CreateSubIndustryRequest = {
+          industryId: parentSubIndustry.industryId,
+          name: values.name,
+          definition: values.definition,
+          definitionCn: values.definitionCn,
+          typicalGlobalCompanies: [],
+          typicalChineseCompanies: [],
+          level: 'Tier3',
+          parentSubIndustryId: values.parentSubIndustryId,
+        }
+        await subIndustryService.create(createData)
+        message.success('3级子行业创建成功')
+      }
+
+      setModalVisible(false)
+      form.resetFields()
+      setEditingSubIndustry(null)
+      await fetchTier3SubIndustries()
+      await fetchTier2SubIndustries() // Refresh to see updated Tier2-Group status
+    } catch (error: any) {
+      if (error.errorFields) return
+      message.error(error.message || '操作失败')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const handleDelete = async (id: string) => {
+    try {
+      await subIndustryService.delete(id)
+      message.success('3级子行业删除成功')
+      await fetchTier3SubIndustries()
+    } catch (error: any) {
+      message.error(error.message || '删除失败')
+    }
+  }
+
+  const getParentSubIndustryName = (parentId?: string) => {
+    if (!parentId) return '-'
+    const parent = tier2SubIndustries.find((si) => si.id === parentId)
+    return parent?.name || parentId
+  }
+
+  const getIndustryName = (industryId: string) => {
+    const industry = industries.find((i) => i.id === industryId)
+    return industry?.name || industryId
+  }
+
+  const columns = [
+    {
+      title: '3级子行业名称',
+      dataIndex: 'name',
+      key: 'name',
+      width: 200,
+    },
+    {
+      title: '所属2级子行业',
+      dataIndex: 'parentSubIndustryId',
+      key: 'parentSubIndustryId',
+      width: 200,
+      render: (parentId: string) => getParentSubIndustryName(parentId),
+    },
+    {
+      title: '所属行业',
+      dataIndex: 'industryId',
+      key: 'industryId',
+      width: 150,
+      render: (industryId: string) => getIndustryName(industryId),
+    },
+    {
+      title: '定义',
+      dataIndex: 'definition',
+      key: 'definition',
+      ellipsis: true,
+    },
+    {
+      title: '操作',
+      key: 'actions',
+      width: 150,
+      fixed: 'right' as const,
+      render: (_: unknown, record: SubIndustry) => (
+        <Space>
+          <Button type="link" icon={<EditOutlined />} onClick={() => handleEdit(record)}>
+            编辑
+          </Button>
+          <Popconfirm
+            title="确定要删除此3级子行业吗？"
+            description="删除后将无法恢复。"
+            onConfirm={() => handleDelete(record.id)}
+            okText="确定"
+            cancelText="取消"
+          >
+            <Button type="link" danger icon={<DeleteOutlined />}>
+              删除
+            </Button>
+          </Popconfirm>
+        </Space>
+      ),
+    },
+  ]
+
+  return (
+    <Card>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+        <Title level={4} style={{ margin: 0 }}>
+          3级子行业管理
+        </Title>
+        <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
+          新增3级子行业
+        </Button>
+      </div>
+
+      <Table
+        columns={columns}
+        dataSource={tier3SubIndustries}
+        rowKey="id"
+        loading={loading}
+        pagination={{ pageSize: 10, showTotal: (total) => `共 ${total} 条` }}
+        scroll={{ x: 1000 }}
+      />
+
+      <Modal
+        title={editingSubIndustry ? '编辑3级子行业' : '新增3级子行业'}
+        open={modalVisible}
+        onOk={handleSubmit}
+        onCancel={() => {
+          setModalVisible(false)
+          form.resetFields()
+          setEditingSubIndustry(null)
+        }}
+        confirmLoading={submitting}
+        okText="保存"
+        cancelText="取消"
+        width={600}
+      >
+        <Form form={form} layout="vertical">
+          <Form.Item
+            name="parentSubIndustryId"
+            label="所属2级子行业"
+            rules={[{ required: true, message: '请选择所属2级子行业' }]}
+          >
+            <Select placeholder="请选择所属2级子行业" disabled={!!editingSubIndustry}>
+              {tier2SubIndustries.map((subIndustry) => (
+                <Option key={subIndustry.id} value={subIndustry.id}>
+                  {getIndustryName(subIndustry.industryId)} / {subIndustry.name}
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+          <Form.Item
+            name="name"
+            label="3级子行业名称"
+            rules={[
+              { required: true, message: '请输入3级子行业名称' },
+              { max: 100, message: '名称不能超过100个字符' },
+            ]}
+          >
+            <Input placeholder="请输入3级子行业名称" />
+          </Form.Item>
+          <Form.Item
+            name="definition"
+            label="定义（英文）"
+            rules={[
+              { required: true, message: '请输入定义' },
+              { max: 1000, message: '定义不能超过1000个字符' },
+            ]}
+          >
+            <TextArea rows={4} placeholder="请输入定义（英文）" />
+          </Form.Item>
+          <Form.Item
+            name="definitionCn"
+            label="定义（中文）"
+            rules={[{ max: 1000, message: '定义不能超过1000个字符' }]}
+          >
+            <TextArea rows={4} placeholder="请输入定义（中文）" />
+          </Form.Item>
+        </Form>
+      </Modal>
+    </Card>
+  )
+}
+
+export default Tier3SubIndustryManagement

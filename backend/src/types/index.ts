@@ -21,6 +21,8 @@ export interface SubIndustry {
   typicalGlobalCompanies: string[]
   typicalChineseCompanies: string[]
   priority?: number
+  level?: string // 'Tier2-individual' | 'Tier2-Group' | 'Tier3'
+  parentSubIndustryId?: string // For Tier3, reference to parent Tier2
   createdAt: string
   updatedAt: string
 }
