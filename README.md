@@ -70,22 +70,21 @@ npm run dev
 
 前提条件：
 - 安装 AWS CLI
-- 安装 AWS SAM CLI
+- 安装 AWS CDK CLI (`npm install -g aws-cdk`)
 - 配置 AWS 凭证
 
 ```bash
-cd backend
+cd cdk
 npm install
-npm run build
-sam deploy --guided
+cdk deploy --all
 ```
 
-首次部署使用 `--guided` 参数进行交互式配置。
+首次部署可能需要运行 `cdk bootstrap` 来初始化CDK环境。
 
 ### 环境变量配置
 
 1. 复制 `frontend/.env.example` 到 `frontend/.env`
-2. 更新环境变量为实际的AWS资源值（从SAM部署输出获取）
+2. 更新环境变量为实际的AWS资源值（从CDK部署输出获取）
 
 ```bash
 cp frontend/.env.example frontend/.env
@@ -145,10 +144,12 @@ npm test
 ### 后端部署
 
 ```bash
-cd backend
-sam build
-sam deploy
+cd cdk
+npm install
+cdk deploy --all
 ```
+
+后端使用AWS CDK进行基础设施即代码部署。
 
 ## 监控和日志
 
