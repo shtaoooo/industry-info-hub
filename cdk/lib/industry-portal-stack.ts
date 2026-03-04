@@ -282,6 +282,10 @@ export class IndustryPortalStack extends cdk.Stack {
     const newsAgentOrchestratorFn = createFunction('NewsAgentOrchestrator', 'newsAgentOrchestrator', 120, 1024);
 
     // Bedrock Agent for News Search
+    // Load OpenAPI schema from file
+    const schemaPath = path.join(__dirname, '../../backend/src/schemas/newsAgentActionGroupSchema.json');
+    const apiSchema = require(schemaPath);
+
     // Create IAM role for Bedrock Agent
     const bedrockAgentRole = new iam.Role(this, 'BedrockAgentRole', {
       assumedBy: new iam.ServicePrincipal('bedrock.amazonaws.com'),
@@ -304,19 +308,31 @@ export class IndustryPortalStack extends cdk.Stack {
       foundationModel: 'anthropic.claude-3-sonnet-20240229-v1:0',
       instruction: `你是一个专业的新闻编辑助手。你的任务是帮助用户搜索和整理新闻。
 
-你有一个工具 searchGoogleNews 可以搜索 Google News。当用户要求搜索新闻时：
-1. 使用 searchGoogleNews 工具搜索相关新闻
-2. 分析返回的新闻列表
-3. 筛选出最相关的新闻（最多10条）
-4. 为每条新闻写一个200字左右的中文概括摘要
-5. 按照用户要求的JSON格式输出结果
+你有以下工具可以使用：
+1. searchGoogleNews(keyword) - 搜索单个关键词的 Google News（简单搜索）
+2. searchGoogleNewsAdvanced(keywords[], daysBack?) - 搜索多个关键词并支持时间过滤（高级搜索，推荐使用）
+   - keywords: 关键词数组，例如 ["油气 数字化", "油气 信息化", "OSDU"]
+   - daysBack: 可选，搜索过去N天的新闻，例如 10 表示过去10天
+3. fetchRssFeed(url) - 从特定 RSS feed URL 获取新闻
+4. searchMultipleSources(keyword, rssFeedUrls[]) - 综合 Google News 和多个 RSS feeds
+
+工具选择指南：
+- 如果用户提到"过去X天"、"最近X天"、"X天内"，使用 searchGoogleNewsAdvanced 并设置 daysBack
+- 如果用户提到多个关键词或主题（如"数字化、信息化、智能化"），使用 searchGoogleNewsAdvanced 并传入多个关键词
+- 如果只是简单的单关键词搜索，使用 searchGoogleNews
+- 如果用户指定了特定网站或 RSS 源，使用 fetchRssFeed
+
+搜索完成后，请：
+1. 筛选出最相关的新闻（最多10条）
+2. 为每条新闻写一个200字左右的中文概括摘要
+3. 严格按照用户要求的JSON格式输出结果
 
 重要规则：
 - 摘要要用中文，简洁清晰
 - 保留原文链接和来源信息
 - 如果没有发布时间，使用当前日期
 - 严格按照用户要求的格式输出`,
-      description: 'Agent for searching and summarizing news from Google News RSS',
+      description: 'Agent for searching and summarizing news from multiple sources',
       actionGroups: [
         {
           actionGroupName: 'NewsSearchActions',
@@ -324,71 +340,9 @@ export class IndustryPortalStack extends cdk.Stack {
             lambda: newsAgentActionGroupFn.functionArn,
           },
           apiSchema: {
-            payload: JSON.stringify({
-              openapi: '3.0.0',
-              info: {
-                title: 'News Search Action Group API',
-                version: '1.0.0',
-                description: 'API for searching Google News RSS',
-              },
-              paths: {
-                '/searchGoogleNews': {
-                  post: {
-                    summary: 'Search Google News by keyword',
-                    description: 'Searches Google News RSS feed for articles matching the given keyword',
-                    operationId: 'searchGoogleNews',
-                    requestBody: {
-                      required: true,
-                      content: {
-                        'application/json': {
-                          schema: {
-                            type: 'object',
-                            properties: {
-                              keyword: {
-                                type: 'string',
-                                description: 'The search keyword or phrase',
-                              },
-                            },
-                            required: ['keyword'],
-                          },
-                        },
-                      },
-                    },
-                    responses: {
-                      '200': {
-                        description: 'Successful response with news items',
-                        content: {
-                          'application/json': {
-                            schema: {
-                              type: 'object',
-                              properties: {
-                                success: { type: 'boolean' },
-                                message: { type: 'string' },
-                                items: {
-                                  type: 'array',
-                                  items: {
-                                    type: 'object',
-                                    properties: {
-                                      title: { type: 'string' },
-                                      link: { type: 'string' },
-                                      description: { type: 'string' },
-                                      pubDate: { type: 'string' },
-                                      source: { type: 'string' },
-                                    },
-                                  },
-                                },
-                              },
-                            },
-                          },
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-            }),
+            payload: JSON.stringify(apiSchema),
           },
-          description: 'Action group for searching Google News',
+          description: 'Action group for searching news from Google News and RSS feeds',
         },
       ],
     });
