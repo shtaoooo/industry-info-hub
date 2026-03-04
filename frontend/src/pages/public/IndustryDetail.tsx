@@ -177,143 +177,185 @@ const IndustryDetail: React.FC = () => {
 
                 return (
                   <React.Fragment key={subIndustry.id}>
-                    {/* Tier2 Sub-Industry Card */}
+                    {/* Tier2 Sub-Industry Card with Stacked Effect */}
                     <div
-                      className="apple-card"
                       style={{
-                        padding: '24px',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'flex-start',
-                        gap: 16,
-                        minHeight: 140,
-                        overflow: 'hidden',
-                        transition: 'all 0.3s ease',
+                        position: 'relative',
+                        paddingTop: hasTier3Children ? 8 : 0,
                       }}
                     >
+                      {/* Stacked cards background effect - only for Tier2-Group */}
+                      {hasTier3Children && (
+                        <>
+                          <div
+                            style={{
+                              position: 'absolute',
+                              top: 0,
+                              left: 4,
+                              right: 4,
+                              height: '100%',
+                              background: '#ffffff',
+                              border: '1px solid #e8e8ed',
+                              borderRadius: 18,
+                              zIndex: 0,
+                            }}
+                          />
+                          <div
+                            style={{
+                              position: 'absolute',
+                              top: 4,
+                              left: 8,
+                              right: 8,
+                              height: '100%',
+                              background: '#ffffff',
+                              border: '1px solid #e8e8ed',
+                              borderRadius: 18,
+                              zIndex: 1,
+                            }}
+                          />
+                        </>
+                      )}
+
+                      {/* Main Tier2 Card */}
                       <div
-                        onClick={() => handleSubIndustryClick(subIndustry.id)}
+                        className="apple-card"
                         style={{
+                          padding: '24px',
+                          cursor: 'pointer',
                           display: 'flex',
                           alignItems: 'flex-start',
                           gap: 16,
-                          flex: 1,
+                          minHeight: 140,
+                          overflow: 'hidden',
+                          transition: 'all 0.3s ease',
+                          position: 'relative',
+                          zIndex: 2,
                         }}
                       >
                         <div
-                          style={{
-                            width: '20%',
-                            fontSize: 15,
-                            fontWeight: 600,
-                            color: '#1d1d1f',
-                            display: '-webkit-box',
-                            WebkitLineClamp: 5,
-                            WebkitBoxOrient: 'vertical',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            lineHeight: 1.5,
-                          }}
-                        >
-                          {subIndustry.name}
-                        </div>
-                        <div
-                          style={{
-                            width: '20%',
-                            fontSize: 13,
-                            color: '#6e6e73',
-                            lineHeight: 1.5,
-                            display: '-webkit-box',
-                            WebkitLineClamp: 5,
-                            WebkitBoxOrient: 'vertical',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                          }}
-                        >
-                          {subIndustry.definition || '-'}
-                        </div>
-                        <div
-                          style={{
-                            width: '20%',
-                            fontSize: 13,
-                            color: '#6e6e73',
-                            lineHeight: 1.5,
-                            display: '-webkit-box',
-                            WebkitLineClamp: 5,
-                            WebkitBoxOrient: 'vertical',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                          }}
-                        >
-                          {subIndustry.definitionCn || '-'}
-                        </div>
-                        <div
-                          style={{
-                            width: '20%',
-                            fontSize: 13,
-                            color: '#6e6e73',
-                            lineHeight: 1.5,
-                            whiteSpace: 'pre-wrap',
-                            display: '-webkit-box',
-                            WebkitLineClamp: 5,
-                            WebkitBoxOrient: 'vertical',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                          }}
-                        >
-                          {subIndustry.typicalGlobalCompanies?.length > 0
-                            ? subIndustry.typicalGlobalCompanies.join('\n')
-                            : '-'}
-                        </div>
-                        <div
-                          style={{
-                            width: '20%',
-                            fontSize: 13,
-                            color: '#6e6e73',
-                            lineHeight: 1.5,
-                            whiteSpace: 'pre-wrap',
-                            display: '-webkit-box',
-                            WebkitLineClamp: 5,
-                            WebkitBoxOrient: 'vertical',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                          }}
-                        >
-                          {subIndustry.typicalChineseCompanies?.length > 0
-                            ? subIndustry.typicalChineseCompanies.join('\n')
-                            : '-'}
-                        </div>
-                      </div>
-
-                      {/* Expand/Collapse Button */}
-                      {hasTier3Children && (
-                        <div
-                          onClick={(e) => toggleTier2Expansion(subIndustry.id, e)}
+                          onClick={() => handleSubIndustryClick(subIndustry.id)}
                           style={{
                             display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            width: 32,
-                            height: 32,
-                            borderRadius: 8,
-                            background: '#f5f5f7',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s ease',
-                            flexShrink: 0,
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.background = '#e8e8ed'
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.background = '#f5f5f7'
+                            alignItems: 'flex-start',
+                            gap: 16,
+                            flex: 1,
                           }}
                         >
-                          {isExpanded ? (
-                            <UpOutlined style={{ fontSize: 14, color: '#1d1d1f' }} />
-                          ) : (
-                            <DownOutlined style={{ fontSize: 14, color: '#1d1d1f' }} />
-                          )}
+                          <div
+                            style={{
+                              width: '20%',
+                              fontSize: 15,
+                              fontWeight: 600,
+                              color: '#1d1d1f',
+                              display: '-webkit-box',
+                              WebkitLineClamp: 5,
+                              WebkitBoxOrient: 'vertical',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              lineHeight: 1.5,
+                            }}
+                          >
+                            {subIndustry.name}
+                          </div>
+                          <div
+                            style={{
+                              width: '20%',
+                              fontSize: 13,
+                              color: '#6e6e73',
+                              lineHeight: 1.5,
+                              display: '-webkit-box',
+                              WebkitLineClamp: 5,
+                              WebkitBoxOrient: 'vertical',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                            }}
+                          >
+                            {subIndustry.definition || '-'}
+                          </div>
+                          <div
+                            style={{
+                              width: '20%',
+                              fontSize: 13,
+                              color: '#6e6e73',
+                              lineHeight: 1.5,
+                              display: '-webkit-box',
+                              WebkitLineClamp: 5,
+                              WebkitBoxOrient: 'vertical',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                            }}
+                          >
+                            {subIndustry.definitionCn || '-'}
+                          </div>
+                          <div
+                            style={{
+                              width: '20%',
+                              fontSize: 13,
+                              color: '#6e6e73',
+                              lineHeight: 1.5,
+                              whiteSpace: 'pre-wrap',
+                              display: '-webkit-box',
+                              WebkitLineClamp: 5,
+                              WebkitBoxOrient: 'vertical',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                            }}
+                          >
+                            {subIndustry.typicalGlobalCompanies?.length > 0
+                              ? subIndustry.typicalGlobalCompanies.join('\n')
+                              : '-'}
+                          </div>
+                          <div
+                            style={{
+                              width: '20%',
+                              fontSize: 13,
+                              color: '#6e6e73',
+                              lineHeight: 1.5,
+                              whiteSpace: 'pre-wrap',
+                              display: '-webkit-box',
+                              WebkitLineClamp: 5,
+                              WebkitBoxOrient: 'vertical',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                            }}
+                          >
+                            {subIndustry.typicalChineseCompanies?.length > 0
+                              ? subIndustry.typicalChineseCompanies.join('\n')
+                              : '-'}
+                          </div>
                         </div>
-                      )}
+
+                        {/* Expand/Collapse Button */}
+                        {hasTier3Children && (
+                          <div
+                            onClick={(e) => toggleTier2Expansion(subIndustry.id, e)}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              width: 32,
+                              height: 32,
+                              borderRadius: 8,
+                              background: '#f5f5f7',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s ease',
+                              flexShrink: 0,
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.background = '#e8e8ed'
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.background = '#f5f5f7'
+                            }}
+                          >
+                            {isExpanded ? (
+                              <UpOutlined style={{ fontSize: 14, color: '#1d1d1f' }} />
+                            ) : (
+                              <DownOutlined style={{ fontSize: 14, color: '#1d1d1f' }} />
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     {/* Tier3 Sub-Industries (Expanded) */}
