@@ -302,7 +302,7 @@ export class IndustryPortalStack extends cdk.Stack {
     }));
 
     // Create Bedrock Agent using L1 construct (CfnAgent)
-    const newsAgent = new bedrock.CfnAgent(this, 'NewsAgent', {
+    const newsAgent = new bedrock.CfnAgent(this, 'BedrockNewsAgent', {
       agentName: 'IndustryPortalNewsAgent',
       agentResourceRoleArn: bedrockAgentRole.roleArn,
       foundationModel: 'anthropic.claude-3-sonnet-20240229-v1:0',
@@ -348,7 +348,7 @@ export class IndustryPortalStack extends cdk.Stack {
     });
 
     // Create Agent Alias
-    const newsAgentAlias = new bedrock.CfnAgentAlias(this, 'NewsAgentAlias', {
+    const newsAgentAlias = new bedrock.CfnAgentAlias(this, 'BedrockNewsAgentAlias', {
       agentId: newsAgent.attrAgentId,
       agentAliasName: 'prod',
       description: 'Production alias for News Agent',
