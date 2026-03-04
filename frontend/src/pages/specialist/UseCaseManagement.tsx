@@ -338,7 +338,6 @@ const UseCaseManagement: React.FC = () => {
             >
               <Select 
                 placeholder="请选择Tier3子行业"
-                disabled={!!editingUseCase}
               >
                 {tier3Options.map((subIndustry) => (
                   <Option key={subIndustry.id} value={subIndustry.id}>
