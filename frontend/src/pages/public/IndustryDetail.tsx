@@ -178,13 +178,8 @@ const IndustryDetail: React.FC = () => {
               {tier2SubIndustries.map((subIndustry) => {
                 const hasTier3Children = tier3ByParent[subIndustry.id]?.length > 0
                 const isExpanded = expandedTier2.has(subIndustry.id)
-                // Show max 3 stacked cards
-                const stackCount = hasTier3Children ? Math.min(tier3ByParent[subIndustry.id].length, 3) : 0
-
-                // Debug log
-                if (hasTier3Children) {
-                  console.log(`SubIndustry ${subIndustry.name}: hasTier3=${hasTier3Children}, stackCount=${stackCount}, isExpanded=${isExpanded}`)
-                }
+                // Always show 3 stacked cards for Tier2-Group
+                const stackCount = hasTier3Children ? 3 : 0
 
                 return (
                   <React.Fragment key={subIndustry.id}>
@@ -192,20 +187,20 @@ const IndustryDetail: React.FC = () => {
                     <div
                       style={{
                         position: 'relative',
-                        paddingBottom: hasTier3Children && !isExpanded ? stackCount * 6 : 0,
+                        paddingBottom: hasTier3Children && !isExpanded ? stackCount * 2 : 0,
                       }}
                     >
-                      {/* Stacked cards behind (only when collapsed and has children) - max 3 cards */}
+                      {/* Stacked cards behind (only when collapsed and has children) - always 3 cards */}
                       {hasTier3Children && !isExpanded && Array.from({ length: stackCount }).map((_, stackIndex) => (
                         <div
                           key={`stack-${stackIndex}`}
                           style={{
                             position: 'absolute',
-                            top: (stackIndex + 1) * 6,
+                            top: (stackIndex + 1) * 2,
                             left: 0,
                             right: 0,
                             height: '100%',
-                            zIndex: 0,
+                            zIndex: -stackIndex - 1,
                             pointerEvents: 'none',
                             background: '#ffffff',
                             border: '1px solid #d2d2d7',
