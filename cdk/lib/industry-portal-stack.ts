@@ -279,7 +279,7 @@ export class IndustryPortalStack extends cdk.Stack {
     const accountsManagementFn = createFunction('AccountsManagement', 'accountsManagement');
     const copilotAgentFn = createFunction('CopilotAgent', 'copilotAgent', 60, 1024);
     const newsAgentActionGroupFn = createFunction('NewsAgentActionGroup', 'newsAgentActionGroup', 30, 512);
-    const newsAgentOrchestratorFn = createFunction('NewsAgentOrchestrator', 'newsAgentOrchestrator', 120, 1024);
+    const newsAgentOrchestratorFn = createFunction('NewsAgentOrchestrator', 'newsAgentOrchestrator', 300, 1024); // Increased timeout for Agent processing
 
     // Bedrock Agent for News Search
     // Load OpenAPI schema from file
