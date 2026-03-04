@@ -32,6 +32,8 @@ const UseCaseManagement: React.FC = () => {
   const [editingUseCase, setEditingUseCase] = useState<UseCase | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [form] = Form.useForm()
+  const [selectedTier2, setSelectedTier2] = useState<SubIndustry | null>(null)
+  const [tier3Options, setTier3Options] = useState<SubIndustry[]>([])
 
   const fetchUseCases = useCallback(async () => {
     setLoading(true)
@@ -72,27 +74,77 @@ const UseCaseManagement: React.FC = () => {
   const handleCreate = () => {
     setEditingUseCase(null)
     form.resetFields()
+    setSelectedTier2(null)
+    setTier3Options([])
     setModalVisible(true)
   }
 
   const handleEdit = (useCase: UseCase) => {
     setEditingUseCase(useCase)
-    form.setFieldsValue({
-      subIndustryId: useCase.subIndustryId,
-      name: useCase.name,
-      businessScenario: useCase.businessScenario || useCase.description, // 向后兼容
-      customerPainPoints: useCase.customerPainPoints || '',
-      targetAudience: useCase.targetAudience || '',
-      communicationScript: useCase.communicationScript || '',
-      recommendationScore: useCase.recommendationScore || 3,
-    })
+    
+    // Find the sub-industry for this use case
+    const subIndustry = subIndustries.find(si => si.id === useCase.subIndustryId)
+    
+    // If it's a Tier3, find its parent and set up the cascading selects
+    if (subIndustry?.level === 'Tier3' && subIndustry.parentSubIndustryId) {
+      const parentTier2 = subIndustries.find(si => si.id === subIndustry.parentSubIndustryId)
+      if (parentTier2) {
+        setSelectedTier2(parentTier2)
+        const tier3List = subIndustries.filter(si => si.parentSubIndustryId === parentTier2.id)
+        setTier3Options(tier3List)
+        form.setFieldsValue({
+          tier2SubIndustryId: parentTier2.id,
+          tier3SubIndustryId: useCase.subIndustryId,
+          name: useCase.name,
+          businessScenario: useCase.businessScenario || useCase.description,
+          customerPainPoints: useCase.customerPainPoints || '',
+          targetAudience: useCase.targetAudience || '',
+          communicationScript: useCase.communicationScript || '',
+          recommendationScore: useCase.recommendationScore || 3,
+        })
+      }
+    } else {
+      // It's a Tier2 sub-industry
+      setSelectedTier2(null)
+      setTier3Options([])
+      form.setFieldsValue({
+        tier2SubIndustryId: useCase.subIndustryId,
+        tier3SubIndustryId: undefined,
+        name: useCase.name,
+        businessScenario: useCase.businessScenario || useCase.description,
+        customerPainPoints: useCase.customerPainPoints || '',
+        targetAudience: useCase.targetAudience || '',
+        communicationScript: useCase.communicationScript || '',
+        recommendationScore: useCase.recommendationScore || 3,
+      })
+    }
+    
     setModalVisible(true)
+  }
+
+  const handleTier2Change = (tier2Id: string) => {
+    const tier2 = subIndustries.find(si => si.id === tier2Id)
+    setSelectedTier2(tier2 || null)
+    
+    // Clear Tier3 selection
+    form.setFieldValue('tier3SubIndustryId', undefined)
+    
+    // If it's a Tier2-Group, load Tier3 options
+    if (tier2?.level === 'Tier2-Group') {
+      const tier3List = subIndustries.filter(si => si.parentSubIndustryId === tier2Id)
+      setTier3Options(tier3List)
+    } else {
+      setTier3Options([])
+    }
   }
 
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields()
       setSubmitting(true)
+
+      // Determine the actual subIndustryId to use
+      const finalSubIndustryId = values.tier3SubIndustryId || values.tier2SubIndustryId
 
       if (editingUseCase) {
         const updateData: UpdateUseCaseRequest = {
@@ -108,7 +160,7 @@ const UseCaseManagement: React.FC = () => {
         message.success('用例更新成功')
       } else {
         const createData: CreateUseCaseRequest = {
-          subIndustryId: values.subIndustryId,
+          subIndustryId: finalSubIndustryId,
           name: values.name,
           description: values.businessScenario, // 保持向后兼容
           businessScenario: values.businessScenario,
@@ -124,6 +176,8 @@ const UseCaseManagement: React.FC = () => {
       setModalVisible(false)
       form.resetFields()
       setEditingUseCase(null)
+      setSelectedTier2(null)
+      setTier3Options([])
       await fetchUseCases()
     } catch (error: any) {
       if (error.errorFields) return // form validation error
@@ -257,18 +311,44 @@ const UseCaseManagement: React.FC = () => {
       >
         <Form form={form} layout="vertical">
           <Form.Item
-            name="subIndustryId"
-            label="所属子行业"
+            name="tier2SubIndustryId"
+            label="所属子行业 (Tier2)"
             rules={[{ required: true, message: '请选择所属子行业' }]}
           >
-            <Select placeholder="请选择所属子行业" disabled={!!editingUseCase}>
-              {subIndustries.map((subIndustry) => (
-                <Option key={subIndustry.id} value={subIndustry.id}>
-                  {getIndustryName(subIndustry.industryId)} / {subIndustry.name}
-                </Option>
-              ))}
+            <Select 
+              placeholder="请选择Tier2子行业" 
+              disabled={!!editingUseCase}
+              onChange={handleTier2Change}
+            >
+              {subIndustries
+                .filter(si => si.level === 'Tier2-individual' || si.level === 'Tier2-Group')
+                .map((subIndustry) => (
+                  <Option key={subIndustry.id} value={subIndustry.id}>
+                    {getIndustryName(subIndustry.industryId)} / {subIndustry.name}
+                    {subIndustry.level === 'Tier2-Group' && ' (包含Tier3子行业)'}
+                  </Option>
+                ))}
             </Select>
           </Form.Item>
+          
+          {selectedTier2?.level === 'Tier2-Group' && tier3Options.length > 0 && (
+            <Form.Item
+              name="tier3SubIndustryId"
+              label="所属子行业 (Tier3)"
+              rules={[{ required: true, message: '请选择Tier3子行业' }]}
+            >
+              <Select 
+                placeholder="请选择Tier3子行业"
+                disabled={!!editingUseCase}
+              >
+                {tier3Options.map((subIndustry) => (
+                  <Option key={subIndustry.id} value={subIndustry.id}>
+                    {subIndustry.name}
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+          )}
           <Form.Item
             name="name"
             label="用例名称"

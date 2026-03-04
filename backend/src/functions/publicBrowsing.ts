@@ -126,11 +126,11 @@ export async function listSubIndustries(event: APIGatewayProxyEvent): Promise<AP
       createdAt: item.createdAt,
     }))
 
-    // Sort by priority ascending (items without priority go to the end)
+    // Sort by priority descending (items without priority go to the end)
     subIndustries.sort((a: any, b: any) => {
-      const pa = typeof a.priority === 'number' ? a.priority : Number.MAX_SAFE_INTEGER
-      const pb = typeof b.priority === 'number' ? b.priority : Number.MAX_SAFE_INTEGER
-      return pa - pb
+      const pa = typeof a.priority === 'number' ? a.priority : Number.MIN_SAFE_INTEGER
+      const pb = typeof b.priority === 'number' ? b.priority : Number.MIN_SAFE_INTEGER
+      return pb - pa
     })
 
     return successResponse(subIndustries)
