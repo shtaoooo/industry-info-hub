@@ -137,6 +137,9 @@ export async function listSubIndustries(event: APIGatewayProxyEvent): Promise<AP
         typicalGlobalCompanies: item.typicalGlobalCompanies || [],
         typicalChineseCompanies: item.typicalChineseCompanies || [],
         priority: item.priority,
+        level: item.level,
+        parentSubIndustryId: item.parentSubIndustryId,
+        childrenIds: item.childrenIds,
         createdAt: item.createdAt,
         updatedAt: item.updatedAt,
       }))
@@ -186,6 +189,9 @@ export async function listSubIndustries(event: APIGatewayProxyEvent): Promise<AP
           typicalGlobalCompanies: item.typicalGlobalCompanies || [],
           typicalChineseCompanies: item.typicalChineseCompanies || [],
           priority: item.priority,
+          level: item.level,
+          parentSubIndustryId: item.parentSubIndustryId,
+          childrenIds: item.childrenIds,
           createdAt: item.createdAt,
           updatedAt: item.updatedAt,
         }))
