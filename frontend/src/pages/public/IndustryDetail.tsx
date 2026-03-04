@@ -111,6 +111,11 @@ const IndustryDetail: React.FC = () => {
   // Debug: Log tier2 and tier3 data
   console.log('Tier2 SubIndustries:', tier2SubIndustries)
   console.log('Tier3 ByParent:', tier3ByParent)
+  console.log('Sample Tier3 priority types:', tier3SubIndustries.slice(0, 3).map(t => ({ 
+    name: t.name, 
+    priority: t.priority, 
+    type: typeof t.priority 
+  })))
 
   if (loading) {
     return (
@@ -402,11 +407,11 @@ const IndustryDetail: React.FC = () => {
                               </div>
                               {typeof tier3.priority === 'number' && (
                                 <div style={{ fontSize: 12 }}>
-                                  {Array.from({ length: 5 }, (_, i) => (
+                                  {Array.from({ length: tier3.priority }, (_, i) => (
                                     <span
                                       key={i}
                                       style={{
-                                        color: i < (tier3.priority ?? 0) ? '#ffb800' : '#d2d2d7',
+                                        color: '#ffb800',
                                         marginRight: 1,
                                       }}
                                     >
