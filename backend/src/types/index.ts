@@ -22,7 +22,8 @@ export interface SubIndustry {
   typicalChineseCompanies: string[]
   priority?: number
   level?: string // 'Tier2-individual' | 'Tier2-Group' | 'Tier3'
-  parentSubIndustryId?: string // For Tier3, reference to parent Tier2
+  parentSubIndustryId?: string // For Tier3, reference to parent Tier2 (also called parentId)
+  childrenIds?: string[] // For Tier2-Group, array of Tier3 sub-industry IDs
   createdAt: string
   updatedAt: string
 }

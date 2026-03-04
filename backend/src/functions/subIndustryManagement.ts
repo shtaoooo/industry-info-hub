@@ -250,19 +250,56 @@ export async function createSubIndustry(event: APIGatewayProxyEvent): Promise<AP
         return errorResponse('NOT_FOUND', '父级Tier2子行业不存在', 404)
       }
 
-      // Update parent to Tier2-Group
+      // Generate ID first so we can add it to parent's childrenIds
+      const id = generateId()
+
+      // Update parent to Tier2-Group and add this child to childrenIds
+      const existingChildrenIds = parentExists.Item.childrenIds || []
       await docClient.send(
         new PutCommand({
           TableName: TABLE_NAMES.SUB_INDUSTRIES,
           Item: {
             ...parentExists.Item,
             level: 'Tier2-Group',
+            childrenIds: [...existingChildrenIds, id],
             updatedAt: new Date().toISOString(),
           },
         })
       )
+
+      // Continue with creating the Tier3 sub-industry
+      const now = new Date().toISOString()
+
+      const subIndustry: SubIndustry = {
+        id,
+        industryId,
+        name: name.trim(),
+        definition: definition.trim(),
+        definitionCn: definitionCn && typeof definitionCn === 'string' ? definitionCn.trim() : undefined,
+        typicalGlobalCompanies: Array.isArray(typicalGlobalCompanies) ? typicalGlobalCompanies : [],
+        typicalChineseCompanies: Array.isArray(typicalChineseCompanies) ? typicalChineseCompanies : [],
+        priority: typeof priority === 'number' ? priority : undefined,
+        level: subIndustryLevel,
+        parentSubIndustryId: parentSubIndustryId,
+        createdAt: now,
+        updatedAt: now,
+      }
+
+      await docClient.send(
+        new PutCommand({
+          TableName: TABLE_NAMES.SUB_INDUSTRIES,
+          Item: {
+            PK: `INDUSTRY#${industryId}`,
+            SK: `SUBINDUSTRY#${id}`,
+            ...subIndustry,
+          },
+        })
+      )
+
+      return successResponse(subIndustry, 201)
     }
 
+    // For non-Tier3 sub-industries
     // Check if parent industry exists
     const industryExists = await docClient.send(
       new GetCommand({
@@ -288,7 +325,8 @@ export async function createSubIndustry(event: APIGatewayProxyEvent): Promise<AP
       typicalChineseCompanies: Array.isArray(typicalChineseCompanies) ? typicalChineseCompanies : [],
       priority: typeof priority === 'number' ? priority : undefined,
       level: subIndustryLevel,
-      parentSubIndustryId: subIndustryLevel === 'Tier3' ? parentSubIndustryId : undefined,
+      parentSubIndustryId: undefined,
+      childrenIds: subIndustryLevel === 'Tier2-Group' ? [] : undefined,
       createdAt: now,
       updatedAt: now,
     }
@@ -453,6 +491,7 @@ export async function deleteSubIndustry(event: APIGatewayProxyEvent): Promise<AP
 
     // Find the sub-industry
     let existingIndustryId: string = ''
+    let subIndustryItem: any = null
     let found = false
 
     const industries = await docClient.send(
@@ -478,6 +517,7 @@ export async function deleteSubIndustry(event: APIGatewayProxyEvent): Promise<AP
 
       if (result.Item) {
         existingIndustryId = industry.id
+        subIndustryItem = result.Item
         found = true
         break
       }
@@ -501,6 +541,36 @@ export async function deleteSubIndustry(event: APIGatewayProxyEvent): Promise<AP
 
     if (useCases.Items && useCases.Items.length > 0) {
       return errorResponse('CONFLICT', '该子行业包含用例，无法删除。请先删除所有用例。', 409, { dependency: 'use-cases' })
+    }
+
+    // If this is a Tier3 sub-industry, remove it from parent's childrenIds
+    if (subIndustryItem.level === 'Tier3' && subIndustryItem.parentSubIndustryId) {
+      const parentResult = await docClient.send(
+        new GetCommand({
+          TableName: TABLE_NAMES.SUB_INDUSTRIES,
+          Key: {
+            PK: `INDUSTRY#${existingIndustryId}`,
+            SK: `SUBINDUSTRY#${subIndustryItem.parentSubIndustryId}`,
+          },
+        })
+      )
+
+      if (parentResult.Item) {
+        const updatedChildrenIds = (parentResult.Item.childrenIds || []).filter(
+          (childId: string) => childId !== subIndustryId
+        )
+
+        await docClient.send(
+          new PutCommand({
+            TableName: TABLE_NAMES.SUB_INDUSTRIES,
+            Item: {
+              ...parentResult.Item,
+              childrenIds: updatedChildrenIds,
+              updatedAt: new Date().toISOString(),
+            },
+          })
+        )
+      }
     }
 
     await docClient.send(
