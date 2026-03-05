@@ -32,7 +32,7 @@ async function listBlogs(event: APIGatewayProxyEvent, user: any): Promise<APIGat
     const blogs = items.map((item) => ({
       id: item.id,
       industryId: item.industryId,
-      useCaseId: item.useCaseId,
+      useCaseIds: item.useCaseIds || [],
       title: item.title,
       summary: item.summary,
       content: item.content,
@@ -59,14 +59,14 @@ async function createBlog(event: APIGatewayProxyEvent, user: any): Promise<APIGa
   try {
     console.log('=== CREATE BLOG START ===')
     const body = JSON.parse(event.body || '{}')
-    const { industryId, useCaseId, title, summary, content, imageUrl, externalUrl, author, publishedAt } = body
+    const { industryId, useCaseIds, title, summary, content, imageUrl, externalUrl, author, publishedAt } = body
 
     console.log('1. Received data:', { 
       industryId, 
-      useCaseId, 
+      useCaseIds, 
       title, 
-      useCaseIdType: typeof useCaseId,
-      useCaseIdValue: JSON.stringify(useCaseId)
+      useCaseIdsType: typeof useCaseIds,
+      useCaseIdsValue: JSON.stringify(useCaseIds)
     })
 
     if (!industryId || !title || !summary || !author) {
@@ -96,51 +96,54 @@ async function createBlog(event: APIGatewayProxyEvent, user: any): Promise<APIGa
     }
     console.log('7. Industry found:', industry.Item.name)
 
-    // Verify use case exists if provided
-    if (useCaseId && typeof useCaseId === 'string' && useCaseId.trim() !== '') {
-      console.log('8. Verifying use case exists:', useCaseId)
-      console.log('9. Scanning USE_CASES table with filter: id =', useCaseId)
+    // Verify use cases exist if provided
+    const processedUseCaseIds: string[] = []
+    if (useCaseIds && Array.isArray(useCaseIds) && useCaseIds.length > 0) {
+      console.log('8. Verifying use cases exist:', useCaseIds)
       
-      // Use cases are stored with PK: SUBINDUSTRY#${subIndustryId}, SK: USECASE#${useCaseId}
-      // We need to scan to find the use case by ID
-      const useCaseResult = await docClient.send(
-        new ScanCommand({
-          TableName: TABLE_NAMES.USE_CASES,
-          FilterExpression: 'id = :useCaseId',
-          ExpressionAttributeValues: {
-            ':useCaseId': useCaseId,
-          },
-        })
-      )
+      for (const useCaseId of useCaseIds) {
+        if (useCaseId && typeof useCaseId === 'string' && useCaseId.trim() !== '') {
+          console.log('9. Scanning USE_CASES table for:', useCaseId)
+          
+          const useCaseResult = await docClient.send(
+            new ScanCommand({
+              TableName: TABLE_NAMES.USE_CASES,
+              FilterExpression: 'id = :useCaseId',
+              ExpressionAttributeValues: {
+                ':useCaseId': useCaseId,
+              },
+            })
+          )
 
-      console.log('10. Use case scan result:', {
-        itemCount: useCaseResult.Items?.length || 0,
-        items: useCaseResult.Items?.map(item => ({ id: item.id, name: item.name }))
-      })
+          console.log('10. Use case scan result:', {
+            useCaseId,
+            itemCount: useCaseResult.Items?.length || 0,
+          })
 
-      if (!useCaseResult.Items || useCaseResult.Items.length === 0) {
-        console.log('11. Use case not found - returning 404')
-        return errorResponse('NOT_FOUND', '用例不存在', 404)
+          if (!useCaseResult.Items || useCaseResult.Items.length === 0) {
+            console.log('11. Use case not found:', useCaseId)
+            return errorResponse('NOT_FOUND', `用例不存在: ${useCaseId}`, 404)
+          }
+          
+          processedUseCaseIds.push(useCaseId)
+          console.log('12. Use case found:', useCaseResult.Items[0].name)
+        }
       }
-      console.log('12. Use case found:', useCaseResult.Items[0].name)
     } else {
-      console.log('8. No use case ID provided or empty, skipping validation')
+      console.log('8. No use case IDs provided or empty, skipping validation')
     }
 
     const blogId = randomUUID()
     const now = new Date().toISOString()
-
-    // Process useCaseId: only set if it's a non-empty string
-    const processedUseCaseId = (useCaseId && typeof useCaseId === 'string' && useCaseId.trim() !== '') ? useCaseId : null
     
-    console.log('13. Processed useCaseId:', processedUseCaseId)
+    console.log('13. Processed useCaseIds:', processedUseCaseIds)
 
     const blogItem = {
       PK: `BLOG#${blogId}`,
       SK: 'METADATA',
       id: blogId,
       industryId,
-      useCaseId: processedUseCaseId,
+      useCaseIds: processedUseCaseIds,
       title,
       summary,
       content: content || '',
@@ -184,7 +187,7 @@ async function updateBlog(event: APIGatewayProxyEvent, user: any): Promise<APIGa
     }
 
     const body = JSON.parse(event.body || '{}')
-    const { title, summary, content, imageUrl, externalUrl, author, publishedAt, useCaseId } = body
+    const { title, summary, content, imageUrl, externalUrl, author, publishedAt, useCaseIds } = body
 
     // Get existing blog
     const existing = await docClient.send(
@@ -203,32 +206,32 @@ async function updateBlog(event: APIGatewayProxyEvent, user: any): Promise<APIGa
       return errorResponse('FORBIDDEN', '您没有权限修改该行业的博客', 403)
     }
 
-    // Verify use case exists if provided
-    if (useCaseId && typeof useCaseId === 'string' && useCaseId.trim() !== '') {
-      console.log('Verifying use case exists for update:', useCaseId)
+    // Verify use cases exist if provided
+    const processedUseCaseIds: string[] = []
+    if (useCaseIds && Array.isArray(useCaseIds) && useCaseIds.length > 0) {
+      console.log('Verifying use cases exist for update:', useCaseIds)
       
-      // Use cases are stored with PK: SUBINDUSTRY#${subIndustryId}, SK: USECASE#${useCaseId}
-      // We need to scan to find the use case by ID
-      const useCaseResult = await docClient.send(
-        new ScanCommand({
-          TableName: TABLE_NAMES.USE_CASES,
-          FilterExpression: 'id = :useCaseId',
-          ExpressionAttributeValues: {
-            ':useCaseId': useCaseId,
-          },
-        })
-      )
+      for (const useCaseId of useCaseIds) {
+        if (useCaseId && typeof useCaseId === 'string' && useCaseId.trim() !== '') {
+          const useCaseResult = await docClient.send(
+            new ScanCommand({
+              TableName: TABLE_NAMES.USE_CASES,
+              FilterExpression: 'id = :useCaseId',
+              ExpressionAttributeValues: {
+                ':useCaseId': useCaseId,
+              },
+            })
+          )
 
-      console.log('Use case scan result:', {
-        itemCount: useCaseResult.Items?.length || 0,
-        items: useCaseResult.Items?.map(item => ({ id: item.id, name: item.name }))
-      })
-
-      if (!useCaseResult.Items || useCaseResult.Items.length === 0) {
-        console.log('Use case not found during update')
-        return errorResponse('NOT_FOUND', '用例不存在', 404)
+          if (!useCaseResult.Items || useCaseResult.Items.length === 0) {
+            console.log('Use case not found during update:', useCaseId)
+            return errorResponse('NOT_FOUND', `用例不存在: ${useCaseId}`, 404)
+          }
+          
+          processedUseCaseIds.push(useCaseId)
+          console.log('Use case found:', useCaseResult.Items[0].name)
+        }
       }
-      console.log('Use case found:', useCaseResult.Items[0].name)
     }
 
     const now = new Date().toISOString()
@@ -241,7 +244,7 @@ async function updateBlog(event: APIGatewayProxyEvent, user: any): Promise<APIGa
       externalUrl: externalUrl !== undefined ? externalUrl : existing.Item.externalUrl,
       author: author || existing.Item.author,
       publishedAt: publishedAt || existing.Item.publishedAt,
-      useCaseId: useCaseId !== undefined ? (useCaseId && useCaseId.trim() !== '' ? useCaseId : null) : existing.Item.useCaseId,
+      useCaseIds: useCaseIds !== undefined ? processedUseCaseIds : (existing.Item.useCaseIds || []),
       updatedAt: now,
     }
 

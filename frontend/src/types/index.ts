@@ -114,7 +114,7 @@ export interface News {
 export interface Blog {
   id: string
   industryId: string
-  useCaseId?: string // 关联的use case ID
+  useCaseIds?: string[] // 关联的use case IDs（支持多个）
   title: string
   summary: string
   content: string

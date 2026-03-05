@@ -675,11 +675,11 @@ export async function getUseCaseBlogs(event: APIGatewayProxyEvent): Promise<APIG
       return errorResponse('VALIDATION_ERROR', '用例ID不能为空', 400)
     }
 
-    // Scan blogs table for blogs with this useCaseId
+    // Scan blogs table for blogs that contain this useCaseId in their useCaseIds array
     const result = await docClient.send(
       new ScanCommand({
         TableName: TABLE_NAMES.BLOGS,
-        FilterExpression: 'SK = :sk AND useCaseId = :useCaseId',
+        FilterExpression: 'SK = :sk AND contains(useCaseIds, :useCaseId)',
         ExpressionAttributeValues: {
           ':sk': 'METADATA',
           ':useCaseId': useCaseId,
@@ -690,7 +690,7 @@ export async function getUseCaseBlogs(event: APIGatewayProxyEvent): Promise<APIG
     const blogs = (result.Items || []).map((item) => ({
       id: item.id,
       industryId: item.industryId,
-      useCaseId: item.useCaseId,
+      useCaseIds: item.useCaseIds || [],
       title: item.title,
       summary: item.summary,
       imageUrl: item.imageUrl,

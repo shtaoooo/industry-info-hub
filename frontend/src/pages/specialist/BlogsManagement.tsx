@@ -47,6 +47,7 @@ const BlogsManagement: React.FC = () => {
   const [tier2Options, setTier2Options] = useState<SubIndustry[]>([])
   const [tier3Options, setTier3Options] = useState<SubIndustry[]>([])
   const [useCaseOptions, setUseCaseOptions] = useState<UseCase[]>([])
+  const [selectedUseCaseIds, setSelectedUseCaseIds] = useState<string[]>([])
 
   const fetchBlogs = useCallback(async () => {
     setLoading(true)
@@ -101,6 +102,7 @@ const BlogsManagement: React.FC = () => {
     setTier2Options([])
     setTier3Options([])
     setUseCaseOptions([])
+    setSelectedUseCaseIds([])
     setModalVisible(true)
   }
 
@@ -108,8 +110,11 @@ const BlogsManagement: React.FC = () => {
     setEditingBlog(blog)
     
     // Set up cascading selects based on existing data
-    if (blog.useCaseId) {
-      const useCase = useCases.find(uc => uc.id === blog.useCaseId)
+    if (blog.useCaseIds && blog.useCaseIds.length > 0) {
+      // 找到第一个use case来设置级联选择器
+      const firstUseCaseId = blog.useCaseIds[0]
+      const useCase = useCases.find(uc => uc.id === firstUseCaseId)
+      
       if (useCase) {
         const subIndustry = subIndustries.find(si => si.id === useCase.subIndustryId)
         
@@ -126,12 +131,13 @@ const BlogsManagement: React.FC = () => {
           // Set use cases for Tier3
           const ucList = useCases.filter(uc => uc.subIndustryId === useCase.subIndustryId)
           setUseCaseOptions(ucList)
+          setSelectedUseCaseIds(blog.useCaseIds)
           
           form.setFieldsValue({
             industryId: blog.industryId,
             tier2SubIndustryId: subIndustry.parentSubIndustryId,
             tier3SubIndustryId: useCase.subIndustryId,
-            useCaseId: blog.useCaseId,
+            useCaseIds: blog.useCaseIds,
             title: blog.title,
             summary: blog.summary,
             content: blog.content,
@@ -146,12 +152,13 @@ const BlogsManagement: React.FC = () => {
           // Set use cases for Tier2
           const ucList = useCases.filter(uc => uc.subIndustryId === useCase.subIndustryId)
           setUseCaseOptions(ucList)
+          setSelectedUseCaseIds(blog.useCaseIds)
           
           form.setFieldsValue({
             industryId: blog.industryId,
             tier2SubIndustryId: useCase.subIndustryId,
             tier3SubIndustryId: undefined,
-            useCaseId: blog.useCaseId,
+            useCaseIds: blog.useCaseIds,
             title: blog.title,
             summary: blog.summary,
             content: blog.content,
@@ -164,6 +171,7 @@ const BlogsManagement: React.FC = () => {
       }
     } else {
       // No use case associated
+      setSelectedUseCaseIds([])
       form.setFieldsValue({
         industryId: blog.industryId,
         title: blog.title,
@@ -186,8 +194,10 @@ const BlogsManagement: React.FC = () => {
     form.setFieldsValue({
       tier2SubIndustryId: undefined,
       tier3SubIndustryId: undefined,
-      useCaseId: undefined,
+      useCaseIds: undefined,
     })
+    
+    setSelectedUseCaseIds([])
     
     // Load Tier2 sub-industries for this industry
     const tier2List = subIndustries.filter(si => 
@@ -205,8 +215,10 @@ const BlogsManagement: React.FC = () => {
     // Clear downstream selections
     form.setFieldsValue({
       tier3SubIndustryId: undefined,
-      useCaseId: undefined,
+      useCaseIds: undefined,
     })
+    
+    setSelectedUseCaseIds([])
     
     const tier2 = subIndustries.find(si => si.id === tier2Id)
     console.log('Found tier2:', tier2)
@@ -231,8 +243,10 @@ const BlogsManagement: React.FC = () => {
     
     // Clear use case selection
     form.setFieldsValue({
-      useCaseId: undefined,
+      useCaseIds: undefined,
     })
+    
+    setSelectedUseCaseIds([])
     
     // Load use cases for this Tier3
     const ucList = useCases.filter(uc => uc.subIndustryId === tier3Id)
@@ -250,7 +264,7 @@ const BlogsManagement: React.FC = () => {
 
       const data = {
         industryId: values.industryId,
-        useCaseId: values.useCaseId || null,
+        useCaseIds: values.useCaseIds || [],
         title: values.title,
         summary: values.summary,
         content: values.content,
@@ -277,6 +291,7 @@ const BlogsManagement: React.FC = () => {
       setTier2Options([])
       setTier3Options([])
       setUseCaseOptions([])
+      setSelectedUseCaseIds([])
       await fetchBlogs()
     } catch (error: any) {
       if (error.errorFields) return
@@ -301,10 +316,13 @@ const BlogsManagement: React.FC = () => {
     return industry?.name || industryId
   }
 
-  const getUseCaseName = (useCaseId?: string) => {
-    if (!useCaseId) return '-'
-    const useCase = useCases.find((uc) => uc.id === useCaseId)
-    return useCase?.name || useCaseId
+  const getUseCaseNames = (useCaseIds?: string[]) => {
+    if (!useCaseIds || useCaseIds.length === 0) return '-'
+    const names = useCaseIds.map(id => {
+      const useCase = useCases.find((uc) => uc.id === id)
+      return useCase?.name || id
+    })
+    return names.join(', ')
   }
 
   const columns = [
@@ -323,10 +341,23 @@ const BlogsManagement: React.FC = () => {
     },
     {
       title: '关联用例',
-      dataIndex: 'useCaseId',
-      key: 'useCaseId',
-      width: 150,
-      render: (useCaseId?: string) => getUseCaseName(useCaseId),
+      dataIndex: 'useCaseIds',
+      key: 'useCaseIds',
+      width: 200,
+      render: (useCaseIds?: string[]) => (
+        <div style={{ 
+          maxWidth: 200, 
+          overflow: 'hidden', 
+          textOverflow: 'ellipsis', 
+          whiteSpace: 'nowrap' 
+        }} title={getUseCaseNames(useCaseIds)}>
+          {useCaseIds && useCaseIds.length > 0 ? (
+            <span>
+              {useCaseIds.length} 个用例
+            </span>
+          ) : '-'}
+        </div>
+      ),
     },
     {
       title: '摘要',
@@ -404,6 +435,7 @@ const BlogsManagement: React.FC = () => {
           setTier2Options([])
           setTier3Options([])
           setUseCaseOptions([])
+          setSelectedUseCaseIds([])
         }}
         confirmLoading={submitting}
         okText="保存"
@@ -467,14 +499,17 @@ const BlogsManagement: React.FC = () => {
           )}
           
           <Form.Item
-            name="useCaseId"
+            name="useCaseIds"
             label="关联用例（可选）"
-            tooltip="选择用例后，该博客会显示在用例详情页面"
+            tooltip="可以选择多个用例，该博客会显示在所有选中用例的详情页面"
           >
             <Select 
+              mode="multiple"
               placeholder="请选择关联用例"
               disabled={useCaseOptions.length === 0}
               allowClear
+              maxTagCount="responsive"
+              onChange={(value) => setSelectedUseCaseIds(value)}
             >
               {useCaseOptions.map((uc) => (
                 <Option key={uc.id} value={uc.id}>

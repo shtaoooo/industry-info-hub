@@ -73,7 +73,7 @@ export interface PublicNews {
 export interface PublicBlog {
   id: string
   industryId: string
-  useCaseId?: string
+  useCaseIds?: string[]
   title: string
   summary: string
   content?: string
