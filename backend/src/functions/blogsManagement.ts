@@ -57,21 +57,31 @@ async function listBlogs(event: APIGatewayProxyEvent, user: any): Promise<APIGat
  */
 async function createBlog(event: APIGatewayProxyEvent, user: any): Promise<APIGatewayProxyResult> {
   try {
+    console.log('=== CREATE BLOG START ===')
     const body = JSON.parse(event.body || '{}')
     const { industryId, useCaseId, title, summary, content, imageUrl, externalUrl, author, publishedAt } = body
 
-    // Debug log
-    console.log('Creating blog with data:', { industryId, useCaseId, title, useCaseIdType: typeof useCaseId })
+    console.log('1. Received data:', { 
+      industryId, 
+      useCaseId, 
+      title, 
+      useCaseIdType: typeof useCaseId,
+      useCaseIdValue: JSON.stringify(useCaseId)
+    })
 
     if (!industryId || !title || !summary || !author) {
+      console.log('2. Validation failed: missing required fields')
       return errorResponse('VALIDATION_ERROR', '缺少必填字段', 400)
     }
 
+    console.log('3. Checking industry access for user:', user.role)
     // Check industry access for specialist
     if (!hasIndustryAccess(user, industryId)) {
+      console.log('4. Industry access denied')
       return errorResponse('FORBIDDEN', '您没有权限管理该行业的博客', 403)
     }
 
+    console.log('5. Verifying industry exists:', industryId)
     // Verify industry exists
     const industry = await docClient.send(
       new GetCommand({
@@ -81,21 +91,40 @@ async function createBlog(event: APIGatewayProxyEvent, user: any): Promise<APIGa
     )
 
     if (!industry.Item) {
+      console.log('6. Industry not found')
       return errorResponse('NOT_FOUND', '行业不存在', 404)
     }
+    console.log('7. Industry found:', industry.Item.name)
 
     // Verify use case exists if provided
     if (useCaseId && typeof useCaseId === 'string' && useCaseId.trim() !== '') {
-      const useCase = await docClient.send(
-        new GetCommand({
+      console.log('8. Verifying use case exists:', useCaseId)
+      console.log('9. Scanning USE_CASES table with filter: id =', useCaseId)
+      
+      // Use cases are stored with PK: SUBINDUSTRY#${subIndustryId}, SK: USECASE#${useCaseId}
+      // We need to scan to find the use case by ID
+      const useCaseResult = await docClient.send(
+        new ScanCommand({
           TableName: TABLE_NAMES.USE_CASES,
-          Key: { PK: `USECASE#${useCaseId}`, SK: 'METADATA' },
+          FilterExpression: 'id = :useCaseId',
+          ExpressionAttributeValues: {
+            ':useCaseId': useCaseId,
+          },
         })
       )
 
-      if (!useCase.Item) {
+      console.log('10. Use case scan result:', {
+        itemCount: useCaseResult.Items?.length || 0,
+        items: useCaseResult.Items?.map(item => ({ id: item.id, name: item.name }))
+      })
+
+      if (!useCaseResult.Items || useCaseResult.Items.length === 0) {
+        console.log('11. Use case not found - returning 404')
         return errorResponse('NOT_FOUND', '用例不存在', 404)
       }
+      console.log('12. Use case found:', useCaseResult.Items[0].name)
+    } else {
+      console.log('8. No use case ID provided or empty, skipping validation')
     }
 
     const blogId = randomUUID()
@@ -104,7 +133,7 @@ async function createBlog(event: APIGatewayProxyEvent, user: any): Promise<APIGa
     // Process useCaseId: only set if it's a non-empty string
     const processedUseCaseId = (useCaseId && typeof useCaseId === 'string' && useCaseId.trim() !== '') ? useCaseId : null
     
-    console.log('Processed useCaseId:', processedUseCaseId)
+    console.log('13. Processed useCaseId:', processedUseCaseId)
 
     const blogItem = {
       PK: `BLOG#${blogId}`,
@@ -123,6 +152,8 @@ async function createBlog(event: APIGatewayProxyEvent, user: any): Promise<APIGa
       updatedAt: now,
     }
 
+    console.log('14. Creating blog item:', JSON.stringify(blogItem, null, 2))
+
     await docClient.send(
       new PutCommand({
         TableName: TABLE_NAMES.BLOGS,
@@ -130,9 +161,13 @@ async function createBlog(event: APIGatewayProxyEvent, user: any): Promise<APIGa
       })
     )
 
+    console.log('15. Blog created successfully with ID:', blogId)
+    console.log('=== CREATE BLOG END ===')
+
     return successResponse(blogItem, 201)
   } catch (error: any) {
-    console.error('Error creating blog:', error)
+    console.error('ERROR in createBlog:', error)
+    console.error('Error stack:', error.stack)
     return errorResponse('INTERNAL_ERROR', '创建博客失败', 500)
   }
 }
@@ -170,16 +205,30 @@ async function updateBlog(event: APIGatewayProxyEvent, user: any): Promise<APIGa
 
     // Verify use case exists if provided
     if (useCaseId && typeof useCaseId === 'string' && useCaseId.trim() !== '') {
-      const useCase = await docClient.send(
-        new GetCommand({
+      console.log('Verifying use case exists for update:', useCaseId)
+      
+      // Use cases are stored with PK: SUBINDUSTRY#${subIndustryId}, SK: USECASE#${useCaseId}
+      // We need to scan to find the use case by ID
+      const useCaseResult = await docClient.send(
+        new ScanCommand({
           TableName: TABLE_NAMES.USE_CASES,
-          Key: { PK: `USECASE#${useCaseId}`, SK: 'METADATA' },
+          FilterExpression: 'id = :useCaseId',
+          ExpressionAttributeValues: {
+            ':useCaseId': useCaseId,
+          },
         })
       )
 
-      if (!useCase.Item) {
+      console.log('Use case scan result:', {
+        itemCount: useCaseResult.Items?.length || 0,
+        items: useCaseResult.Items?.map(item => ({ id: item.id, name: item.name }))
+      })
+
+      if (!useCaseResult.Items || useCaseResult.Items.length === 0) {
+        console.log('Use case not found during update')
         return errorResponse('NOT_FOUND', '用例不存在', 404)
       }
+      console.log('Use case found:', useCaseResult.Items[0].name)
     }
 
     const now = new Date().toISOString()
