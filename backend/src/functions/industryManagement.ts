@@ -97,10 +97,11 @@ export async function createIndustry(event: APIGatewayProxyEvent): Promise<APIGa
     await docClient.send(new PutCommand({
       TableName: TABLE_NAMES.INDUSTRIES,
       Item: {
-        PK: `INDUSTRY#${id}`,
+        PK: id,
         SK: 'METADATA',
         ...industry,
-        version: 0, // Initialize version for optimistic locking
+        isVisibleStr: 'true', // for VisibilityIndex GSI
+        version: 0,
       },
     }))
 
@@ -142,7 +143,7 @@ export async function updateIndustry(event: APIGatewayProxyEvent): Promise<APIGa
     // Get current item with version for optimistic locking
     const { item: existing, version: currentVersion } = await getItemWithVersion(
       TABLE_NAMES.INDUSTRIES,
-      { PK: `INDUSTRY#${industryId}`, SK: 'METADATA' }
+      { PK: industryId, SK: 'METADATA' }
     )
 
     const now = new Date().toISOString()
@@ -194,7 +195,7 @@ export async function updateIndustry(event: APIGatewayProxyEvent): Promise<APIGa
     try {
       await docClient.send(new UpdateCommand({
         TableName: TABLE_NAMES.INDUSTRIES,
-        Key: { PK: `INDUSTRY#${industryId}`, SK: 'METADATA' },
+        Key: { PK: industryId, SK: 'METADATA' },
         UpdateExpression: updateExpression,
         ExpressionAttributeNames: expressionAttributeNames,
         ExpressionAttributeValues: {
@@ -214,7 +215,7 @@ export async function updateIndustry(event: APIGatewayProxyEvent): Promise<APIGa
     // Fetch updated item
     const result = await docClient.send(new GetCommand({
       TableName: TABLE_NAMES.INDUSTRIES,
-      Key: { PK: `INDUSTRY#${industryId}`, SK: 'METADATA' },
+      Key: { PK: industryId, SK: 'METADATA' },
     }))
 
     const updated: Industry = {
@@ -258,7 +259,7 @@ export async function deleteIndustry(event: APIGatewayProxyEvent): Promise<APIGa
     // Check if industry exists
     const existing = await docClient.send(new GetCommand({
       TableName: TABLE_NAMES.INDUSTRIES,
-      Key: { PK: `INDUSTRY#${industryId}`, SK: 'METADATA' },
+      Key: { PK: industryId, SK: 'METADATA' },
     }))
 
     if (!existing.Item) {
@@ -279,7 +280,7 @@ export async function deleteIndustry(event: APIGatewayProxyEvent): Promise<APIGa
 
     await docClient.send(new DeleteCommand({
       TableName: TABLE_NAMES.INDUSTRIES,
-      Key: { PK: `INDUSTRY#${industryId}`, SK: 'METADATA' },
+      Key: { PK: industryId, SK: 'METADATA' },
     }))
 
     return successResponse({ message: '行业删除成功' })
@@ -316,7 +317,7 @@ export async function setIndustryVisibility(event: APIGatewayProxyEvent): Promis
     // Check if industry exists
     const existing = await docClient.send(new GetCommand({
       TableName: TABLE_NAMES.INDUSTRIES,
-      Key: { PK: `INDUSTRY#${industryId}`, SK: 'METADATA' },
+      Key: { PK: industryId, SK: 'METADATA' },
     }))
 
     if (!existing.Item) {
@@ -333,9 +334,10 @@ export async function setIndustryVisibility(event: APIGatewayProxyEvent): Promis
     await docClient.send(new PutCommand({
       TableName: TABLE_NAMES.INDUSTRIES,
       Item: {
-        PK: `INDUSTRY#${industryId}`,
+        PK: industryId,
         SK: 'METADATA',
         ...updated,
+        isVisibleStr: isVisible ? 'true' : 'false',
       },
     }))
 

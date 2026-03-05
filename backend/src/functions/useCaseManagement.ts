@@ -13,49 +13,68 @@ function generateId(): string {
 }
 
 /**
- * Check if user has access to the industry of a sub-industry
+ * Get use case by id directly (PK=id, SK=METADATA)
  */
-async function checkSubIndustryAccess(user: any, subIndustryId: string): Promise<{ hasAccess: boolean; industryId?: string }> {
-  // Admin has access to everything
-  if (user.roles?.includes('admin')) {
-    return { hasAccess: true }
-  }
-
-  // Find the sub-industry to get its industry
-  const industries = await docClient.send(
-    new ScanCommand({
-      TableName: TABLE_NAMES.INDUSTRIES,
-      FilterExpression: 'SK = :sk',
-      ExpressionAttributeValues: {
-        ':sk': 'METADATA',
-      },
+async function getUseCaseById(useCaseId: string): Promise<any | null> {
+  const result = await docClient.send(
+    new GetCommand({
+      TableName: TABLE_NAMES.USE_CASES,
+      Key: { PK: useCaseId, SK: 'METADATA' },
     })
   )
-
-  for (const industry of industries.Items || []) {
-    const result = await docClient.send(
-      new GetCommand({
-        TableName: TABLE_NAMES.SUB_INDUSTRIES,
-        Key: {
-          PK: `INDUSTRY#${industry.id}`,
-          SK: `SUBINDUSTRY#${subIndustryId}`,
-        },
-      })
-    )
-
-    if (result.Item) {
-      const industryId = industry.id
-      const hasAccess = hasIndustryAccess(user, industryId)
-      return { hasAccess, industryId }
-    }
-  }
-
-  return { hasAccess: false }
+  return result.Item || null
 }
 
 /**
- * List use cases (filtered by specialist's assigned industries)
+ * Get sub-industry by id directly (PK=id, SK=METADATA)
+ */
+async function getSubIndustryById(subIndustryId: string): Promise<any | null> {
+  const result = await docClient.send(
+    new GetCommand({
+      TableName: TABLE_NAMES.SUB_INDUSTRIES,
+      Key: { PK: subIndustryId, SK: 'METADATA' },
+    })
+  )
+  return result.Item || null
+}
+
+/**
+ * Check if user has access to the industry of a sub-industry
+ */
+async function checkSubIndustryAccess(user: any, subIndustryId: string): Promise<{ hasAccess: boolean; industryId?: string }> {
+  if (user.roles?.includes('admin') || user.role === 'admin') {
+    return { hasAccess: true }
+  }
+
+  const subIndustry = await getSubIndustryById(subIndustryId)
+  if (!subIndustry) return { hasAccess: false }
+
+  const industryId = subIndustry.industryId
+  const hasAccess = hasIndustryAccess(user, industryId)
+  return { hasAccess, industryId }
+}
+
+const mapUseCase = (item: any): UseCase => ({
+  id: item.id,
+  subIndustryId: item.subIndustryId,
+  industryId: item.industryId,
+  name: item.name,
+  description: item.description,
+  businessScenario: item.businessScenario,
+  customerPainPoints: item.customerPainPoints,
+  targetAudience: item.targetAudience,
+  communicationScript: item.communicationScript,
+  recommendationScore: item.recommendationScore || 3,
+  documents: item.documents || [],
+  createdAt: item.createdAt,
+  updatedAt: item.updatedAt,
+  createdBy: item.createdBy,
+})
+
+/**
+ * List use cases
  * GET /specialist/use-cases
+ * Uses SubIndustryIndex GSI or IndustryIndex GSI
  */
 export async function listUseCases(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   try {
@@ -65,111 +84,34 @@ export async function listUseCases(event: APIGatewayProxyEvent): Promise<APIGate
     const useCases: UseCase[] = []
 
     if (user!.role === 'admin') {
-      // Admin can see all use cases
-      // Scan all sub-industries
-      const industries = await docClient.send(
+      // Admin: scan all use cases
+      const result = await docClient.send(
         new ScanCommand({
-      TableName: TABLE_NAMES.INDUSTRIES,
-      FilterExpression: 'SK = :sk',
-          ExpressionAttributeValues: {
-            ':sk': 'METADATA',
-          },
+          TableName: TABLE_NAMES.USE_CASES,
+          FilterExpression: 'SK = :sk',
+          ExpressionAttributeValues: { ':sk': 'METADATA' },
         })
       )
-
-      for (const industry of industries.Items || []) {
-        const subIndustries = await docClient.send(
-          new QueryCommand({
-            TableName: TABLE_NAMES.SUB_INDUSTRIES,
-            KeyConditionExpression: 'PK = :pk',
-            ExpressionAttributeValues: {
-              ':pk': `INDUSTRY#${industry.id}`,
-            },
-          })
-        )
-
-        for (const subIndustry of subIndustries.Items || []) {
-          const result = await docClient.send(
-            new QueryCommand({
-              TableName: TABLE_NAMES.USE_CASES,
-              KeyConditionExpression: 'PK = :pk',
-              ExpressionAttributeValues: {
-                ':pk': `SUBINDUSTRY#${subIndustry.id}`,
-              },
-            })
-          )
-
-          useCases.push(
-            ...(result.Items || []).map((item) => ({
-              id: item.id,
-              subIndustryId: item.subIndustryId,
-              industryId: item.industryId,
-              name: item.name,
-              description: item.description,
-              businessScenario: item.businessScenario,
-              customerPainPoints: item.customerPainPoints,
-              targetAudience: item.targetAudience,
-              communicationScript: item.communicationScript,
-              documents: item.documents || [],
-              createdAt: item.createdAt,
-              updatedAt: item.updatedAt,
-              createdBy: item.createdBy,
-            }))
-          )
-        }
-      }
+      useCases.push(...(result.Items || []).map(mapUseCase))
     } else {
-      // Specialist can only see use cases in their assigned industries
+      // Specialist: query by assigned industries using IndustryIndex GSI
       const assignedIndustries = user!.assignedIndustries || []
-
       for (const industryId of assignedIndustries) {
-        const subIndustries = await docClient.send(
+        const result = await docClient.send(
           new QueryCommand({
-            TableName: TABLE_NAMES.SUB_INDUSTRIES,
-            KeyConditionExpression: 'PK = :pk',
-            ExpressionAttributeValues: {
-              ':pk': `INDUSTRY#${industryId}`,
-            },
+            TableName: TABLE_NAMES.USE_CASES,
+            IndexName: 'IndustryIndex',
+            KeyConditionExpression: 'industryId = :industryId',
+            ExpressionAttributeValues: { ':industryId': industryId },
           })
         )
-
-        for (const subIndustry of subIndustries.Items || []) {
-          const result = await docClient.send(
-            new QueryCommand({
-              TableName: TABLE_NAMES.USE_CASES,
-              KeyConditionExpression: 'PK = :pk',
-              ExpressionAttributeValues: {
-                ':pk': `SUBINDUSTRY#${subIndustry.id}`,
-              },
-            })
-          )
-
-          useCases.push(
-            ...(result.Items || []).map((item) => ({
-              id: item.id,
-              subIndustryId: item.subIndustryId,
-              industryId: item.industryId,
-              name: item.name,
-              description: item.description,
-              businessScenario: item.businessScenario,
-              customerPainPoints: item.customerPainPoints,
-              targetAudience: item.targetAudience,
-              communicationScript: item.communicationScript,
-              documents: item.documents || [],
-              createdAt: item.createdAt,
-              updatedAt: item.updatedAt,
-              createdBy: item.createdBy,
-            }))
-          )
-        }
+        useCases.push(...(result.Items || []).map(mapUseCase))
       }
     }
 
     return successResponse(useCases)
   } catch (error: any) {
-    if (error.message === 'Insufficient permissions') {
-      return errorResponse('FORBIDDEN', '权限不足', 403)
-    }
+    if (error.message === 'Insufficient permissions') return errorResponse('FORBIDDEN', '权限不足', 403)
     console.error('Error listing use cases:', error)
     return errorResponse('INTERNAL_ERROR', '获取用例列表失败', 500)
   }
@@ -178,6 +120,7 @@ export async function listUseCases(event: APIGatewayProxyEvent): Promise<APIGate
 /**
  * Create a new use case
  * POST /specialist/use-cases
+ * PK: id, SK: METADATA
  */
 export async function createUseCase(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   try {
@@ -190,17 +133,14 @@ export async function createUseCase(event: APIGatewayProxyEvent): Promise<APIGat
     if (!subIndustryId || typeof subIndustryId !== 'string' || subIndustryId.trim().length === 0) {
       return errorResponse('VALIDATION_ERROR', '子行业ID不能为空', 400, { field: 'subIndustryId', constraint: 'required' })
     }
-
     if (!name || typeof name !== 'string' || name.trim().length === 0) {
       return errorResponse('VALIDATION_ERROR', '用例名称不能为空', 400, { field: 'name', constraint: 'required' })
     }
-
     if (!description || typeof description !== 'string' || description.trim().length === 0) {
       return errorResponse('VALIDATION_ERROR', '用例描述不能为空', 400, { field: 'description', constraint: 'required' })
     }
 
-    // Validate recommendationScore (1-5)
-    let validatedScore = 3 // Default value
+    let validatedScore = 3
     if (recommendationScore !== undefined && recommendationScore !== null) {
       const score = Number(recommendationScore)
       if (isNaN(score) || score < 1 || score > 5 || !Number.isInteger(score)) {
@@ -209,11 +149,8 @@ export async function createUseCase(event: APIGatewayProxyEvent): Promise<APIGat
       validatedScore = score
     }
 
-    // Check if user has access to this sub-industry's industry
     const accessCheck = await checkSubIndustryAccess(user, subIndustryId)
-    if (!accessCheck.hasAccess) {
-      return errorResponse('FORBIDDEN', '您没有权限管理该子行业的用例', 403)
-    }
+    if (!accessCheck.hasAccess) return errorResponse('FORBIDDEN', '您没有权限管理该子行业的用例', 403)
 
     const id = generateId()
     const now = new Date().toISOString()
@@ -224,10 +161,10 @@ export async function createUseCase(event: APIGatewayProxyEvent): Promise<APIGat
       industryId: accessCheck.industryId || '',
       name: name.trim(),
       description: description.trim(),
-      businessScenario: businessScenario && typeof businessScenario === 'string' ? businessScenario.trim() : undefined,
-      customerPainPoints: customerPainPoints && typeof customerPainPoints === 'string' ? customerPainPoints.trim() : undefined,
-      targetAudience: targetAudience && typeof targetAudience === 'string' ? targetAudience.trim() : undefined,
-      communicationScript: communicationScript && typeof communicationScript === 'string' ? communicationScript.trim() : undefined,
+      businessScenario: businessScenario?.trim() || undefined,
+      customerPainPoints: customerPainPoints?.trim() || undefined,
+      targetAudience: targetAudience?.trim() || undefined,
+      communicationScript: communicationScript?.trim() || undefined,
       recommendationScore: validatedScore,
       documents: [],
       createdAt: now,
@@ -238,19 +175,13 @@ export async function createUseCase(event: APIGatewayProxyEvent): Promise<APIGat
     await docClient.send(
       new PutCommand({
         TableName: TABLE_NAMES.USE_CASES,
-        Item: {
-          PK: `SUBINDUSTRY#${subIndustryId}`,
-          SK: `USECASE#${id}`,
-          ...useCase,
-        },
+        Item: { PK: id, SK: 'METADATA', ...useCase },
       })
     )
 
     return successResponse(useCase, 201)
   } catch (error: any) {
-    if (error.message === 'Insufficient permissions') {
-      return errorResponse('FORBIDDEN', '权限不足', 403)
-    }
+    if (error.message === 'Insufficient permissions') return errorResponse('FORBIDDEN', '权限不足', 403)
     console.error('Error creating use case:', error)
     return errorResponse('INTERNAL_ERROR', '创建用例失败', 500)
   }
@@ -266,65 +197,13 @@ export async function updateUseCase(event: APIGatewayProxyEvent): Promise<APIGat
     requireRole(user, ['admin', 'specialist'])
 
     const useCaseId = event.pathParameters?.id
-    if (!useCaseId) {
-      return errorResponse('VALIDATION_ERROR', '用例ID不能为空', 400)
-    }
+    if (!useCaseId) return errorResponse('VALIDATION_ERROR', '用例ID不能为空', 400)
 
-    // Find the use case
-    let existingUseCase: any = null
-    let existingSubIndustryId: string = ''
+    const existingUseCase = await getUseCaseById(useCaseId)
+    if (!existingUseCase) return errorResponse('NOT_FOUND', '用例不存在', 404)
 
-    const industries = await docClient.send(
-      new ScanCommand({
-      TableName: TABLE_NAMES.INDUSTRIES,
-      FilterExpression: 'SK = :sk',
-        ExpressionAttributeValues: {
-          ':sk': 'METADATA',
-        },
-      })
-    )
-
-    for (const industry of industries.Items || []) {
-      const subIndustries = await docClient.send(
-        new QueryCommand({
-          TableName: TABLE_NAMES.SUB_INDUSTRIES,
-          KeyConditionExpression: 'PK = :pk',
-          ExpressionAttributeValues: {
-            ':pk': `INDUSTRY#${industry.id}`,
-          },
-        })
-      )
-
-      for (const subIndustry of subIndustries.Items || []) {
-        const result = await docClient.send(
-          new GetCommand({
-            TableName: TABLE_NAMES.USE_CASES,
-            Key: {
-              PK: `SUBINDUSTRY#${subIndustry.id}`,
-              SK: `USECASE#${useCaseId}`,
-            },
-          })
-        )
-
-        if (result.Item) {
-          existingUseCase = result.Item
-          existingSubIndustryId = subIndustry.id
-          break
-        }
-      }
-
-      if (existingUseCase) break
-    }
-
-    if (!existingUseCase) {
-      return errorResponse('NOT_FOUND', '用例不存在', 404)
-    }
-
-    // Check if user has access
-    const accessCheck = await checkSubIndustryAccess(user, existingSubIndustryId)
-    if (!accessCheck.hasAccess) {
-      return errorResponse('FORBIDDEN', '您没有权限修改该用例', 403)
-    }
+    const accessCheck = await checkSubIndustryAccess(user, existingUseCase.subIndustryId)
+    if (!accessCheck.hasAccess) return errorResponse('FORBIDDEN', '您没有权限修改该用例', 403)
 
     const body = JSON.parse(event.body || '{}')
     const { name, description, businessScenario, customerPainPoints, targetAudience, communicationScript, recommendationScore, subIndustryId: newSubIndustryId } = body
@@ -332,12 +211,10 @@ export async function updateUseCase(event: APIGatewayProxyEvent): Promise<APIGat
     if (name !== undefined && (typeof name !== 'string' || name.trim().length === 0)) {
       return errorResponse('VALIDATION_ERROR', '用例名称不能为空', 400, { field: 'name', constraint: 'required' })
     }
-
     if (description !== undefined && (typeof description !== 'string' || description.trim().length === 0)) {
       return errorResponse('VALIDATION_ERROR', '用例描述不能为空', 400, { field: 'description', constraint: 'required' })
     }
 
-    // Validate recommendationScore if provided
     let validatedScore = existingUseCase.recommendationScore || 3
     if (recommendationScore !== undefined && recommendationScore !== null) {
       const score = Number(recommendationScore)
@@ -347,43 +224,18 @@ export async function updateUseCase(event: APIGatewayProxyEvent): Promise<APIGat
       validatedScore = score
     }
 
-    // Determine final subIndustryId and industryId
-    let finalSubIndustryId = existingSubIndustryId
+    let finalSubIndustryId = existingUseCase.subIndustryId
     let finalIndustryId = existingUseCase.industryId
-    let subIndustryChanged = false
 
-    if (newSubIndustryId && newSubIndustryId !== existingSubIndustryId) {
-      // Validate new subIndustry exists and get its industryId
-      let newSubIndustry: any = null
-      for (const industry of industries.Items || []) {
-        const result = await docClient.send(
-          new GetCommand({
-            TableName: TABLE_NAMES.SUB_INDUSTRIES,
-            Key: {
-              PK: `INDUSTRY#${industry.id}`,
-              SK: `SUBINDUSTRY#${newSubIndustryId}`,
-            },
-          })
-        )
-        if (result.Item) {
-          newSubIndustry = result.Item
-          finalIndustryId = industry.id
-          break
-        }
-      }
+    if (newSubIndustryId && newSubIndustryId !== existingUseCase.subIndustryId) {
+      const newSubIndustry = await getSubIndustryById(newSubIndustryId)
+      if (!newSubIndustry) return errorResponse('NOT_FOUND', '新的子行业不存在', 404)
 
-      if (!newSubIndustry) {
-        return errorResponse('NOT_FOUND', '新的子行业不存在', 404)
-      }
-
-      // Check if user has access to new subIndustry
       const newAccessCheck = await checkSubIndustryAccess(user, newSubIndustryId)
-      if (!newAccessCheck.hasAccess) {
-        return errorResponse('FORBIDDEN', '您没有权限将用例移动到该子行业', 403)
-      }
+      if (!newAccessCheck.hasAccess) return errorResponse('FORBIDDEN', '您没有权限将用例移动到该子行业', 403)
 
       finalSubIndustryId = newSubIndustryId
-      subIndustryChanged = true
+      finalIndustryId = newSubIndustry.industryId
     }
 
     const now = new Date().toISOString()
@@ -393,18 +245,10 @@ export async function updateUseCase(event: APIGatewayProxyEvent): Promise<APIGat
       industryId: finalIndustryId,
       name: name !== undefined ? name.trim() : existingUseCase.name,
       description: description !== undefined ? description.trim() : existingUseCase.description,
-      businessScenario: businessScenario !== undefined 
-        ? (businessScenario && typeof businessScenario === 'string' ? businessScenario.trim() : undefined)
-        : existingUseCase.businessScenario,
-      customerPainPoints: customerPainPoints !== undefined
-        ? (customerPainPoints && typeof customerPainPoints === 'string' ? customerPainPoints.trim() : undefined)
-        : existingUseCase.customerPainPoints,
-      targetAudience: targetAudience !== undefined
-        ? (targetAudience && typeof targetAudience === 'string' ? targetAudience.trim() : undefined)
-        : existingUseCase.targetAudience,
-      communicationScript: communicationScript !== undefined
-        ? (communicationScript && typeof communicationScript === 'string' ? communicationScript.trim() : undefined)
-        : existingUseCase.communicationScript,
+      businessScenario: businessScenario !== undefined ? (businessScenario?.trim() || undefined) : existingUseCase.businessScenario,
+      customerPainPoints: customerPainPoints !== undefined ? (customerPainPoints?.trim() || undefined) : existingUseCase.customerPainPoints,
+      targetAudience: targetAudience !== undefined ? (targetAudience?.trim() || undefined) : existingUseCase.targetAudience,
+      communicationScript: communicationScript !== undefined ? (communicationScript?.trim() || undefined) : existingUseCase.communicationScript,
       recommendationScore: validatedScore,
       documents: existingUseCase.documents || [],
       createdAt: existingUseCase.createdAt,
@@ -412,49 +256,16 @@ export async function updateUseCase(event: APIGatewayProxyEvent): Promise<APIGat
       createdBy: existingUseCase.createdBy,
     }
 
-    // If subIndustry changed, delete from old location and create in new location
-    if (subIndustryChanged) {
-      // Delete from old location
-      await docClient.send(
-        new DeleteCommand({
-          TableName: TABLE_NAMES.USE_CASES,
-          Key: {
-            PK: `SUBINDUSTRY#${existingSubIndustryId}`,
-            SK: `USECASE#${useCaseId}`,
-          },
-        })
-      )
-      
-      // Create in new location
-      await docClient.send(
-        new PutCommand({
-          TableName: TABLE_NAMES.USE_CASES,
-          Item: {
-            PK: `SUBINDUSTRY#${finalSubIndustryId}`,
-            SK: `USECASE#${useCaseId}`,
-            ...updated,
-          },
-        })
-      )
-    } else {
-      // Update in same location
-      await docClient.send(
-        new PutCommand({
-          TableName: TABLE_NAMES.USE_CASES,
-          Item: {
-            PK: `SUBINDUSTRY#${existingSubIndustryId}`,
-            SK: `USECASE#${useCaseId}`,
-            ...updated,
-          },
-        })
-      )
-    }
+    await docClient.send(
+      new PutCommand({
+        TableName: TABLE_NAMES.USE_CASES,
+        Item: { PK: useCaseId, SK: 'METADATA', ...updated },
+      })
+    )
 
     return successResponse(updated)
   } catch (error: any) {
-    if (error.message === 'Insufficient permissions') {
-      return errorResponse('FORBIDDEN', '权限不足', 403)
-    }
+    if (error.message === 'Insufficient permissions') return errorResponse('FORBIDDEN', '权限不足', 403)
     console.error('Error updating use case:', error)
     return errorResponse('INTERNAL_ERROR', '更新用例失败', 500)
   }
@@ -470,79 +281,18 @@ export async function deleteUseCase(event: APIGatewayProxyEvent): Promise<APIGat
     requireRole(user, ['admin', 'specialist'])
 
     const useCaseId = event.pathParameters?.id
-    if (!useCaseId) {
-      return errorResponse('VALIDATION_ERROR', '用例ID不能为空', 400)
-    }
+    if (!useCaseId) return errorResponse('VALIDATION_ERROR', '用例ID不能为空', 400)
 
-    // Find the use case
-    let existingUseCase: any = null
-    let existingSubIndustryId: string = ''
+    const existingUseCase = await getUseCaseById(useCaseId)
+    if (!existingUseCase) return errorResponse('NOT_FOUND', '用例不存在', 404)
 
-    const industries = await docClient.send(
-      new ScanCommand({
-      TableName: TABLE_NAMES.INDUSTRIES,
-      FilterExpression: 'SK = :sk',
-        ExpressionAttributeValues: {
-          ':sk': 'METADATA',
-        },
-      })
-    )
-
-    for (const industry of industries.Items || []) {
-      const subIndustries = await docClient.send(
-        new QueryCommand({
-          TableName: TABLE_NAMES.SUB_INDUSTRIES,
-          KeyConditionExpression: 'PK = :pk',
-          ExpressionAttributeValues: {
-            ':pk': `INDUSTRY#${industry.id}`,
-          },
-        })
-      )
-
-      for (const subIndustry of subIndustries.Items || []) {
-        const result = await docClient.send(
-          new GetCommand({
-            TableName: TABLE_NAMES.USE_CASES,
-            Key: {
-              PK: `SUBINDUSTRY#${subIndustry.id}`,
-              SK: `USECASE#${useCaseId}`,
-            },
-          })
-        )
-
-        if (result.Item) {
-          existingUseCase = result.Item
-          existingSubIndustryId = subIndustry.id
-          break
-        }
-      }
-
-      if (existingUseCase) break
-    }
-
-    if (!existingUseCase) {
-      return errorResponse('NOT_FOUND', '用例不存在', 404)
-    }
-
-    // Check if user has access
-    const accessCheck = await checkSubIndustryAccess(user, existingSubIndustryId)
-    if (!accessCheck.hasAccess) {
-      return errorResponse('FORBIDDEN', '您没有权限删除该用例', 403)
-    }
-
-    // Check for references (solutions, customer cases)
-    // TODO: Add checks for solution mappings and customer cases
+    const accessCheck = await checkSubIndustryAccess(user, existingUseCase.subIndustryId)
+    if (!accessCheck.hasAccess) return errorResponse('FORBIDDEN', '您没有权限删除该用例', 403)
 
     // Delete documents from S3
-    const documents = existingUseCase.documents || []
-    for (const doc of documents) {
+    for (const doc of existingUseCase.documents || []) {
       try {
-        await s3Client.send(
-          new DeleteObjectCommand({
-            Bucket: BUCKET_NAME,
-            Key: doc.s3Key,
-          })
-        )
+        await s3Client.send(new DeleteObjectCommand({ Bucket: BUCKET_NAME, Key: doc.s3Key }))
       } catch (s3Error) {
         console.error('Error deleting document from S3:', s3Error)
       }
@@ -551,18 +301,13 @@ export async function deleteUseCase(event: APIGatewayProxyEvent): Promise<APIGat
     await docClient.send(
       new DeleteCommand({
         TableName: TABLE_NAMES.USE_CASES,
-        Key: {
-          PK: `SUBINDUSTRY#${existingSubIndustryId}`,
-          SK: `USECASE#${useCaseId}`,
-        },
+        Key: { PK: useCaseId, SK: 'METADATA' },
       })
     )
 
     return successResponse({ message: '用例删除成功' })
   } catch (error: any) {
-    if (error.message === 'Insufficient permissions') {
-      return errorResponse('FORBIDDEN', '权限不足', 403)
-    }
+    if (error.message === 'Insufficient permissions') return errorResponse('FORBIDDEN', '权限不足', 403)
     console.error('Error deleting use case:', error)
     return errorResponse('INTERNAL_ERROR', '删除用例失败', 500)
   }
@@ -578,78 +323,21 @@ export async function uploadDocument(event: APIGatewayProxyEvent): Promise<APIGa
     requireRole(user, ['admin', 'specialist'])
 
     const useCaseId = event.pathParameters?.id
-    if (!useCaseId) {
-      return errorResponse('VALIDATION_ERROR', '用例ID不能为空', 400)
-    }
+    if (!useCaseId) return errorResponse('VALIDATION_ERROR', '用例ID不能为空', 400)
 
-    // Find the use case
-    let existingUseCase: any = null
-    let existingSubIndustryId: string = ''
+    const existingUseCase = await getUseCaseById(useCaseId)
+    if (!existingUseCase) return errorResponse('NOT_FOUND', '用例不存在', 404)
 
-    const industries = await docClient.send(
-      new ScanCommand({
-      TableName: TABLE_NAMES.INDUSTRIES,
-      FilterExpression: 'SK = :sk',
-        ExpressionAttributeValues: {
-          ':sk': 'METADATA',
-        },
-      })
-    )
-
-    for (const industry of industries.Items || []) {
-      const subIndustries = await docClient.send(
-        new QueryCommand({
-          TableName: TABLE_NAMES.SUB_INDUSTRIES,
-          KeyConditionExpression: 'PK = :pk',
-          ExpressionAttributeValues: {
-            ':pk': `INDUSTRY#${industry.id}`,
-          },
-        })
-      )
-
-      for (const subIndustry of subIndustries.Items || []) {
-        const result = await docClient.send(
-          new GetCommand({
-            TableName: TABLE_NAMES.USE_CASES,
-            Key: {
-              PK: `SUBINDUSTRY#${subIndustry.id}`,
-              SK: `USECASE#${useCaseId}`,
-            },
-          })
-        )
-
-        if (result.Item) {
-          existingUseCase = result.Item
-          existingSubIndustryId = subIndustry.id
-          break
-        }
-      }
-
-      if (existingUseCase) break
-    }
-
-    if (!existingUseCase) {
-      return errorResponse('NOT_FOUND', '用例不存在', 404)
-    }
-
-    // Check if user has access
-    const accessCheck = await checkSubIndustryAccess(user, existingSubIndustryId)
-    if (!accessCheck.hasAccess) {
-      return errorResponse('FORBIDDEN', '您没有权限上传文档到该用例', 403)
-    }
+    const accessCheck = await checkSubIndustryAccess(user, existingUseCase.subIndustryId)
+    if (!accessCheck.hasAccess) return errorResponse('FORBIDDEN', '您没有权限上传文档到该用例', 403)
 
     const body = JSON.parse(event.body || '{}')
     const { fileName, fileContent, contentType } = body
 
-    if (!fileName || !fileContent) {
-      return errorResponse('VALIDATION_ERROR', '文件名和文件内容不能为空', 400)
-    }
+    if (!fileName || !fileContent) return errorResponse('VALIDATION_ERROR', '文件名和文件内容不能为空', 400)
 
-    // Upload to S3
     const documentId = generateId()
     const s3Key = `use-cases/${useCaseId}/${documentId}-${fileName}`
-
-    // Decode base64 content
     const buffer = Buffer.from(fileContent, 'base64')
 
     await s3Client.send(
@@ -661,37 +349,20 @@ export async function uploadDocument(event: APIGatewayProxyEvent): Promise<APIGa
       })
     )
 
-    // Add document to use case
-    const document: Document = {
-      id: documentId,
-      name: fileName,
-      s3Key,
-      uploadedAt: new Date().toISOString(),
-    }
-
+    const document: Document = { id: documentId, name: fileName, s3Key, uploadedAt: new Date().toISOString() }
     const documents = [...(existingUseCase.documents || []), document]
-    const updated: UseCase = {
-      ...existingUseCase,
-      documents,
-      updatedAt: new Date().toISOString(),
-    }
+    const updated = { ...existingUseCase, documents, updatedAt: new Date().toISOString() }
 
     await docClient.send(
       new PutCommand({
         TableName: TABLE_NAMES.USE_CASES,
-        Item: {
-          PK: `SUBINDUSTRY#${existingSubIndustryId}`,
-          SK: `USECASE#${useCaseId}`,
-          ...updated,
-        },
+        Item: { PK: useCaseId, SK: 'METADATA', ...updated },
       })
     )
 
     return successResponse({ document, message: '文档上传成功' })
   } catch (error: any) {
-    if (error.message === 'Insufficient permissions') {
-      return errorResponse('FORBIDDEN', '权限不足', 403)
-    }
+    if (error.message === 'Insufficient permissions') return errorResponse('FORBIDDEN', '权限不足', 403)
     console.error('Error uploading document:', error)
     return errorResponse('INTERNAL_ERROR', '文档上传失败', 500)
   }
@@ -708,150 +379,65 @@ export async function deleteDocument(event: APIGatewayProxyEvent): Promise<APIGa
 
     const useCaseId = event.pathParameters?.id
     const docId = event.pathParameters?.docId
+    if (!useCaseId || !docId) return errorResponse('VALIDATION_ERROR', '用例ID和文档ID不能为空', 400)
 
-    if (!useCaseId || !docId) {
-      return errorResponse('VALIDATION_ERROR', '用例ID和文档ID不能为空', 400)
-    }
+    const existingUseCase = await getUseCaseById(useCaseId)
+    if (!existingUseCase) return errorResponse('NOT_FOUND', '用例不存在', 404)
 
-    // Find the use case
-    let existingUseCase: any = null
-    let existingSubIndustryId: string = ''
+    const accessCheck = await checkSubIndustryAccess(user, existingUseCase.subIndustryId)
+    if (!accessCheck.hasAccess) return errorResponse('FORBIDDEN', '您没有权限删除该用例的文档', 403)
 
-    const industries = await docClient.send(
-      new ScanCommand({
-      TableName: TABLE_NAMES.INDUSTRIES,
-      FilterExpression: 'SK = :sk',
-        ExpressionAttributeValues: {
-          ':sk': 'METADATA',
-        },
-      })
-    )
-
-    for (const industry of industries.Items || []) {
-      const subIndustries = await docClient.send(
-        new QueryCommand({
-          TableName: TABLE_NAMES.SUB_INDUSTRIES,
-          KeyConditionExpression: 'PK = :pk',
-          ExpressionAttributeValues: {
-            ':pk': `INDUSTRY#${industry.id}`,
-          },
-        })
-      )
-
-      for (const subIndustry of subIndustries.Items || []) {
-        const result = await docClient.send(
-          new GetCommand({
-            TableName: TABLE_NAMES.USE_CASES,
-            Key: {
-              PK: `SUBINDUSTRY#${subIndustry.id}`,
-              SK: `USECASE#${useCaseId}`,
-            },
-          })
-        )
-
-        if (result.Item) {
-          existingUseCase = result.Item
-          existingSubIndustryId = subIndustry.id
-          break
-        }
-      }
-
-      if (existingUseCase) break
-    }
-
-    if (!existingUseCase) {
-      return errorResponse('NOT_FOUND', '用例不存在', 404)
-    }
-
-    // Check if user has access
-    const accessCheck = await checkSubIndustryAccess(user, existingSubIndustryId)
-    if (!accessCheck.hasAccess) {
-      return errorResponse('FORBIDDEN', '您没有权限删除该用例的文档', 403)
-    }
-
-    // Find and delete document
     const documents = existingUseCase.documents || []
     const document = documents.find((d: Document) => d.id === docId)
+    if (!document) return errorResponse('NOT_FOUND', '文档不存在', 404)
 
-    if (!document) {
-      return errorResponse('NOT_FOUND', '文档不存在', 404)
-    }
-
-    // Delete from S3
     try {
-      await s3Client.send(
-        new DeleteObjectCommand({
-          Bucket: BUCKET_NAME,
-          Key: document.s3Key,
-        })
-      )
+      await s3Client.send(new DeleteObjectCommand({ Bucket: BUCKET_NAME, Key: document.s3Key }))
     } catch (s3Error) {
       console.error('Error deleting document from S3:', s3Error)
     }
 
-    // Remove document from use case
     const updatedDocuments = documents.filter((d: Document) => d.id !== docId)
-    const updated: UseCase = {
-      ...existingUseCase,
-      documents: updatedDocuments,
-      updatedAt: new Date().toISOString(),
-    }
+    const updated = { ...existingUseCase, documents: updatedDocuments, updatedAt: new Date().toISOString() }
 
     await docClient.send(
       new PutCommand({
         TableName: TABLE_NAMES.USE_CASES,
-        Item: {
-          PK: `SUBINDUSTRY#${existingSubIndustryId}`,
-          SK: `USECASE#${useCaseId}`,
-          ...updated,
-        },
+        Item: { PK: useCaseId, SK: 'METADATA', ...updated },
       })
     )
 
     return successResponse({ message: '文档删除成功' })
   } catch (error: any) {
-    if (error.message === 'Insufficient permissions') {
-      return errorResponse('FORBIDDEN', '权限不足', 403)
-    }
+    if (error.message === 'Insufficient permissions') return errorResponse('FORBIDDEN', '权限不足', 403)
     console.error('Error deleting document:', error)
     return errorResponse('INTERNAL_ERROR', '文档删除失败', 500)
   }
 }
 
 /**
- * Lambda handler - routes requests to appropriate function
+ * Lambda handler
  */
 export async function handler(event: any): Promise<APIGatewayProxyResult> {
   const method = event.httpMethod || event.requestContext?.http?.method
   const path = event.resource || event.rawPath || event.path
 
   try {
-    // GET /specialist/use-cases
     if (method === 'GET' && (path === '/specialist/use-cases' || path === '/specialist/use-cases/')) {
       return await listUseCases(event)
     }
-
-    // POST /specialist/use-cases
     if (method === 'POST' && (path === '/specialist/use-cases' || path === '/specialist/use-cases/')) {
       return await createUseCase(event)
     }
-
-    // PUT /specialist/use-cases/{id}
     if (method === 'PUT' && path.match(/\/specialist\/use-cases\/[^/]+\/?$/) && !path.includes('documents')) {
       return await updateUseCase(event)
     }
-
-    // DELETE /specialist/use-cases/{id}
     if (method === 'DELETE' && path.match(/\/specialist\/use-cases\/[^/]+\/?$/) && !path.includes('documents')) {
       return await deleteUseCase(event)
     }
-
-    // POST /specialist/use-cases/{id}/documents
     if (method === 'POST' && path.match(/\/specialist\/use-cases\/[^/]+\/documents\/?$/)) {
       return await uploadDocument(event)
     }
-
-    // DELETE /specialist/use-cases/{id}/documents/{docId}
     if (method === 'DELETE' && path.match(/\/specialist\/use-cases\/[^/]+\/documents\/[^/]+\/?$/)) {
       return await deleteDocument(event)
     }

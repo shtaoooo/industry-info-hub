@@ -9,17 +9,16 @@ import { s3Client, BUCKET_NAME } from '../utils/s3'
 /**
  * Get all visible industries
  * GET /public/industries
+ * Uses VisibilityIndex GSI: PK=isVisibleStr('true'), SK=createdAt
  */
-export async function listVisibleIndustries(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+export async function listVisibleIndustries(_event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   try {
     const result = await docClient.send(
-      new ScanCommand({
+      new QueryCommand({
         TableName: TABLE_NAMES.INDUSTRIES,
-        FilterExpression: 'SK = :sk AND isVisible = :visible',
-        ExpressionAttributeValues: {
-          ':sk': 'METADATA',
-          ':visible': true,
-        },
+        IndexName: 'VisibilityIndex',
+        KeyConditionExpression: 'isVisibleStr = :v',
+        ExpressionAttributeValues: { ':v': 'true' },
       })
     )
 
@@ -42,18 +41,17 @@ export async function listVisibleIndustries(event: APIGatewayProxyEvent): Promis
 /**
  * Get industry details
  * GET /public/industries/{id}
+ * PK: id, SK: METADATA
  */
 export async function getIndustryDetails(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   try {
     const industryId = event.pathParameters?.id
-    if (!industryId) {
-      return errorResponse('VALIDATION_ERROR', '行业ID不能为空', 400)
-    }
+    if (!industryId) return errorResponse('VALIDATION_ERROR', '行业ID不能为空', 400)
 
     const result = await docClient.send(
       new GetCommand({
         TableName: TABLE_NAMES.INDUSTRIES,
-        Key: { PK: `INDUSTRY#${industryId}`, SK: 'METADATA' },
+        Key: { PK: industryId, SK: 'METADATA' },
       })
     )
 
@@ -61,7 +59,7 @@ export async function getIndustryDetails(event: APIGatewayProxyEvent): Promise<A
       return errorResponse('NOT_FOUND', '行业不存在或不可见', 404)
     }
 
-    const industry = {
+    return successResponse({
       id: result.Item.id,
       name: result.Item.name,
       definition: result.Item.definition,
@@ -69,9 +67,7 @@ export async function getIndustryDetails(event: APIGatewayProxyEvent): Promise<A
       imageUrl: result.Item.imageUrl,
       icon: result.Item.icon,
       createdAt: result.Item.createdAt,
-    }
-
-    return successResponse(industry)
+    })
   } catch (error: any) {
     console.error('Error getting industry details:', error)
     return errorResponse('INTERNAL_ERROR', '获取行业详情失败', 500)
@@ -81,19 +77,17 @@ export async function getIndustryDetails(event: APIGatewayProxyEvent): Promise<A
 /**
  * Get sub-industries for an industry
  * GET /public/industries/{id}/sub-industries
+ * Uses IndustryIndex GSI on SubIndustries: PK=industryId, SK=priority
  */
 export async function listSubIndustries(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   try {
     const industryId = event.pathParameters?.id
-    if (!industryId) {
-      return errorResponse('VALIDATION_ERROR', '行业ID不能为空', 400)
-    }
+    if (!industryId) return errorResponse('VALIDATION_ERROR', '行业ID不能为空', 400)
 
-    // Check if industry is visible
     const industry = await docClient.send(
       new GetCommand({
         TableName: TABLE_NAMES.INDUSTRIES,
-        Key: { PK: `INDUSTRY#${industryId}`, SK: 'METADATA' },
+        Key: { PK: industryId, SK: 'METADATA' },
       })
     )
 
@@ -104,10 +98,10 @@ export async function listSubIndustries(event: APIGatewayProxyEvent): Promise<AP
     const result = await docClient.send(
       new QueryCommand({
         TableName: TABLE_NAMES.SUB_INDUSTRIES,
-        KeyConditionExpression: 'PK = :pk',
-        ExpressionAttributeValues: {
-          ':pk': `INDUSTRY#${industryId}`,
-        },
+        IndexName: 'IndustryIndex',
+        KeyConditionExpression: 'industryId = :industryId',
+        ExpressionAttributeValues: { ':industryId': industryId },
+        ScanIndexForward: false, // descending by priority
       })
     )
 
@@ -126,13 +120,6 @@ export async function listSubIndustries(event: APIGatewayProxyEvent): Promise<AP
       createdAt: item.createdAt,
     }))
 
-    // Sort by priority descending (items without priority go to the end)
-    subIndustries.sort((a: any, b: any) => {
-      const pa = typeof a.priority === 'number' ? a.priority : Number.MIN_SAFE_INTEGER
-      const pb = typeof b.priority === 'number' ? b.priority : Number.MIN_SAFE_INTEGER
-      return pb - pa
-    })
-
     return successResponse(subIndustries)
   } catch (error: any) {
     console.error('Error listing sub-industries:', error)
@@ -143,77 +130,61 @@ export async function listSubIndustries(event: APIGatewayProxyEvent): Promise<AP
 /**
  * Get use cases for a sub-industry
  * GET /public/sub-industries/{id}/use-cases
+ * SubIndustry: GetCommand PK=id, SK=METADATA
+ * UseCases: SubIndustryIndex GSI PK=subIndustryId, SK=recommendationScore (desc)
  */
 export async function listUseCases(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   try {
     const subIndustryId = event.pathParameters?.id
-    if (!subIndustryId) {
-      return errorResponse('VALIDATION_ERROR', '子行业ID不能为空', 400)
-    }
+    if (!subIndustryId) return errorResponse('VALIDATION_ERROR', '子行业ID不能为空', 400)
 
-    // Use GSI to look up sub-industry by id directly (single query instead of scanning all industries)
     const subIndustryResult = await docClient.send(
-      new QueryCommand({
+      new GetCommand({
         TableName: TABLE_NAMES.SUB_INDUSTRIES,
-        IndexName: 'IdIndex',
-        KeyConditionExpression: 'id = :id',
-        ExpressionAttributeValues: {
-          ':id': subIndustryId,
-        },
+        Key: { PK: subIndustryId, SK: 'METADATA' },
       })
     )
 
-    if (!subIndustryResult.Items || subIndustryResult.Items.length === 0) {
+    if (!subIndustryResult.Item) {
       return errorResponse('NOT_FOUND', '子行业不存在', 404)
     }
 
-    const subIndustryItem = subIndustryResult.Items[0]
+    const item = subIndustryResult.Item
     const subIndustry = {
-      id: subIndustryItem.id,
-      industryId: subIndustryItem.industryId,
-      name: subIndustryItem.name,
-      definition: subIndustryItem.definition,
-      definitionCn: subIndustryItem.definitionCn,
-      typicalGlobalCompanies: subIndustryItem.typicalGlobalCompanies || [],
-      typicalChineseCompanies: subIndustryItem.typicalChineseCompanies || [],
+      id: item.id,
+      industryId: item.industryId,
+      name: item.name,
+      definition: item.definition,
+      definitionCn: item.definitionCn,
+      typicalGlobalCompanies: item.typicalGlobalCompanies || [],
+      typicalChineseCompanies: item.typicalChineseCompanies || [],
     }
 
     const result = await docClient.send(
       new QueryCommand({
         TableName: TABLE_NAMES.USE_CASES,
-        KeyConditionExpression: 'PK = :pk',
-        ExpressionAttributeValues: {
-          ':pk': `SUBINDUSTRY#${subIndustryId}`,
-        },
+        IndexName: 'SubIndustryIndex',
+        KeyConditionExpression: 'subIndustryId = :subIndustryId',
+        ExpressionAttributeValues: { ':subIndustryId': subIndustryId },
+        ScanIndexForward: false, // descending by recommendationScore
       })
     )
 
-    const useCases = (result.Items || []).map((item) => ({
-      id: item.id,
-      subIndustryId: item.subIndustryId,
-      industryId: item.industryId,
-      name: item.name,
-      description: item.description,
-      businessScenario: item.businessScenario,
-      customerPainPoints: item.customerPainPoints,
-      targetAudience: item.targetAudience,
-      communicationScript: item.communicationScript,
-      recommendationScore: item.recommendationScore || 3,
-      createdAt: item.createdAt,
+    const useCases = (result.Items || []).map((uc) => ({
+      id: uc.id,
+      subIndustryId: uc.subIndustryId,
+      industryId: uc.industryId,
+      name: uc.name,
+      description: uc.description,
+      businessScenario: uc.businessScenario,
+      customerPainPoints: uc.customerPainPoints,
+      targetAudience: uc.targetAudience,
+      communicationScript: uc.communicationScript,
+      recommendationScore: uc.recommendationScore || 3,
+      createdAt: uc.createdAt,
     }))
 
-    // Sort by recommendationScore (descending), then by name
-    useCases.sort((a, b) => {
-      if (b.recommendationScore !== a.recommendationScore) {
-        return b.recommendationScore - a.recommendationScore
-      }
-      return a.name.localeCompare(b.name, 'zh-CN')
-    })
-
-    return successResponse({
-      subIndustry,
-      useCases,
-    })
+    return successResponse({ subIndustry, useCases })
   } catch (error: any) {
     console.error('Error listing use cases:', error)
     return errorResponse('INTERNAL_ERROR', '获取用例列表失败', 500)
@@ -223,32 +194,24 @@ export async function listUseCases(event: APIGatewayProxyEvent): Promise<APIGate
 /**
  * Get use case details
  * GET /public/use-cases/{id}
+ * PK: id, SK: METADATA
  */
 export async function getUseCaseDetails(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   try {
     const useCaseId = event.pathParameters?.id
-    if (!useCaseId) {
-      return errorResponse('VALIDATION_ERROR', '用例ID不能为空', 400)
-    }
+    if (!useCaseId) return errorResponse('VALIDATION_ERROR', '用例ID不能为空', 400)
 
-    // Use GSI to look up use case by id directly (single query instead of nested scan)
     const result = await docClient.send(
-      new QueryCommand({
+      new GetCommand({
         TableName: TABLE_NAMES.USE_CASES,
-        IndexName: 'IdIndex',
-        KeyConditionExpression: 'id = :id',
-        ExpressionAttributeValues: {
-          ':id': useCaseId,
-        },
+        Key: { PK: useCaseId, SK: 'METADATA' },
       })
     )
 
-    if (!result.Items || result.Items.length === 0) {
-      return errorResponse('NOT_FOUND', '用例不存在', 404)
-    }
+    if (!result.Item) return errorResponse('NOT_FOUND', '用例不存在', 404)
 
-    const item = result.Items[0]
-    const useCase = {
+    const item = result.Item
+    return successResponse({
       id: item.id,
       subIndustryId: item.subIndustryId,
       industryId: item.industryId,
@@ -260,9 +223,7 @@ export async function getUseCaseDetails(event: APIGatewayProxyEvent): Promise<AP
       communicationScript: item.communicationScript,
       documents: item.documents || [],
       createdAt: item.createdAt,
-    }
-
-    return successResponse(useCase)
+    })
   } catch (error: any) {
     console.error('Error getting use case details:', error)
     return errorResponse('INTERNAL_ERROR', '获取用例详情失败', 500)
@@ -276,18 +237,13 @@ export async function getUseCaseDetails(event: APIGatewayProxyEvent): Promise<AP
 export async function getSolutionsForUseCase(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   try {
     const useCaseId = event.pathParameters?.id
-    if (!useCaseId) {
-      return errorResponse('VALIDATION_ERROR', '用例ID不能为空', 400)
-    }
+    if (!useCaseId) return errorResponse('VALIDATION_ERROR', '用例ID不能为空', 400)
 
-    // Get mappings
     const mappings = await docClient.send(
       new QueryCommand({
         TableName: TABLE_NAMES.MAPPING,
         KeyConditionExpression: 'PK = :pk',
-        ExpressionAttributeValues: {
-          ':pk': `USECASE#${useCaseId}`,
-        },
+        ExpressionAttributeValues: { ':pk': `USECASE#${useCaseId}` },
       })
     )
 
@@ -296,10 +252,9 @@ export async function getSolutionsForUseCase(event: APIGatewayProxyEvent): Promi
       const solution = await docClient.send(
         new GetCommand({
           TableName: TABLE_NAMES.SOLUTIONS,
-          Key: { PK: `SOLUTION#${mapping.solutionId}`, SK: 'METADATA' },
+          Key: { PK: mapping.solutionId, SK: 'METADATA' },
         })
       )
-
       if (solution.Item) {
         solutions.push({
           id: solution.Item.id,
@@ -320,34 +275,29 @@ export async function getSolutionsForUseCase(event: APIGatewayProxyEvent): Promi
 /**
  * Get solution details
  * GET /public/solutions/{id}
+ * PK: id, SK: METADATA
  */
 export async function getSolutionDetails(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   try {
     const solutionId = event.pathParameters?.id
-    if (!solutionId) {
-      return errorResponse('VALIDATION_ERROR', '解决方案ID不能为空', 400)
-    }
+    if (!solutionId) return errorResponse('VALIDATION_ERROR', '解决方案ID不能为空', 400)
 
     const result = await docClient.send(
       new GetCommand({
         TableName: TABLE_NAMES.SOLUTIONS,
-        Key: { PK: `SOLUTION#${solutionId}`, SK: 'METADATA' },
+        Key: { PK: solutionId, SK: 'METADATA' },
       })
     )
 
-    if (!result.Item) {
-      return errorResponse('NOT_FOUND', '解决方案不存在', 404)
-    }
+    if (!result.Item) return errorResponse('NOT_FOUND', '解决方案不存在', 404)
 
-    const solution = {
+    return successResponse({
       id: result.Item.id,
       name: result.Item.name,
       description: result.Item.description,
       detailMarkdownUrl: result.Item.detailMarkdownUrl,
       createdAt: result.Item.createdAt,
-    }
-
-    return successResponse(solution)
+    })
   } catch (error: any) {
     console.error('Error getting solution details:', error)
     return errorResponse('INTERNAL_ERROR', '获取解决方案详情失败', 500)
@@ -361,14 +311,12 @@ export async function getSolutionDetails(event: APIGatewayProxyEvent): Promise<A
 export async function getSolutionMarkdown(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   try {
     const solutionId = event.pathParameters?.id
-    if (!solutionId) {
-      return errorResponse('VALIDATION_ERROR', '解决方案ID不能为空', 400)
-    }
+    if (!solutionId) return errorResponse('VALIDATION_ERROR', '解决方案ID不能为空', 400)
 
     const result = await docClient.send(
       new GetCommand({
         TableName: TABLE_NAMES.SOLUTIONS,
-        Key: { PK: `SOLUTION#${solutionId}`, SK: 'METADATA' },
+        Key: { PK: solutionId, SK: 'METADATA' },
       })
     )
 
@@ -376,14 +324,10 @@ export async function getSolutionMarkdown(event: APIGatewayProxyEvent): Promise<
       return errorResponse('NOT_FOUND', '解决方案详细介绍不存在', 404)
     }
 
-    // Generate presigned URL
     const s3Key = `solutions/${solutionId}/detail.md`
     const presignedUrl = await getSignedUrl(
       s3Client,
-      new GetObjectCommand({
-        Bucket: BUCKET_NAME,
-        Key: s3Key,
-      }),
+      new GetObjectCommand({ Bucket: BUCKET_NAME, Key: s3Key }),
       { expiresIn: 3600 }
     )
 
@@ -397,21 +341,18 @@ export async function getSolutionMarkdown(event: APIGatewayProxyEvent): Promise<
 /**
  * Get customer cases for a use case
  * GET /public/use-cases/{id}/customer-cases
+ * PK: id, SK: METADATA
  */
 export async function getCustomerCasesForUseCase(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   try {
     const useCaseId = event.pathParameters?.id
-    if (!useCaseId) {
-      return errorResponse('VALIDATION_ERROR', '用例ID不能为空', 400)
-    }
+    if (!useCaseId) return errorResponse('VALIDATION_ERROR', '用例ID不能为空', 400)
 
     const result = await docClient.send(
       new ScanCommand({
         TableName: TABLE_NAMES.CUSTOMER_CASES,
         FilterExpression: 'SK = :sk',
-        ExpressionAttributeValues: {
-          ':sk': 'METADATA',
-        },
+        ExpressionAttributeValues: { ':sk': 'METADATA' },
       })
     )
 
@@ -440,24 +381,17 @@ export async function getCustomerCasesForUseCase(event: APIGatewayProxyEvent): P
 /**
  * Get customer cases for a solution
  * GET /public/solutions/{id}/customer-cases
- * Note: Now customer cases are stored independently with PK: CUSTOMERCASE#id
- * We scan and filter by checking if the solution is referenced
  */
 export async function getCustomerCasesForSolution(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   try {
     const solutionId = event.pathParameters?.id
-    if (!solutionId) {
-      return errorResponse('VALIDATION_ERROR', '解决方案ID不能为空', 400)
-    }
+    if (!solutionId) return errorResponse('VALIDATION_ERROR', '解决方案ID不能为空', 400)
 
-    // Customer cases are now stored independently, scan all
     const result = await docClient.send(
       new ScanCommand({
         TableName: TABLE_NAMES.CUSTOMER_CASES,
         FilterExpression: 'SK = :sk',
-        ExpressionAttributeValues: {
-          ':sk': 'METADATA',
-        },
+        ExpressionAttributeValues: { ':sk': 'METADATA' },
       })
     )
 
@@ -488,15 +422,12 @@ export async function getCustomerCasesForSolution(event: APIGatewayProxyEvent): 
 export async function getIndustryNews(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   try {
     const industryId = event.pathParameters?.id
-    if (!industryId) {
-      return errorResponse('VALIDATION_ERROR', '行业ID不能为空', 400)
-    }
+    if (!industryId) return errorResponse('VALIDATION_ERROR', '行业ID不能为空', 400)
 
-    // Check if industry is visible
     const industry = await docClient.send(
       new GetCommand({
         TableName: TABLE_NAMES.INDUSTRIES,
-        Key: { PK: `INDUSTRY#${industryId}`, SK: 'METADATA' },
+        Key: { PK: industryId, SK: 'METADATA' },
       })
     )
 
@@ -504,34 +435,30 @@ export async function getIndustryNews(event: APIGatewayProxyEvent): Promise<APIG
       return errorResponse('NOT_FOUND', '行业不存在或不可见', 404)
     }
 
-    // Query news by industryId using GSI
     const limitParam = event.queryStringParameters?.limit
     const queryParams: any = {
       TableName: TABLE_NAMES.NEWS,
       IndexName: 'IndustryIndex',
       KeyConditionExpression: 'industryId = :industryId',
-      ExpressionAttributeValues: {
-        ':industryId': industryId,
-      },
+      ExpressionAttributeValues: { ':industryId': industryId },
       ScanIndexForward: false,
     }
-    if (limitParam) {
-      queryParams.Limit = parseInt(limitParam, 10)
-    }
+    if (limitParam) queryParams.Limit = parseInt(limitParam, 10)
+
     const result = await docClient.send(new QueryCommand(queryParams))
 
-    const news = (result.Items || []).map((item) => ({
-      id: item.id,
-      industryId: item.industryId,
-      title: item.title,
-      summary: item.summary,
-      imageUrl: item.imageUrl,
-      externalUrl: item.externalUrl,
-      author: item.author,
-      publishedAt: item.publishedAt,
-    }))
-
-    return successResponse(news)
+    return successResponse(
+      (result.Items || []).map((item) => ({
+        id: item.id,
+        industryId: item.industryId,
+        title: item.title,
+        summary: item.summary,
+        imageUrl: item.imageUrl,
+        externalUrl: item.externalUrl,
+        author: item.author,
+        publishedAt: item.publishedAt,
+      }))
+    )
   } catch (error: any) {
     console.error('Error getting industry news:', error)
     return errorResponse('INTERNAL_ERROR', '获取行业新闻失败', 500)
@@ -545,15 +472,12 @@ export async function getIndustryNews(event: APIGatewayProxyEvent): Promise<APIG
 export async function getIndustryBlogs(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   try {
     const industryId = event.pathParameters?.id
-    if (!industryId) {
-      return errorResponse('VALIDATION_ERROR', '行业ID不能为空', 400)
-    }
+    if (!industryId) return errorResponse('VALIDATION_ERROR', '行业ID不能为空', 400)
 
-    // Check if industry is visible
     const industry = await docClient.send(
       new GetCommand({
         TableName: TABLE_NAMES.INDUSTRIES,
-        Key: { PK: `INDUSTRY#${industryId}`, SK: 'METADATA' },
+        Key: { PK: industryId, SK: 'METADATA' },
       })
     )
 
@@ -561,34 +485,30 @@ export async function getIndustryBlogs(event: APIGatewayProxyEvent): Promise<API
       return errorResponse('NOT_FOUND', '行业不存在或不可见', 404)
     }
 
-    // Query blogs by industryId using GSI
     const limitParam = event.queryStringParameters?.limit
     const queryParams: any = {
       TableName: TABLE_NAMES.BLOGS,
       IndexName: 'IndustryIndex',
       KeyConditionExpression: 'industryId = :industryId',
-      ExpressionAttributeValues: {
-        ':industryId': industryId,
-      },
+      ExpressionAttributeValues: { ':industryId': industryId },
       ScanIndexForward: false,
     }
-    if (limitParam) {
-      queryParams.Limit = parseInt(limitParam, 10)
-    }
+    if (limitParam) queryParams.Limit = parseInt(limitParam, 10)
+
     const result = await docClient.send(new QueryCommand(queryParams))
 
-    const blogs = (result.Items || []).map((item) => ({
-      id: item.id,
-      industryId: item.industryId,
-      title: item.title,
-      summary: item.summary,
-      imageUrl: item.imageUrl,
-      externalUrl: item.externalUrl,
-      author: item.author,
-      publishedAt: item.publishedAt,
-    }))
-
-    return successResponse(blogs)
+    return successResponse(
+      (result.Items || []).map((item) => ({
+        id: item.id,
+        industryId: item.industryId,
+        title: item.title,
+        summary: item.summary,
+        imageUrl: item.imageUrl,
+        externalUrl: item.externalUrl,
+        author: item.author,
+        publishedAt: item.publishedAt,
+      }))
+    )
   } catch (error: any) {
     console.error('Error getting industry blogs:', error)
     return errorResponse('INTERNAL_ERROR', '获取行业博客失败', 500)
@@ -602,9 +522,7 @@ export async function getIndustryBlogs(event: APIGatewayProxyEvent): Promise<API
 export async function getNewsDetail(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   try {
     const newsId = event.pathParameters?.id
-    if (!newsId) {
-      return errorResponse('VALIDATION_ERROR', '新闻ID不能为空', 400)
-    }
+    if (!newsId) return errorResponse('VALIDATION_ERROR', '新闻ID不能为空', 400)
 
     const result = await docClient.send(
       new GetCommand({
@@ -613,11 +531,9 @@ export async function getNewsDetail(event: APIGatewayProxyEvent): Promise<APIGat
       })
     )
 
-    if (!result.Item) {
-      return errorResponse('NOT_FOUND', '新闻不存在', 404)
-    }
+    if (!result.Item) return errorResponse('NOT_FOUND', '新闻不存在', 404)
 
-    const news = {
+    return successResponse({
       id: result.Item.id,
       industryId: result.Item.industryId,
       title: result.Item.title,
@@ -627,9 +543,7 @@ export async function getNewsDetail(event: APIGatewayProxyEvent): Promise<APIGat
       externalUrl: result.Item.externalUrl,
       author: result.Item.author,
       publishedAt: result.Item.publishedAt,
-    }
-
-    return successResponse(news)
+    })
   } catch (error: any) {
     console.error('Error getting news detail:', error)
     return errorResponse('INTERNAL_ERROR', '获取新闻详情失败', 500)
@@ -643,9 +557,7 @@ export async function getNewsDetail(event: APIGatewayProxyEvent): Promise<APIGat
 export async function getBlogDetail(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   try {
     const blogId = event.pathParameters?.id
-    if (!blogId) {
-      return errorResponse('VALIDATION_ERROR', '博客ID不能为空', 400)
-    }
+    if (!blogId) return errorResponse('VALIDATION_ERROR', '博客ID不能为空', 400)
 
     const result = await docClient.send(
       new GetCommand({
@@ -654,11 +566,9 @@ export async function getBlogDetail(event: APIGatewayProxyEvent): Promise<APIGat
       })
     )
 
-    if (!result.Item) {
-      return errorResponse('NOT_FOUND', '博客不存在', 404)
-    }
+    if (!result.Item) return errorResponse('NOT_FOUND', '博客不存在', 404)
 
-    const blog = {
+    return successResponse({
       id: result.Item.id,
       industryId: result.Item.industryId,
       title: result.Item.title,
@@ -668,9 +578,7 @@ export async function getBlogDetail(event: APIGatewayProxyEvent): Promise<APIGat
       externalUrl: result.Item.externalUrl,
       author: result.Item.author,
       publishedAt: result.Item.publishedAt,
-    }
-
-    return successResponse(blog)
+    })
   } catch (error: any) {
     console.error('Error getting blog detail:', error)
     return errorResponse('INTERNAL_ERROR', '获取博客详情失败', 500)
@@ -684,11 +592,8 @@ export async function getBlogDetail(event: APIGatewayProxyEvent): Promise<APIGat
 export async function getUseCaseBlogs(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   try {
     const useCaseId = event.pathParameters?.id
-    if (!useCaseId) {
-      return errorResponse('VALIDATION_ERROR', '用例ID不能为空', 400)
-    }
+    if (!useCaseId) return errorResponse('VALIDATION_ERROR', '用例ID不能为空', 400)
 
-    // Scan blogs table for blogs that contain this useCaseId in their useCaseIds array
     const result = await docClient.send(
       new ScanCommand({
         TableName: TABLE_NAMES.BLOGS,
@@ -700,20 +605,19 @@ export async function getUseCaseBlogs(event: APIGatewayProxyEvent): Promise<APIG
       })
     )
 
-    const blogs = (result.Items || []).map((item) => ({
-      id: item.id,
-      industryId: item.industryId,
-      useCaseIds: item.useCaseIds || [],
-      title: item.title,
-      summary: item.summary,
-      imageUrl: item.imageUrl,
-      externalUrl: item.externalUrl,
-      author: item.author,
-      publishedAt: item.publishedAt,
-    }))
-
-    // Sort by publishedAt (descending)
-    blogs.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
+    const blogs = (result.Items || [])
+      .map((item) => ({
+        id: item.id,
+        industryId: item.industryId,
+        useCaseIds: item.useCaseIds || [],
+        title: item.title,
+        summary: item.summary,
+        imageUrl: item.imageUrl,
+        externalUrl: item.externalUrl,
+        author: item.author,
+        publishedAt: item.publishedAt,
+      }))
+      .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
 
     return successResponse(blogs)
   } catch (error: any) {
@@ -723,94 +627,57 @@ export async function getUseCaseBlogs(event: APIGatewayProxyEvent): Promise<APIG
 }
 
 /**
- * Lambda handler - routes requests to appropriate function
+ * Lambda handler
  */
 export async function handler(event: any): Promise<APIGatewayProxyResult> {
   const method = event.httpMethod || event.requestContext?.http?.method || event.requestContext?.httpMethod
   const path = event.rawPath || event.path || event.resource
-  
-  console.log('Full Event:', JSON.stringify(event, null, 2))
-  console.log('Method:', method)
-  console.log('Path:', path)
-  console.log('RouteKey:', event.routeKey)
+
+  console.log('Method:', method, 'Path:', path)
 
   try {
-    // GET /public/industries
     if (method === 'GET' && (path === '/public/industries' || path === '/public/industries/')) {
       return await listVisibleIndustries(event)
     }
-
-    // GET /public/industries/{id}
     if (method === 'GET' && path.match(/\/public\/industries\/[^/]+\/?$/) && !path.includes('sub-industries')) {
       return await getIndustryDetails(event)
     }
-
-    // GET /public/industries/{id}/sub-industries
     if (method === 'GET' && path.match(/\/public\/industries\/[^/]+\/sub-industries\/?$/)) {
       return await listSubIndustries(event)
     }
-
-    // GET /public/sub-industries/{id}/use-cases
     if (method === 'GET' && path.match(/\/public\/sub-industries\/[^/]+\/use-cases\/?$/)) {
       return await listUseCases(event)
     }
-
-    // GET /public/use-cases/{id}
-    if (method === 'GET' && path.match(/\/public\/use-cases\/[^/]+\/?$/) && !path.includes('solutions')) {
+    if (method === 'GET' && path.match(/\/public\/use-cases\/[^/]+\/?$/) && !path.includes('solutions') && !path.includes('blogs') && !path.includes('customer-cases')) {
       return await getUseCaseDetails(event)
     }
-
-    // GET /public/use-cases/{id}/solutions
     if (method === 'GET' && path.match(/\/public\/use-cases\/[^/]+\/solutions\/?$/)) {
       return await getSolutionsForUseCase(event)
     }
-
-    // GET /public/use-cases/{id}/blogs
     if (method === 'GET' && path.match(/\/public\/use-cases\/[^/]+\/blogs\/?$/)) {
       return await getUseCaseBlogs(event)
     }
-
-    // GET /public/use-cases/{id}/customer-cases
     if (method === 'GET' && path.match(/\/public\/use-cases\/[^/]+\/customer-cases\/?$/)) {
       return await getCustomerCasesForUseCase(event)
     }
-
-    // GET /public/solutions/{id}
-    if (
-      method === 'GET' &&
-      path.match(/\/public\/solutions\/[^/]+\/?$/) &&
-      !path.includes('detail-markdown') &&
-      !path.includes('customer-cases')
-    ) {
+    if (method === 'GET' && path.match(/\/public\/solutions\/[^/]+\/?$/) && !path.includes('detail-markdown') && !path.includes('customer-cases')) {
       return await getSolutionDetails(event)
     }
-
-    // GET /public/solutions/{id}/detail-markdown
     if (method === 'GET' && path.match(/\/public\/solutions\/[^/]+\/detail-markdown\/?$/)) {
       return await getSolutionMarkdown(event)
     }
-
-    // GET /public/solutions/{id}/customer-cases
     if (method === 'GET' && path.match(/\/public\/solutions\/[^/]+\/customer-cases\/?$/)) {
       return await getCustomerCasesForSolution(event)
     }
-
-    // GET /public/industries/{id}/news
     if (method === 'GET' && path.match(/\/public\/industries\/[^/]+\/news\/?$/)) {
       return await getIndustryNews(event)
     }
-
-    // GET /public/industries/{id}/blogs
     if (method === 'GET' && path.match(/\/public\/industries\/[^/]+\/blogs\/?$/)) {
       return await getIndustryBlogs(event)
     }
-
-    // GET /public/news/{id}
     if (method === 'GET' && path.match(/\/public\/news\/[^/]+\/?$/)) {
       return await getNewsDetail(event)
     }
-
-    // GET /public/blogs/{id}
     if (method === 'GET' && path.match(/\/public\/blogs\/[^/]+\/?$/)) {
       return await getBlogDetail(event)
     }

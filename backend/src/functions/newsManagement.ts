@@ -68,11 +68,11 @@ async function createNews(event: APIGatewayProxyEvent, user: any): Promise<APIGa
       return errorResponse('FORBIDDEN', '您没有权限管理该行业的新闻', 403)
     }
 
-    // Verify industry exists
+    // Verify industry exists (PK: id, SK: METADATA)
     const industry = await docClient.send(
       new GetCommand({
         TableName: TABLE_NAMES.INDUSTRIES,
-        Key: { PK: `INDUSTRY#${industryId}`, SK: 'METADATA' },
+        Key: { PK: industryId, SK: 'METADATA' },
       })
     )
 

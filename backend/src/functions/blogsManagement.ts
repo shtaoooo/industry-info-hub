@@ -82,11 +82,11 @@ async function createBlog(event: APIGatewayProxyEvent, user: any): Promise<APIGa
     }
 
     console.log('5. Verifying industry exists:', industryId)
-    // Verify industry exists
+    // Verify industry exists (PK: id, SK: METADATA)
     const industry = await docClient.send(
       new GetCommand({
         TableName: TABLE_NAMES.INDUSTRIES,
-        Key: { PK: `INDUSTRY#${industryId}`, SK: 'METADATA' },
+        Key: { PK: industryId, SK: 'METADATA' },
       })
     )
 
@@ -103,30 +103,23 @@ async function createBlog(event: APIGatewayProxyEvent, user: any): Promise<APIGa
       
       for (const useCaseId of useCaseIds) {
         if (useCaseId && typeof useCaseId === 'string' && useCaseId.trim() !== '') {
-          console.log('9. Scanning USE_CASES table for:', useCaseId)
+          console.log('9. Getting USE_CASES by id:', useCaseId)
           
-          const useCaseResult = await docClient.send(
-            new ScanCommand({
+          // Use GetCommand directly (PK: id, SK: METADATA)
+          const { Item: useCaseItem } = await docClient.send(
+            new GetCommand({
               TableName: TABLE_NAMES.USE_CASES,
-              FilterExpression: 'id = :useCaseId',
-              ExpressionAttributeValues: {
-                ':useCaseId': useCaseId,
-              },
+              Key: { PK: useCaseId, SK: 'METADATA' },
             })
           )
 
-          console.log('10. Use case scan result:', {
-            useCaseId,
-            itemCount: useCaseResult.Items?.length || 0,
-          })
-
-          if (!useCaseResult.Items || useCaseResult.Items.length === 0) {
-            console.log('11. Use case not found:', useCaseId)
+          if (!useCaseItem) {
+            console.log('10. Use case not found:', useCaseId)
             return errorResponse('NOT_FOUND', `用例不存在: ${useCaseId}`, 404)
           }
           
           processedUseCaseIds.push(useCaseId)
-          console.log('12. Use case found:', useCaseResult.Items[0].name)
+          console.log('10. Use case found:', useCaseItem.name)
         }
       }
     } else {
@@ -213,23 +206,21 @@ async function updateBlog(event: APIGatewayProxyEvent, user: any): Promise<APIGa
       
       for (const useCaseId of useCaseIds) {
         if (useCaseId && typeof useCaseId === 'string' && useCaseId.trim() !== '') {
-          const useCaseResult = await docClient.send(
-            new ScanCommand({
+          // Use GetCommand directly (PK: id, SK: METADATA)
+          const { Item: useCaseItem } = await docClient.send(
+            new GetCommand({
               TableName: TABLE_NAMES.USE_CASES,
-              FilterExpression: 'id = :useCaseId',
-              ExpressionAttributeValues: {
-                ':useCaseId': useCaseId,
-              },
+              Key: { PK: useCaseId, SK: 'METADATA' },
             })
           )
 
-          if (!useCaseResult.Items || useCaseResult.Items.length === 0) {
+          if (!useCaseItem) {
             console.log('Use case not found during update:', useCaseId)
             return errorResponse('NOT_FOUND', `用例不存在: ${useCaseId}`, 404)
           }
           
           processedUseCaseIds.push(useCaseId)
-          console.log('Use case found:', useCaseResult.Items[0].name)
+          console.log('Use case found:', useCaseItem.name)
         }
       }
     }

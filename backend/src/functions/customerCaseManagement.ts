@@ -1,8 +1,8 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
-import { PutCommand, GetCommand, DeleteCommand, ScanCommand } from '@aws-sdk/lib-dynamodb'
+import { PutCommand, GetCommand, DeleteCommand, ScanCommand, QueryCommand } from '@aws-sdk/lib-dynamodb'
 import { PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
 import { successResponse, errorResponse } from '../utils/response'
-import { getUserFromEvent, requireRole, hasIndustryAccess } from '../utils/auth'
+import { getUserFromEvent, requireRole } from '../utils/auth'
 import { docClient, TABLE_NAMES } from '../utils/dynamodb'
 import { s3Client, BUCKET_NAME } from '../utils/s3'
 import { Document } from '../types'
@@ -11,6 +11,7 @@ import { randomUUID } from 'crypto'
 /**
  * List customer cases
  * GET /specialist/customer-cases
+ * PK: id, SK: METADATA
  */
 async function listCustomerCases(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   try {
@@ -27,22 +28,30 @@ async function listCustomerCases(event: APIGatewayProxyEvent): Promise<APIGatewa
 
     let items = result.Items || []
 
-    // Specialist filtering by assigned industries via useCaseIds
+    // Specialist: filter by assigned industries via useCaseIds
     if (user!.role === 'specialist') {
       const assignedIndustries = user!.assignedIndustries || []
-      // Get all use cases to check industry
-      const useCasesResult = await docClient.send(
-        new ScanCommand({ TableName: TABLE_NAMES.USE_CASES })
-      )
+
+      // Build useCaseId -> industryId map using IndustryIndex GSI
       const useCaseIndustryMap: Record<string, string> = {}
-      for (const uc of useCasesResult.Items || []) {
-        if (uc.id && uc.industryId) useCaseIndustryMap[uc.id] = uc.industryId
+      for (const industryId of assignedIndustries) {
+        const ucResult = await docClient.send(
+          new QueryCommand({
+            TableName: TABLE_NAMES.USE_CASES,
+            IndexName: 'IndustryIndex',
+            KeyConditionExpression: 'industryId = :industryId',
+            ExpressionAttributeValues: { ':industryId': industryId },
+          })
+        )
+        for (const uc of ucResult.Items || []) {
+          if (uc.id) useCaseIndustryMap[uc.id] = industryId
+        }
       }
 
       items = items.filter((item) => {
-        const ucIds = item.useCaseIds || []
-        if (ucIds.length === 0) return true // no use case = visible to all
-        return ucIds.some((ucId: string) => assignedIndustries.includes(useCaseIndustryMap[ucId]))
+        const ucIds: string[] = item.useCaseIds || []
+        if (ucIds.length === 0) return true
+        return ucIds.some((ucId) => assignedIndustries.includes(useCaseIndustryMap[ucId]))
       })
     }
 
@@ -63,9 +72,7 @@ async function listCustomerCases(event: APIGatewayProxyEvent): Promise<APIGatewa
 
     return successResponse(cases)
   } catch (error: any) {
-    if (error.message === 'Insufficient permissions') {
-      return errorResponse('FORBIDDEN', '权限不足', 403)
-    }
+    if (error.message === 'Insufficient permissions') return errorResponse('FORBIDDEN', '权限不足', 403)
     console.error('Error listing customer cases:', error)
     return errorResponse('INTERNAL_ERROR', '获取客户案例列表失败', 500)
   }
@@ -83,8 +90,6 @@ async function createCustomerCase(event: APIGatewayProxyEvent): Promise<APIGatew
     const body = JSON.parse(event.body || '{}')
     const { name, accountId, partner, useCaseIds, challenge, solution, benefit } = body
 
-    console.log('=== CREATE CUSTOMER CASE ===', { name, accountId, partner, useCaseIds })
-
     if (!name || typeof name !== 'string' || name.trim().length === 0) {
       return errorResponse('VALIDATION_ERROR', '客户案例名称不能为空', 400)
     }
@@ -93,7 +98,7 @@ async function createCustomerCase(event: APIGatewayProxyEvent): Promise<APIGatew
     const now = new Date().toISOString()
 
     const caseItem = {
-      PK: `CUSTOMERCASE#${id}`,
+      PK: id,
       SK: 'METADATA',
       id,
       name: name.trim(),
@@ -116,12 +121,9 @@ async function createCustomerCase(event: APIGatewayProxyEvent): Promise<APIGatew
       })
     )
 
-    console.log('Customer case created:', id)
     return successResponse(caseItem, 201)
   } catch (error: any) {
-    if (error.message === 'Insufficient permissions') {
-      return errorResponse('FORBIDDEN', '权限不足', 403)
-    }
+    if (error.message === 'Insufficient permissions') return errorResponse('FORBIDDEN', '权限不足', 403)
     console.error('Error creating customer case:', error)
     return errorResponse('INTERNAL_ERROR', '创建客户案例失败', 500)
   }
@@ -137,20 +139,16 @@ async function updateCustomerCase(event: APIGatewayProxyEvent): Promise<APIGatew
     requireRole(user, ['admin', 'specialist'])
 
     const customerCaseId = event.pathParameters?.id
-    if (!customerCaseId) {
-      return errorResponse('VALIDATION_ERROR', '客户案例ID不能为空', 400)
-    }
+    if (!customerCaseId) return errorResponse('VALIDATION_ERROR', '客户案例ID不能为空', 400)
 
     const existing = await docClient.send(
       new GetCommand({
         TableName: TABLE_NAMES.CUSTOMER_CASES,
-        Key: { PK: `CUSTOMERCASE#${customerCaseId}`, SK: 'METADATA' },
+        Key: { PK: customerCaseId, SK: 'METADATA' },
       })
     )
 
-    if (!existing.Item) {
-      return errorResponse('NOT_FOUND', '客户案例不存在', 404)
-    }
+    if (!existing.Item) return errorResponse('NOT_FOUND', '客户案例不存在', 404)
 
     const body = JSON.parse(event.body || '{}')
     const { name, accountId, partner, useCaseIds, challenge, solution, benefit } = body
@@ -177,9 +175,7 @@ async function updateCustomerCase(event: APIGatewayProxyEvent): Promise<APIGatew
 
     return successResponse(updatedItem)
   } catch (error: any) {
-    if (error.message === 'Insufficient permissions') {
-      return errorResponse('FORBIDDEN', '权限不足', 403)
-    }
+    if (error.message === 'Insufficient permissions') return errorResponse('FORBIDDEN', '权限不足', 403)
     console.error('Error updating customer case:', error)
     return errorResponse('INTERNAL_ERROR', '更新客户案例失败', 500)
   }
@@ -195,22 +191,17 @@ async function deleteCustomerCase(event: APIGatewayProxyEvent): Promise<APIGatew
     requireRole(user, ['admin', 'specialist'])
 
     const customerCaseId = event.pathParameters?.id
-    if (!customerCaseId) {
-      return errorResponse('VALIDATION_ERROR', '客户案例ID不能为空', 400)
-    }
+    if (!customerCaseId) return errorResponse('VALIDATION_ERROR', '客户案例ID不能为空', 400)
 
     const existing = await docClient.send(
       new GetCommand({
         TableName: TABLE_NAMES.CUSTOMER_CASES,
-        Key: { PK: `CUSTOMERCASE#${customerCaseId}`, SK: 'METADATA' },
+        Key: { PK: customerCaseId, SK: 'METADATA' },
       })
     )
 
-    if (!existing.Item) {
-      return errorResponse('NOT_FOUND', '客户案例不存在', 404)
-    }
+    if (!existing.Item) return errorResponse('NOT_FOUND', '客户案例不存在', 404)
 
-    // Delete documents from S3
     for (const doc of existing.Item.documents || []) {
       try {
         await s3Client.send(new DeleteObjectCommand({ Bucket: BUCKET_NAME, Key: doc.s3Key }))
@@ -222,15 +213,13 @@ async function deleteCustomerCase(event: APIGatewayProxyEvent): Promise<APIGatew
     await docClient.send(
       new DeleteCommand({
         TableName: TABLE_NAMES.CUSTOMER_CASES,
-        Key: { PK: `CUSTOMERCASE#${customerCaseId}`, SK: 'METADATA' },
+        Key: { PK: customerCaseId, SK: 'METADATA' },
       })
     )
 
     return successResponse({ message: '客户案例删除成功' })
   } catch (error: any) {
-    if (error.message === 'Insufficient permissions') {
-      return errorResponse('FORBIDDEN', '权限不足', 403)
-    }
+    if (error.message === 'Insufficient permissions') return errorResponse('FORBIDDEN', '权限不足', 403)
     console.error('Error deleting customer case:', error)
     return errorResponse('INTERNAL_ERROR', '删除客户案例失败', 500)
   }
@@ -246,27 +235,21 @@ async function uploadDocument(event: APIGatewayProxyEvent): Promise<APIGatewayPr
     requireRole(user, ['admin', 'specialist'])
 
     const customerCaseId = event.pathParameters?.id
-    if (!customerCaseId) {
-      return errorResponse('VALIDATION_ERROR', '客户案例ID不能为空', 400)
-    }
+    if (!customerCaseId) return errorResponse('VALIDATION_ERROR', '客户案例ID不能为空', 400)
 
     const existing = await docClient.send(
       new GetCommand({
         TableName: TABLE_NAMES.CUSTOMER_CASES,
-        Key: { PK: `CUSTOMERCASE#${customerCaseId}`, SK: 'METADATA' },
+        Key: { PK: customerCaseId, SK: 'METADATA' },
       })
     )
 
-    if (!existing.Item) {
-      return errorResponse('NOT_FOUND', '客户案例不存在', 404)
-    }
+    if (!existing.Item) return errorResponse('NOT_FOUND', '客户案例不存在', 404)
 
     const body = JSON.parse(event.body || '{}')
     const { fileName, fileContent, contentType } = body
 
-    if (!fileName || !fileContent) {
-      return errorResponse('VALIDATION_ERROR', '文件名和文件内容不能为空', 400)
-    }
+    if (!fileName || !fileContent) return errorResponse('VALIDATION_ERROR', '文件名和文件内容不能为空', 400)
 
     const documentId = randomUUID()
     const s3Key = `customer-cases/${customerCaseId}/${documentId}-${fileName}`
@@ -304,9 +287,7 @@ async function uploadDocument(event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
     return successResponse({ document, message: '文档上传成功' })
   } catch (error: any) {
-    if (error.message === 'Insufficient permissions') {
-      return errorResponse('FORBIDDEN', '权限不足', 403)
-    }
+    if (error.message === 'Insufficient permissions') return errorResponse('FORBIDDEN', '权限不足', 403)
     console.error('Error uploading document:', error)
     return errorResponse('INTERNAL_ERROR', '文档上传失败', 500)
   }
@@ -323,19 +304,15 @@ export async function handler(event: any): Promise<APIGatewayProxyResult> {
     if (method === 'GET' && (path === '/specialist/customer-cases' || path === '/specialist/customer-cases/')) {
       return await listCustomerCases(event)
     }
-
     if (method === 'POST' && (path === '/specialist/customer-cases' || path === '/specialist/customer-cases/')) {
       return await createCustomerCase(event)
     }
-
     if (method === 'PUT' && path.match(/\/specialist\/customer-cases\/[^/]+$/) && !path.includes('documents')) {
       return await updateCustomerCase(event)
     }
-
     if (method === 'DELETE' && path.match(/\/specialist\/customer-cases\/[^/]+$/) && !path.includes('documents')) {
       return await deleteCustomerCase(event)
     }
-
     if (method === 'POST' && path.match(/\/specialist\/customer-cases\/[^/]+\/documents$/)) {
       return await uploadDocument(event)
     }
