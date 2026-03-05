@@ -202,6 +202,7 @@ export class IndustryPortalStack extends cdk.Stack {
       },
       customAttributes: {
         role: new cognito.StringAttribute({ mutable: true }),
+        roles: new cognito.StringAttribute({ mutable: true }),
         assignedIndustries: new cognito.StringAttribute({ mutable: true }),
       },
       removalPolicy: cdk.RemovalPolicy.DESTROY, // Changed from RETAIN to DESTROY for dev environment
