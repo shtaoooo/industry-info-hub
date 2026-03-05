@@ -200,6 +200,7 @@ const BlogsManagement: React.FC = () => {
   }
 
   const handleTier2Change = (tier2Id: string) => {
+    console.log('Tier2 changed:', tier2Id)
     
     // Clear downstream selections
     form.setFieldsValue({
@@ -208,21 +209,26 @@ const BlogsManagement: React.FC = () => {
     })
     
     const tier2 = subIndustries.find(si => si.id === tier2Id)
+    console.log('Found tier2:', tier2)
     
     if (tier2?.level === 'Tier2-Group') {
       // Load Tier3 options
       const tier3List = subIndustries.filter(si => si.parentSubIndustryId === tier2Id)
+      console.log('Tier3 options:', tier3List)
       setTier3Options(tier3List)
       setUseCaseOptions([])
     } else {
       // It's Tier2-individual, load use cases directly
       setTier3Options([])
       const ucList = useCases.filter(uc => uc.subIndustryId === tier2Id)
+      console.log('Use case options for Tier2:', ucList)
       setUseCaseOptions(ucList)
     }
   }
 
   const handleTier3Change = (tier3Id: string) => {
+    console.log('Tier3 changed:', tier3Id)
+    
     // Clear use case selection
     form.setFieldsValue({
       useCaseId: undefined,
@@ -230,6 +236,7 @@ const BlogsManagement: React.FC = () => {
     
     // Load use cases for this Tier3
     const ucList = useCases.filter(uc => uc.subIndustryId === tier3Id)
+    console.log('Use case options for Tier3:', ucList)
     setUseCaseOptions(ucList)
   }
 
@@ -237,6 +244,9 @@ const BlogsManagement: React.FC = () => {
     try {
       const values = await form.validateFields()
       setSubmitting(true)
+
+      console.log('Form values:', values)
+      console.log('useCaseOptions:', useCaseOptions)
 
       const data = {
         industryId: values.industryId,
@@ -249,6 +259,8 @@ const BlogsManagement: React.FC = () => {
         author: values.author,
         publishedAt: values.publishedAt ? new Date(values.publishedAt).toISOString() : undefined,
       }
+
+      console.log('Submitting data:', data)
 
       if (editingBlog) {
         await blogsService.update(editingBlog.id, data)

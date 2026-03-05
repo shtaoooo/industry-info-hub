@@ -60,6 +60,9 @@ async function createBlog(event: APIGatewayProxyEvent, user: any): Promise<APIGa
     const body = JSON.parse(event.body || '{}')
     const { industryId, useCaseId, title, summary, content, imageUrl, externalUrl, author, publishedAt } = body
 
+    // Debug log
+    console.log('Creating blog with data:', { industryId, useCaseId, title, useCaseIdType: typeof useCaseId })
+
     if (!industryId || !title || !summary || !author) {
       return errorResponse('VALIDATION_ERROR', '缺少必填字段', 400)
     }
@@ -98,12 +101,17 @@ async function createBlog(event: APIGatewayProxyEvent, user: any): Promise<APIGa
     const blogId = randomUUID()
     const now = new Date().toISOString()
 
+    // Process useCaseId: only set if it's a non-empty string
+    const processedUseCaseId = (useCaseId && typeof useCaseId === 'string' && useCaseId.trim() !== '') ? useCaseId : null
+    
+    console.log('Processed useCaseId:', processedUseCaseId)
+
     const blogItem = {
       PK: `BLOG#${blogId}`,
       SK: 'METADATA',
       id: blogId,
       industryId,
-      useCaseId: useCaseId && useCaseId.trim() !== '' ? useCaseId : null,
+      useCaseId: processedUseCaseId,
       title,
       summary,
       content: content || '',
