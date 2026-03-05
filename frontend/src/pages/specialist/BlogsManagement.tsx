@@ -44,7 +44,6 @@ const BlogsManagement: React.FC = () => {
   
   // Cascading select states
   const [selectedIndustry, setSelectedIndustry] = useState<string | null>(null)
-  const [selectedTier2, setSelectedTier2] = useState<string | null>(null)
   const [tier2Options, setTier2Options] = useState<SubIndustry[]>([])
   const [tier3Options, setTier3Options] = useState<SubIndustry[]>([])
   const [useCaseOptions, setUseCaseOptions] = useState<UseCase[]>([])
@@ -99,7 +98,6 @@ const BlogsManagement: React.FC = () => {
     setEditingBlog(null)
     form.resetFields()
     setSelectedIndustry(null)
-    setSelectedTier2(null)
     setTier2Options([])
     setTier3Options([])
     setUseCaseOptions([])
@@ -122,7 +120,6 @@ const BlogsManagement: React.FC = () => {
         
         if (subIndustry?.level === 'Tier3' && subIndustry.parentSubIndustryId) {
           // It's a Tier3, set up parent Tier2
-          setSelectedTier2(subIndustry.parentSubIndustryId)
           const tier3List = subIndustries.filter(si => si.parentSubIndustryId === subIndustry.parentSubIndustryId)
           setTier3Options(tier3List)
           
@@ -145,7 +142,6 @@ const BlogsManagement: React.FC = () => {
           })
         } else {
           // It's a Tier2
-          setSelectedTier2(useCase.subIndustryId)
           
           // Set use cases for Tier2
           const ucList = useCases.filter(uc => uc.subIndustryId === useCase.subIndustryId)
@@ -185,7 +181,6 @@ const BlogsManagement: React.FC = () => {
 
   const handleIndustryChange = (industryId: string) => {
     setSelectedIndustry(industryId)
-    setSelectedTier2(null)
     
     // Clear downstream selections
     form.setFieldsValue({
@@ -205,7 +200,6 @@ const BlogsManagement: React.FC = () => {
   }
 
   const handleTier2Change = (tier2Id: string) => {
-    setSelectedTier2(tier2Id)
     
     // Clear downstream selections
     form.setFieldsValue({
@@ -268,7 +262,6 @@ const BlogsManagement: React.FC = () => {
       form.resetFields()
       setEditingBlog(null)
       setSelectedIndustry(null)
-      setSelectedTier2(null)
       setTier2Options([])
       setTier3Options([])
       setUseCaseOptions([])
@@ -396,7 +389,6 @@ const BlogsManagement: React.FC = () => {
           form.resetFields()
           setEditingBlog(null)
           setSelectedIndustry(null)
-          setSelectedTier2(null)
           setTier2Options([])
           setTier3Options([])
           setUseCaseOptions([])

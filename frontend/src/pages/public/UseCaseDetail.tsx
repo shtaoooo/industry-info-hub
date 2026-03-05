@@ -2,10 +2,9 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { Layout, Spin, message, Button, Empty } from 'antd'
 import { ArrowLeftOutlined, FileTextOutlined, BulbOutlined, UserOutlined, ExclamationCircleOutlined, CommentOutlined, FileOutlined, ReadOutlined } from '@ant-design/icons'
-import { publicService, PublicUseCase, PublicSolution } from '../../services/publicService'
+import { publicService, PublicUseCase, PublicSolution, PublicBlog } from '../../services/publicService'
 import { DocumentDownloadList } from '../../components/DocumentDownloadList'
 import MarkdownText from '../../components/MarkdownText'
-import { Blog } from '../../types'
 
 const { Content } = Layout
 
@@ -14,7 +13,7 @@ const UseCaseDetail: React.FC = () => {
   const navigate = useNavigate()
   const [useCase, setUseCase] = useState<PublicUseCase | null>(null)
   const [solutions, setSolutions] = useState<PublicSolution[]>([])
-  const [blogs, setBlogs] = useState<Blog[]>([])
+  const [blogs, setBlogs] = useState<PublicBlog[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
