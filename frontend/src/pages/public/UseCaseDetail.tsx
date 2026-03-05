@@ -323,99 +323,77 @@ const UseCaseDetail: React.FC = () => {
                 </h2>
               </div>
 
-              <div style={{ 
-                overflowX: 'auto', 
-                marginBottom: 32,
-                paddingBottom: 16,
-                scrollbarWidth: 'thin',
-                scrollbarColor: '#d2d2d7 transparent'
-              }}>
-                <div style={{ 
-                  display: 'flex', 
-                  gap: 20,
-                  minWidth: 'min-content'
-                }}>
-                  {blogs.map((blog) => (
-                    <div
-                      key={blog.id}
-                      onClick={() => navigate(`/public/blogs/${blog.id}`)}
-                      className="apple-card"
-                      style={{
-                        minWidth: 320,
-                        maxWidth: 320,
-                        padding: 0,
-                        cursor: 'pointer',
-                        overflow: 'hidden',
-                        flexShrink: 0,
-                        transition: 'all 0.3s ease',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-4px)'
-                        e.currentTarget.style.boxShadow = '0 12px 24px rgba(0, 0, 0, 0.12)'
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'translateY(0)'
-                        e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.08)'
-                      }}
-                    >
-                      {blog.imageUrl && (
-                        <div style={{
-                          width: '100%',
-                          height: 180,
-                          overflow: 'hidden',
-                          background: '#f5f5f7',
-                        }}>
-                          <img
-                            src={blog.imageUrl}
-                            alt={blog.title}
-                            style={{
-                              width: '100%',
-                              height: '100%',
-                              objectFit: 'cover',
-                            }}
-                          />
-                        </div>
-                      )}
-                      <div style={{ padding: 20 }}>
-                        <div style={{
-                          fontSize: 17,
-                          fontWeight: 600,
-                          marginBottom: 8,
-                          color: '#1d1d1f',
-                          display: '-webkit-box',
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: 'vertical',
-                          overflow: 'hidden',
-                          lineHeight: 1.4,
-                        }}>
-                          {blog.title}
-                        </div>
-                        <div style={{
-                          fontSize: 14,
-                          color: '#6e6e73',
-                          marginBottom: 12,
-                          display: '-webkit-box',
-                          WebkitLineClamp: 3,
-                          WebkitBoxOrient: 'vertical',
-                          overflow: 'hidden',
-                          lineHeight: 1.6,
-                        }}>
-                          {blog.summary}
-                        </div>
-                        <div style={{
-                          fontSize: 12,
-                          color: '#86868b',
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                        }}>
-                          <span>{blog.author}</span>
-                          <span>{new Date(blog.publishedAt).toLocaleDateString('zh-CN')}</span>
-                        </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                {blogs.map((blog, index) => (
+                  <div
+                    key={blog.id}
+                    onClick={() => {
+                      if (blog.externalUrl) {
+                        window.open(blog.externalUrl, '_blank', 'noopener,noreferrer')
+                      } else {
+                        navigate(`/public/blogs/${blog.id}`)
+                      }
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      padding: '32px 0',
+                      borderTop: index === 0 ? '1px solid #d2d2d7' : 'none',
+                      borderBottom: '1px solid #d2d2d7',
+                      cursor: 'pointer',
+                      transition: 'background 0.2s ease',
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = '#f5f5f7' }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
+                  >
+                    {blog.imageUrl && (
+                      <div style={{ 
+                        width: 240, 
+                        height: 120, 
+                        borderRadius: 12, 
+                        background: `url(${blog.imageUrl}) center/cover`, 
+                        marginRight: 24, 
+                        flexShrink: 0 
+                      }} />
+                    )}
+                    <div style={{ flex: 1 }}>
+                      <div style={{ 
+                        fontSize: 12, 
+                        color: '#86868b', 
+                        marginBottom: 8, 
+                        textTransform: 'uppercase', 
+                        letterSpacing: '0.5px' 
+                      }}>
+                        {new Date(blog.publishedAt).toLocaleDateString('en-US', { 
+                          month: 'long', 
+                          day: 'numeric', 
+                          year: 'numeric' 
+                        })}
                       </div>
+                      <h4 style={{ 
+                        fontSize: 21, 
+                        fontWeight: 600, 
+                        color: '#1d1d1f', 
+                        margin: '0 0 8px 0', 
+                        lineHeight: 1.3 
+                      }}>
+                        {blog.title}
+                      </h4>
+                      <p style={{ 
+                        fontSize: 14, 
+                        color: '#6e6e73', 
+                        lineHeight: 1.6, 
+                        margin: 0, 
+                        display: '-webkit-box', 
+                        WebkitLineClamp: 5, 
+                        WebkitBoxOrient: 'vertical', 
+                        overflow: 'hidden' 
+                      }}>
+                        {blog.summary}
+                      </p>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ))}
               </div>
             </>
           )}
