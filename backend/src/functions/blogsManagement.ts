@@ -82,7 +82,7 @@ async function createBlog(event: APIGatewayProxyEvent, user: any): Promise<APIGa
     }
 
     // Verify use case exists if provided
-    if (useCaseId) {
+    if (useCaseId && typeof useCaseId === 'string' && useCaseId.trim() !== '') {
       const useCase = await docClient.send(
         new GetCommand({
           TableName: TABLE_NAMES.USE_CASES,
@@ -103,7 +103,7 @@ async function createBlog(event: APIGatewayProxyEvent, user: any): Promise<APIGa
       SK: 'METADATA',
       id: blogId,
       industryId,
-      useCaseId: useCaseId || null,
+      useCaseId: useCaseId && useCaseId.trim() !== '' ? useCaseId : null,
       title,
       summary,
       content: content || '',
@@ -161,7 +161,7 @@ async function updateBlog(event: APIGatewayProxyEvent, user: any): Promise<APIGa
     }
 
     // Verify use case exists if provided
-    if (useCaseId) {
+    if (useCaseId && typeof useCaseId === 'string' && useCaseId.trim() !== '') {
       const useCase = await docClient.send(
         new GetCommand({
           TableName: TABLE_NAMES.USE_CASES,
@@ -184,7 +184,7 @@ async function updateBlog(event: APIGatewayProxyEvent, user: any): Promise<APIGa
       externalUrl: externalUrl !== undefined ? externalUrl : existing.Item.externalUrl,
       author: author || existing.Item.author,
       publishedAt: publishedAt || existing.Item.publishedAt,
-      useCaseId: useCaseId !== undefined ? useCaseId : existing.Item.useCaseId,
+      useCaseId: useCaseId !== undefined ? (useCaseId && useCaseId.trim() !== '' ? useCaseId : null) : existing.Item.useCaseId,
       updatedAt: now,
     }
 
