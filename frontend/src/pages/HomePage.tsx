@@ -99,16 +99,16 @@ const getFallbackImage = (industryName: string): string => {
 }
 
 const HomePage: React.FC = () => {
-  const { user, logout, hasRole } = useAuth()
+  const { user, currentRole, logout, hasRole, switchRole } = useAuth()
   const navigate = useNavigate()
   const [industries, setIndustries] = useState<PublicIndustry[]>([])
   const [loadingIndustries, setLoadingIndustries] = useState(false)
 
   useEffect(() => {
-    if (user?.role === 'user') {
+    if (currentRole === 'user') {
       loadIndustries()
     }
-  }, [user])
+  }, [currentRole])
 
   const loadIndustries = async () => {
     setLoadingIndustries(true)
@@ -184,17 +184,43 @@ const HomePage: React.FC = () => {
             <UserOutlined style={{ color: '#a1a1a6', fontSize: 16 }} />
             <span style={{ color: '#ffffff', fontSize: 14 }}>{user?.email}</span>
           </Space>
-          <Tag
-            className="header-tag"
-            style={{
-              borderRadius: 12,
-              padding: '4px 12px',
-              fontSize: 12,
-              fontWeight: 400,
-            }}
-          >
-            {getRoleLabel(user?.role || '')}
-          </Tag>
+          {user && user.roles && user.roles.length > 1 ? (
+            <select
+              value={currentRole || ''}
+              onChange={(e) => {
+                switchRole(e.target.value as 'admin' | 'specialist' | 'user')
+                window.location.reload() // 刷新页面以重新加载内容
+              }}
+              style={{
+                background: 'rgba(255, 255, 255, 0.1)',
+                color: '#ffffff',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                borderRadius: 12,
+                padding: '4px 12px',
+                fontSize: 12,
+                cursor: 'pointer',
+                outline: 'none',
+              }}
+            >
+              {user.roles.map(role => (
+                <option key={role} value={role} style={{ background: '#1d1d1f', color: '#ffffff' }}>
+                  {getRoleLabel(role)}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <Tag
+              className="header-tag"
+              style={{
+                borderRadius: 12,
+                padding: '4px 12px',
+                fontSize: 12,
+                fontWeight: 400,
+              }}
+            >
+              {getRoleLabel(currentRole || '')}
+            </Tag>
+          )}
           <Button
             type="text"
             icon={<LogoutOutlined style={{ color: '#2997ff' }} />}
@@ -232,9 +258,9 @@ const HomePage: React.FC = () => {
               fontWeight: 400,
               letterSpacing: '0.011em',
             }}>
-              {user?.role === 'admin' && '您拥有系统管理员权限，可以管理所有功能模块'}
-              {user?.role === 'specialist' && '您可以管理负责行业的用例、解决方案和客户案例'}
-              {user?.role === 'user' && '您可以浏览行业信息并下载相关文档'}
+              {currentRole === 'admin' && '您拥有系统管理员权限，可以管理所有功能模块'}
+              {currentRole === 'specialist' && '您可以管理负责行业的用例、解决方案和客户案例'}
+              {currentRole === 'user' && '您可以浏览行业信息并下载相关文档'}
             </div>
           </div>
 
@@ -243,9 +269,9 @@ const HomePage: React.FC = () => {
               {adminCards
                 .filter((card) => {
                   // 管理员可以看到所有卡片
-                  if (user?.role === 'admin') return true
+                  if (currentRole === 'admin') return true
                   // 行业专员只能看到专员相关的功能和解决方案
-                  if (user?.role === 'specialist') {
+                  if (currentRole === 'specialist') {
                     return card.path.startsWith('/specialist/') || card.path === '/admin/solutions'
                   }
                   return false
@@ -283,7 +309,7 @@ const HomePage: React.FC = () => {
             </div>
           )}
 
-          {user?.role === 'user' && (
+          {currentRole === 'user' && (
             <div>
               {loadingIndustries ? (
                 <div style={{ textAlign: 'center', padding: 80 }}>
@@ -390,7 +416,7 @@ const HomePage: React.FC = () => {
         </div>
       </Content>
 
-      {user?.role === 'user' && <CopilotChat />}
+      {currentRole === 'user' && <CopilotChat />}
     </Layout>
   )
 }
