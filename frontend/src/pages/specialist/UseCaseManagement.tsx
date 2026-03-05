@@ -230,6 +230,31 @@ const UseCaseManagement: React.FC = () => {
       render: (subIndustryId: string) => <Tag color="cyan">{getSubIndustryName(subIndustryId)}</Tag>,
     },
     {
+      title: '推荐指数',
+      dataIndex: 'recommendationScore',
+      key: 'recommendationScore',
+      width: 150,
+      render: (score: number) => {
+        const displayScore = score || 3
+        return (
+          <div>
+            {Array.from({ length: 5 }, (_, i) => (
+              <span
+                key={i}
+                style={{
+                  color: i < displayScore ? '#ffb800' : '#d2d2d7',
+                  marginRight: 2,
+                }}
+              >
+                ⭐
+              </span>
+            ))}
+            <span style={{ marginLeft: 4, color: '#6e6e73' }}>({displayScore})</span>
+          </div>
+        )
+      },
+    },
+    {
       title: '切入人群',
       dataIndex: 'targetAudience',
       key: 'targetAudience',
