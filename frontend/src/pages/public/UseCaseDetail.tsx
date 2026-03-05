@@ -1,10 +1,11 @@
 ﻿import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Layout, Spin, message, Button, Empty } from 'antd'
-import { ArrowLeftOutlined, FileTextOutlined, BulbOutlined, UserOutlined, ExclamationCircleOutlined, CommentOutlined, FileOutlined } from '@ant-design/icons'
+import { ArrowLeftOutlined, FileTextOutlined, BulbOutlined, UserOutlined, ExclamationCircleOutlined, CommentOutlined, FileOutlined, ReadOutlined } from '@ant-design/icons'
 import { publicService, PublicUseCase, PublicSolution } from '../../services/publicService'
 import { DocumentDownloadList } from '../../components/DocumentDownloadList'
 import MarkdownText from '../../components/MarkdownText'
+import { Blog } from '../../types'
 
 const { Content } = Layout
 
@@ -13,6 +14,7 @@ const UseCaseDetail: React.FC = () => {
   const navigate = useNavigate()
   const [useCase, setUseCase] = useState<PublicUseCase | null>(null)
   const [solutions, setSolutions] = useState<PublicSolution[]>([])
+  const [blogs, setBlogs] = useState<Blog[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -25,12 +27,14 @@ const UseCaseDetail: React.FC = () => {
     if (!id) return
     setLoading(true)
     try {
-      const [useCaseData, solutionsData] = await Promise.all([
+      const [useCaseData, solutionsData, blogsData] = await Promise.all([
         publicService.getUseCase(id),
         publicService.getSolutionsForUseCase(id),
+        publicService.getUseCaseBlogs(id).catch(() => []), // 如果没有blogs也不报错
       ])
       setUseCase(useCaseData)
       setSolutions(solutionsData)
+      setBlogs(blogsData)
     } catch (error: any) {
       console.error('Failed to load use case data:', error)
       message.error('加载用例信息失败')
@@ -301,6 +305,120 @@ const UseCaseDetail: React.FC = () => {
                 </div>
               ))}
             </div>
+          )}
+
+          {/* 相关博客部分 */}
+          {blogs.length > 0 && (
+            <>
+              <div style={{ marginBottom: 24, marginTop: 48 }}>
+                <h2 style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  fontSize: 28, 
+                  fontWeight: 700, 
+                  margin: 0,
+                  color: '#1d1d1f'
+                }}>
+                  <ReadOutlined style={{ marginRight: 12, color: '#0071e3', fontSize: 32 }} />
+                  相关博客
+                </h2>
+              </div>
+
+              <div style={{ 
+                overflowX: 'auto', 
+                marginBottom: 32,
+                paddingBottom: 16,
+                scrollbarWidth: 'thin',
+                scrollbarColor: '#d2d2d7 transparent'
+              }}>
+                <div style={{ 
+                  display: 'flex', 
+                  gap: 20,
+                  minWidth: 'min-content'
+                }}>
+                  {blogs.map((blog) => (
+                    <div
+                      key={blog.id}
+                      onClick={() => navigate(`/public/blogs/${blog.id}`)}
+                      className="apple-card"
+                      style={{
+                        minWidth: 320,
+                        maxWidth: 320,
+                        padding: 0,
+                        cursor: 'pointer',
+                        overflow: 'hidden',
+                        flexShrink: 0,
+                        transition: 'all 0.3s ease',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-4px)'
+                        e.currentTarget.style.boxShadow = '0 12px 24px rgba(0, 0, 0, 0.12)'
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0)'
+                        e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.08)'
+                      }}
+                    >
+                      {blog.imageUrl && (
+                        <div style={{
+                          width: '100%',
+                          height: 180,
+                          overflow: 'hidden',
+                          background: '#f5f5f7',
+                        }}>
+                          <img
+                            src={blog.imageUrl}
+                            alt={blog.title}
+                            style={{
+                              width: '100%',
+                              height: '100%',
+                              objectFit: 'cover',
+                            }}
+                          />
+                        </div>
+                      )}
+                      <div style={{ padding: 20 }}>
+                        <div style={{
+                          fontSize: 17,
+                          fontWeight: 600,
+                          marginBottom: 8,
+                          color: '#1d1d1f',
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden',
+                          lineHeight: 1.4,
+                        }}>
+                          {blog.title}
+                        </div>
+                        <div style={{
+                          fontSize: 14,
+                          color: '#6e6e73',
+                          marginBottom: 12,
+                          display: '-webkit-box',
+                          WebkitLineClamp: 3,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden',
+                          lineHeight: 1.6,
+                        }}>
+                          {blog.summary}
+                        </div>
+                        <div style={{
+                          fontSize: 12,
+                          color: '#86868b',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                        }}>
+                          <span>{blog.author}</span>
+                          <span>{new Date(blog.publishedAt).toLocaleDateString('zh-CN')}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
           )}
         </div>
       </Content>

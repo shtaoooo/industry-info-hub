@@ -116,6 +116,7 @@ export interface News {
 export interface Blog {
   id: string
   industryId: string
+  useCaseId?: string // 关联的use case ID
   title: string
   summary: string
   content: string

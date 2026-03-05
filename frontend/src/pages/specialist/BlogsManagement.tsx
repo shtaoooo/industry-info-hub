@@ -13,8 +13,10 @@ import {
   Card,
 } from 'antd'
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
-import { Blog, Industry } from '../../types'
+import { Blog, Industry, SubIndustry, UseCase } from '../../types'
 import { industryService } from '../../services/industryService'
+import { subIndustryService } from '../../services/subIndustryService'
+import { useCaseService } from '../../services/useCaseService'
 import { api } from '../../services/api'
 
 const { Title } = Typography
@@ -32,11 +34,20 @@ const blogsService = {
 const BlogsManagement: React.FC = () => {
   const [blogs, setBlogs] = useState<Blog[]>([])
   const [industries, setIndustries] = useState<Industry[]>([])
+  const [subIndustries, setSubIndustries] = useState<SubIndustry[]>([])
+  const [useCases, setUseCases] = useState<UseCase[]>([])
   const [loading, setLoading] = useState(false)
   const [modalVisible, setModalVisible] = useState(false)
   const [editingBlog, setEditingBlog] = useState<Blog | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [form] = Form.useForm()
+  
+  // Cascading select states
+  const [selectedIndustry, setSelectedIndustry] = useState<string | null>(null)
+  const [selectedTier2, setSelectedTier2] = useState<string | null>(null)
+  const [tier2Options, setTier2Options] = useState<SubIndustry[]>([])
+  const [tier3Options, setTier3Options] = useState<SubIndustry[]>([])
+  const [useCaseOptions, setUseCaseOptions] = useState<UseCase[]>([])
 
   const fetchBlogs = useCallback(async () => {
     setLoading(true)
@@ -59,30 +70,173 @@ const BlogsManagement: React.FC = () => {
     }
   }, [])
 
+  const fetchSubIndustries = useCallback(async () => {
+    try {
+      const data = await subIndustryService.listAll()
+      setSubIndustries(data)
+    } catch (error: any) {
+      message.error(error.message || '获取子行业列表失败')
+    }
+  }, [])
+
+  const fetchUseCases = useCallback(async () => {
+    try {
+      const data = await useCaseService.list()
+      setUseCases(data)
+    } catch (error: any) {
+      message.error(error.message || '获取用例列表失败')
+    }
+  }, [])
+
   useEffect(() => {
     fetchBlogs()
     fetchIndustries()
-  }, [fetchBlogs, fetchIndustries])
+    fetchSubIndustries()
+    fetchUseCases()
+  }, [fetchBlogs, fetchIndustries, fetchSubIndustries, fetchUseCases])
 
   const handleCreate = () => {
     setEditingBlog(null)
     form.resetFields()
+    setSelectedIndustry(null)
+    setSelectedTier2(null)
+    setTier2Options([])
+    setTier3Options([])
+    setUseCaseOptions([])
     setModalVisible(true)
   }
 
   const handleEdit = (blog: Blog) => {
     setEditingBlog(blog)
-    form.setFieldsValue({
-      industryId: blog.industryId,
-      title: blog.title,
-      summary: blog.summary,
-      content: blog.content,
-      imageUrl: blog.imageUrl,
-      externalUrl: blog.externalUrl,
-      author: blog.author,
-      publishedAt: blog.publishedAt ? new Date(blog.publishedAt).toISOString().slice(0, 16) : null,
-    })
+    
+    // Set up cascading selects based on existing data
+    if (blog.useCaseId) {
+      const useCase = useCases.find(uc => uc.id === blog.useCaseId)
+      if (useCase) {
+        const subIndustry = subIndustries.find(si => si.id === useCase.subIndustryId)
+        
+        // Set industry
+        setSelectedIndustry(blog.industryId)
+        const tier2List = subIndustries.filter(si => si.industryId === blog.industryId && (!si.level || si.level === 'Tier2-individual' || si.level === 'Tier2-Group'))
+        setTier2Options(tier2List)
+        
+        if (subIndustry?.level === 'Tier3' && subIndustry.parentSubIndustryId) {
+          // It's a Tier3, set up parent Tier2
+          setSelectedTier2(subIndustry.parentSubIndustryId)
+          const tier3List = subIndustries.filter(si => si.parentSubIndustryId === subIndustry.parentSubIndustryId)
+          setTier3Options(tier3List)
+          
+          // Set use cases for Tier3
+          const ucList = useCases.filter(uc => uc.subIndustryId === useCase.subIndustryId)
+          setUseCaseOptions(ucList)
+          
+          form.setFieldsValue({
+            industryId: blog.industryId,
+            tier2SubIndustryId: subIndustry.parentSubIndustryId,
+            tier3SubIndustryId: useCase.subIndustryId,
+            useCaseId: blog.useCaseId,
+            title: blog.title,
+            summary: blog.summary,
+            content: blog.content,
+            imageUrl: blog.imageUrl,
+            externalUrl: blog.externalUrl,
+            author: blog.author,
+            publishedAt: blog.publishedAt ? new Date(blog.publishedAt).toISOString().slice(0, 16) : null,
+          })
+        } else {
+          // It's a Tier2
+          setSelectedTier2(useCase.subIndustryId)
+          
+          // Set use cases for Tier2
+          const ucList = useCases.filter(uc => uc.subIndustryId === useCase.subIndustryId)
+          setUseCaseOptions(ucList)
+          
+          form.setFieldsValue({
+            industryId: blog.industryId,
+            tier2SubIndustryId: useCase.subIndustryId,
+            tier3SubIndustryId: undefined,
+            useCaseId: blog.useCaseId,
+            title: blog.title,
+            summary: blog.summary,
+            content: blog.content,
+            imageUrl: blog.imageUrl,
+            externalUrl: blog.externalUrl,
+            author: blog.author,
+            publishedAt: blog.publishedAt ? new Date(blog.publishedAt).toISOString().slice(0, 16) : null,
+          })
+        }
+      }
+    } else {
+      // No use case associated
+      form.setFieldsValue({
+        industryId: blog.industryId,
+        title: blog.title,
+        summary: blog.summary,
+        content: blog.content,
+        imageUrl: blog.imageUrl,
+        externalUrl: blog.externalUrl,
+        author: blog.author,
+        publishedAt: blog.publishedAt ? new Date(blog.publishedAt).toISOString().slice(0, 16) : null,
+      })
+    }
+    
     setModalVisible(true)
+  }
+
+  const handleIndustryChange = (industryId: string) => {
+    setSelectedIndustry(industryId)
+    setSelectedTier2(null)
+    
+    // Clear downstream selections
+    form.setFieldsValue({
+      tier2SubIndustryId: undefined,
+      tier3SubIndustryId: undefined,
+      useCaseId: undefined,
+    })
+    
+    // Load Tier2 sub-industries for this industry
+    const tier2List = subIndustries.filter(si => 
+      si.industryId === industryId && 
+      (!si.level || si.level === 'Tier2-individual' || si.level === 'Tier2-Group')
+    )
+    setTier2Options(tier2List)
+    setTier3Options([])
+    setUseCaseOptions([])
+  }
+
+  const handleTier2Change = (tier2Id: string) => {
+    setSelectedTier2(tier2Id)
+    
+    // Clear downstream selections
+    form.setFieldsValue({
+      tier3SubIndustryId: undefined,
+      useCaseId: undefined,
+    })
+    
+    const tier2 = subIndustries.find(si => si.id === tier2Id)
+    
+    if (tier2?.level === 'Tier2-Group') {
+      // Load Tier3 options
+      const tier3List = subIndustries.filter(si => si.parentSubIndustryId === tier2Id)
+      setTier3Options(tier3List)
+      setUseCaseOptions([])
+    } else {
+      // It's Tier2-individual, load use cases directly
+      setTier3Options([])
+      const ucList = useCases.filter(uc => uc.subIndustryId === tier2Id)
+      setUseCaseOptions(ucList)
+    }
+  }
+
+  const handleTier3Change = (tier3Id: string) => {
+    // Clear use case selection
+    form.setFieldsValue({
+      useCaseId: undefined,
+    })
+    
+    // Load use cases for this Tier3
+    const ucList = useCases.filter(uc => uc.subIndustryId === tier3Id)
+    setUseCaseOptions(ucList)
   }
 
   const handleSubmit = async () => {
@@ -91,7 +245,14 @@ const BlogsManagement: React.FC = () => {
       setSubmitting(true)
 
       const data = {
-        ...values,
+        industryId: values.industryId,
+        useCaseId: values.useCaseId || null,
+        title: values.title,
+        summary: values.summary,
+        content: values.content,
+        imageUrl: values.imageUrl,
+        externalUrl: values.externalUrl,
+        author: values.author,
         publishedAt: values.publishedAt ? new Date(values.publishedAt).toISOString() : undefined,
       }
 
@@ -106,6 +267,11 @@ const BlogsManagement: React.FC = () => {
       setModalVisible(false)
       form.resetFields()
       setEditingBlog(null)
+      setSelectedIndustry(null)
+      setSelectedTier2(null)
+      setTier2Options([])
+      setTier3Options([])
+      setUseCaseOptions([])
       await fetchBlogs()
     } catch (error: any) {
       if (error.errorFields) return
@@ -130,19 +296,32 @@ const BlogsManagement: React.FC = () => {
     return industry?.name || industryId
   }
 
+  const getUseCaseName = (useCaseId?: string) => {
+    if (!useCaseId) return '-'
+    const useCase = useCases.find((uc) => uc.id === useCaseId)
+    return useCase?.name || useCaseId
+  }
+
   const columns = [
     {
       title: '标题',
       dataIndex: 'title',
       key: 'title',
-      width: 250,
+      width: 200,
     },
     {
       title: '所属行业',
       dataIndex: 'industryId',
       key: 'industryId',
-      width: 150,
+      width: 120,
       render: (industryId: string) => getIndustryName(industryId),
+    },
+    {
+      title: '关联用例',
+      dataIndex: 'useCaseId',
+      key: 'useCaseId',
+      width: 150,
+      render: (useCaseId?: string) => getUseCaseName(useCaseId),
     },
     {
       title: '摘要',
@@ -154,13 +333,13 @@ const BlogsManagement: React.FC = () => {
       title: '作者',
       dataIndex: 'author',
       key: 'author',
-      width: 120,
+      width: 100,
     },
     {
       title: '发布时间',
       dataIndex: 'publishedAt',
       key: 'publishedAt',
-      width: 180,
+      width: 160,
       render: (text: string) => new Date(text).toLocaleString('zh-CN'),
     },
     {
@@ -205,7 +384,7 @@ const BlogsManagement: React.FC = () => {
         rowKey="id"
         loading={loading}
         pagination={{ pageSize: 10, showTotal: (total) => `共 ${total} 条` }}
-        scroll={{ x: 1200 }}
+        scroll={{ x: 1400 }}
       />
 
       <Modal
@@ -216,6 +395,11 @@ const BlogsManagement: React.FC = () => {
           setModalVisible(false)
           form.resetFields()
           setEditingBlog(null)
+          setSelectedIndustry(null)
+          setSelectedTier2(null)
+          setTier2Options([])
+          setTier3Options([])
+          setUseCaseOptions([])
         }}
         confirmLoading={submitting}
         okText="保存"
@@ -228,7 +412,10 @@ const BlogsManagement: React.FC = () => {
             label="所属行业"
             rules={[{ required: true, message: '请选择所属行业' }]}
           >
-            <Select placeholder="请选择所属行业">
+            <Select 
+              placeholder="请选择所属行业"
+              onChange={handleIndustryChange}
+            >
               {industries.map((industry) => (
                 <Option key={industry.id} value={industry.id}>
                   {industry.name}
@@ -236,6 +423,63 @@ const BlogsManagement: React.FC = () => {
               ))}
             </Select>
           </Form.Item>
+          
+          <Form.Item
+            name="tier2SubIndustryId"
+            label="二级子行业（可选）"
+            tooltip="选择子行业后可以关联到具体的用例"
+          >
+            <Select 
+              placeholder="请选择二级子行业"
+              onChange={handleTier2Change}
+              disabled={!selectedIndustry}
+              allowClear
+            >
+              {tier2Options.map((si) => (
+                <Option key={si.id} value={si.id}>
+                  {si.name}
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+          
+          {tier3Options.length > 0 && (
+            <Form.Item
+              name="tier3SubIndustryId"
+              label="三级子行业"
+            >
+              <Select 
+                placeholder="请选择三级子行业"
+                onChange={handleTier3Change}
+                allowClear
+              >
+                {tier3Options.map((si) => (
+                  <Option key={si.id} value={si.id}>
+                    {si.name}
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+          )}
+          
+          <Form.Item
+            name="useCaseId"
+            label="关联用例（可选）"
+            tooltip="选择用例后，该博客会显示在用例详情页面"
+          >
+            <Select 
+              placeholder="请选择关联用例"
+              disabled={useCaseOptions.length === 0}
+              allowClear
+            >
+              {useCaseOptions.map((uc) => (
+                <Option key={uc.id} value={uc.id}>
+                  {uc.name}
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+          
           <Form.Item
             name="title"
             label="标题"

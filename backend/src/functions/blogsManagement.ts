@@ -32,6 +32,7 @@ async function listBlogs(event: APIGatewayProxyEvent, user: any): Promise<APIGat
     const blogs = items.map((item) => ({
       id: item.id,
       industryId: item.industryId,
+      useCaseId: item.useCaseId,
       title: item.title,
       summary: item.summary,
       content: item.content,
@@ -57,7 +58,7 @@ async function listBlogs(event: APIGatewayProxyEvent, user: any): Promise<APIGat
 async function createBlog(event: APIGatewayProxyEvent, user: any): Promise<APIGatewayProxyResult> {
   try {
     const body = JSON.parse(event.body || '{}')
-    const { industryId, title, summary, content, imageUrl, externalUrl, author, publishedAt } = body
+    const { industryId, useCaseId, title, summary, content, imageUrl, externalUrl, author, publishedAt } = body
 
     if (!industryId || !title || !summary || !author) {
       return errorResponse('VALIDATION_ERROR', '缺少必填字段', 400)
@@ -80,6 +81,20 @@ async function createBlog(event: APIGatewayProxyEvent, user: any): Promise<APIGa
       return errorResponse('NOT_FOUND', '行业不存在', 404)
     }
 
+    // Verify use case exists if provided
+    if (useCaseId) {
+      const useCase = await docClient.send(
+        new GetCommand({
+          TableName: TABLE_NAMES.USE_CASES,
+          Key: { PK: `USECASE#${useCaseId}`, SK: 'METADATA' },
+        })
+      )
+
+      if (!useCase.Item) {
+        return errorResponse('NOT_FOUND', '用例不存在', 404)
+      }
+    }
+
     const blogId = randomUUID()
     const now = new Date().toISOString()
 
@@ -88,6 +103,7 @@ async function createBlog(event: APIGatewayProxyEvent, user: any): Promise<APIGa
       SK: 'METADATA',
       id: blogId,
       industryId,
+      useCaseId: useCaseId || null,
       title,
       summary,
       content: content || '',
@@ -125,7 +141,7 @@ async function updateBlog(event: APIGatewayProxyEvent, user: any): Promise<APIGa
     }
 
     const body = JSON.parse(event.body || '{}')
-    const { title, summary, content, imageUrl, externalUrl, author, publishedAt } = body
+    const { title, summary, content, imageUrl, externalUrl, author, publishedAt, useCaseId } = body
 
     // Get existing blog
     const existing = await docClient.send(
@@ -144,6 +160,20 @@ async function updateBlog(event: APIGatewayProxyEvent, user: any): Promise<APIGa
       return errorResponse('FORBIDDEN', '您没有权限修改该行业的博客', 403)
     }
 
+    // Verify use case exists if provided
+    if (useCaseId) {
+      const useCase = await docClient.send(
+        new GetCommand({
+          TableName: TABLE_NAMES.USE_CASES,
+          Key: { PK: `USECASE#${useCaseId}`, SK: 'METADATA' },
+        })
+      )
+
+      if (!useCase.Item) {
+        return errorResponse('NOT_FOUND', '用例不存在', 404)
+      }
+    }
+
     const now = new Date().toISOString()
     const updatedItem = {
       ...existing.Item,
@@ -154,6 +184,7 @@ async function updateBlog(event: APIGatewayProxyEvent, user: any): Promise<APIGa
       externalUrl: externalUrl !== undefined ? externalUrl : existing.Item.externalUrl,
       author: author || existing.Item.author,
       publishedAt: publishedAt || existing.Item.publishedAt,
+      useCaseId: useCaseId !== undefined ? useCaseId : existing.Item.useCaseId,
       updatedAt: now,
     }
 

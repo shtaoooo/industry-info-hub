@@ -665,6 +665,51 @@ export async function getBlogDetail(event: APIGatewayProxyEvent): Promise<APIGat
 }
 
 /**
+ * Get blogs for a use case
+ * GET /public/use-cases/{id}/blogs
+ */
+export async function getUseCaseBlogs(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+  try {
+    const useCaseId = event.pathParameters?.id
+    if (!useCaseId) {
+      return errorResponse('VALIDATION_ERROR', '用例ID不能为空', 400)
+    }
+
+    // Scan blogs table for blogs with this useCaseId
+    const result = await docClient.send(
+      new ScanCommand({
+        TableName: TABLE_NAMES.BLOGS,
+        FilterExpression: 'SK = :sk AND useCaseId = :useCaseId',
+        ExpressionAttributeValues: {
+          ':sk': 'METADATA',
+          ':useCaseId': useCaseId,
+        },
+      })
+    )
+
+    const blogs = (result.Items || []).map((item) => ({
+      id: item.id,
+      industryId: item.industryId,
+      useCaseId: item.useCaseId,
+      title: item.title,
+      summary: item.summary,
+      imageUrl: item.imageUrl,
+      externalUrl: item.externalUrl,
+      author: item.author,
+      publishedAt: item.publishedAt,
+    }))
+
+    // Sort by publishedAt (descending)
+    blogs.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
+
+    return successResponse(blogs)
+  } catch (error: any) {
+    console.error('Error getting use case blogs:', error)
+    return errorResponse('INTERNAL_ERROR', '获取用例博客失败', 500)
+  }
+}
+
+/**
  * Lambda handler - routes requests to appropriate function
  */
 export async function handler(event: any): Promise<APIGatewayProxyResult> {
@@ -705,6 +750,11 @@ export async function handler(event: any): Promise<APIGatewayProxyResult> {
     // GET /public/use-cases/{id}/solutions
     if (method === 'GET' && path.match(/\/public\/use-cases\/[^/]+\/solutions\/?$/)) {
       return await getSolutionsForUseCase(event)
+    }
+
+    // GET /public/use-cases/{id}/blogs
+    if (method === 'GET' && path.match(/\/public\/use-cases\/[^/]+\/blogs\/?$/)) {
+      return await getUseCaseBlogs(event)
     }
 
     // GET /public/solutions/{id}

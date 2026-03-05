@@ -113,6 +113,9 @@ export const publicService = {
   getSolutionsForUseCase: (useCaseId: string) =>
     api.get<PublicSolution[]>(`/public/use-cases/${useCaseId}/solutions`),
 
+  getUseCaseBlogs: (useCaseId: string) =>
+    api.get<PublicBlog[]>(`/public/use-cases/${useCaseId}/blogs`),
+
   // Solutions
   getSolution: (id: string) => api.get<PublicSolution>(`/public/solutions/${id}`),
   
