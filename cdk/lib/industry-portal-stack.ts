@@ -200,11 +200,8 @@ export class IndustryPortalStack extends cdk.Stack {
         requireDigits: true,
         requireSymbols: true,
       },
-      customAttributes: {
-        role: new cognito.StringAttribute({ mutable: true }),
-        roles: new cognito.StringAttribute({ mutable: true }),
-        assignedIndustries: new cognito.StringAttribute({ mutable: true }),
-      },
+      // customAttributes 已在 Cognito 中创建，不再在 CDK 中定义以避免更新冲突
+      // custom:role, custom:roles, custom:assignedIndustries 已存在
       // 配置邮件发送
       // 注意：需要先在SES中验证发件邮箱地址后再启用
       // email: cognito.UserPoolEmail.withSES({
