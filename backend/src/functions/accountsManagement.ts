@@ -170,23 +170,23 @@ async function deleteAccount(event: APIGatewayProxyEvent): Promise<APIGatewayPro
  * Lambda handler
  */
 export async function handler(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
-  const method = event.httpMethod
-  const path = event.path || event.resource
+  const method = event.httpMethod || event.requestContext?.http?.method
+  const path = event.path || event.resource || event.rawPath
 
   try {
     // Verify authentication
     const user = getUserFromEvent(event)
-    if (!user || user.role !== 'admin') {
+    if (!user || !['admin', 'specialist'].includes(user.role)) {
       return errorResponse('FORBIDDEN', '权限不足', 403)
     }
 
-    // GET /admin/accounts
-    if (method === 'GET' && path === '/admin/accounts') {
+    // GET /admin/accounts or /specialist/accounts
+    if (method === 'GET' && (path === '/admin/accounts' || path === '/specialist/accounts')) {
       return await listAccounts(event)
     }
 
-    // POST /admin/accounts
-    if (method === 'POST' && path === '/admin/accounts') {
+    // POST /admin/accounts or /specialist/accounts
+    if (method === 'POST' && (path === '/admin/accounts' || path === '/specialist/accounts')) {
       return await createAccount(event)
     }
 

@@ -59,10 +59,13 @@ export interface Solution {
 
 export interface CustomerCase {
   id: string
-  solutionId: string
-  useCaseId: string
   name: string
-  description: string
+  accountId?: string // 客户（从account表选择）
+  partner?: string // 合作伙伴
+  useCaseIds?: string[] // 关联的use case IDs（支持多个）
+  challenge?: string // 业务挑战
+  solution?: string // 解决方案描述
+  benefit?: string // 收益
   documents: Document[]
   createdAt: string
   updatedAt: string

@@ -697,6 +697,10 @@ export class IndustryPortalStack extends cdk.Stack {
     addRoute('/admin/accounts/{id}', apigatewayv2.HttpMethod.PUT, accountsManagementFn);
     addRoute('/admin/accounts/{id}', apigatewayv2.HttpMethod.DELETE, accountsManagementFn);
 
+    // Specialist routes - Accounts (read and create for customer case management)
+    addRoute('/specialist/accounts', apigatewayv2.HttpMethod.GET, accountsManagementFn);
+    addRoute('/specialist/accounts', apigatewayv2.HttpMethod.POST, accountsManagementFn);
+
     // Copilot Agent route
     addRoute('/public/copilot/chat', apigatewayv2.HttpMethod.POST, copilotAgentFn);
 

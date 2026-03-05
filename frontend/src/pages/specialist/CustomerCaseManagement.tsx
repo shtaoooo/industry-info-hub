@@ -11,34 +11,32 @@ import {
   Popconfirm,
   Typography,
   Card,
-  Tag,
+  Divider,
 } from 'antd'
 import { PlusOutlined, EditOutlined, DeleteOutlined, FileOutlined } from '@ant-design/icons'
-import { CustomerCase, Solution } from '../../types'
+import { CustomerCase, UseCase } from '../../types'
 import {
   customerCaseService,
-  CreateCustomerCaseRequest,
-  UpdateCustomerCaseRequest,
+  accountService,
+  Account,
 } from '../../services/customerCaseService'
-import { solutionService } from '../../services/solutionService'
-import { mappingService, MappedUseCase } from '../../services/mappingService'
+import { useCaseService } from '../../services/useCaseService'
 import { DocumentUploader } from '../../components/DocumentUploader'
 
 const { Title } = Typography
 const { TextArea } = Input
-const { Option } = Select
 
 const CustomerCaseManagement: React.FC = () => {
   const [customerCases, setCustomerCases] = useState<CustomerCase[]>([])
-  const [solutions, setSolutions] = useState<Solution[]>([])
-  const [useCasesForSolution, setUseCasesForSolution] = useState<MappedUseCase[]>([])
+  const [accounts, setAccounts] = useState<Account[]>([])
+  const [useCases, setUseCases] = useState<UseCase[]>([])
   const [loading, setLoading] = useState(false)
   const [modalVisible, setModalVisible] = useState(false)
   const [documentModalVisible, setDocumentModalVisible] = useState(false)
   const [editingCase, setEditingCase] = useState<CustomerCase | null>(null)
   const [selectedCase, setSelectedCase] = useState<CustomerCase | null>(null)
-  const [selectedSolutionId, setSelectedSolutionId] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [newAccountName, setNewAccountName] = useState('')
   const [form] = Form.useForm()
 
   const fetchCustomerCases = useCallback(async () => {
@@ -53,60 +51,66 @@ const CustomerCaseManagement: React.FC = () => {
     }
   }, [])
 
-  const fetchSolutions = useCallback(async () => {
+  const fetchAccounts = useCallback(async () => {
     try {
-      const data = await solutionService.list()
-      setSolutions(data)
+      const data = await accountService.list()
+      setAccounts(data)
     } catch (error: any) {
-      message.error(error.message || '获取解决方案列表失败')
+      console.error('获取账户列表失败:', error)
     }
   }, [])
 
-  const fetchUseCasesForSolution = useCallback(async (solutionId: string) => {
+  const fetchUseCases = useCallback(async () => {
     try {
-      const data = await mappingService.getUseCasesForSolution(solutionId)
-      setUseCasesForSolution(data)
+      const data = await useCaseService.list()
+      setUseCases(data)
     } catch (error: any) {
-      message.error(error.message || '获取用例列表失败')
-      setUseCasesForSolution([])
+      console.error('获取用例列表失败:', error)
     }
   }, [])
 
   useEffect(() => {
     fetchCustomerCases()
-    fetchSolutions()
-  }, [fetchCustomerCases, fetchSolutions])
+    fetchAccounts()
+    fetchUseCases()
+  }, [fetchCustomerCases, fetchAccounts, fetchUseCases])
 
   const handleCreate = () => {
     setEditingCase(null)
-    setSelectedSolutionId(null)
-    setUseCasesForSolution([])
     form.resetFields()
     setModalVisible(true)
   }
 
-  const handleEdit = (customerCase: CustomerCase) => {
-    setEditingCase(customerCase)
+  const handleEdit = (record: CustomerCase) => {
+    setEditingCase(record)
     form.setFieldsValue({
-      solutionId: customerCase.solutionId,
-      useCaseId: customerCase.useCaseId,
-      name: customerCase.name,
-      description: customerCase.description,
+      name: record.name,
+      accountId: record.accountId || undefined,
+      partner: record.partner || undefined,
+      useCaseIds: record.useCaseIds || [],
+      challenge: record.challenge || undefined,
+      solution: record.solution || undefined,
+      benefit: record.benefit || undefined,
     })
-    setSelectedSolutionId(customerCase.solutionId)
-    fetchUseCasesForSolution(customerCase.solutionId)
     setModalVisible(true)
   }
 
-  const handleManageDocuments = (customerCase: CustomerCase) => {
-    setSelectedCase(customerCase)
+  const handleManageDocuments = (record: CustomerCase) => {
+    setSelectedCase(record)
     setDocumentModalVisible(true)
   }
 
-  const handleSolutionChange = (solutionId: string) => {
-    setSelectedSolutionId(solutionId)
-    form.setFieldsValue({ useCaseId: undefined })
-    fetchUseCasesForSolution(solutionId)
+  const handleAddAccount = async () => {
+    if (!newAccountName.trim()) return
+    try {
+      const newAccount = await accountService.create({ name: newAccountName.trim(), type: 'customer' })
+      setAccounts([...accounts, newAccount])
+      form.setFieldsValue({ accountId: newAccount.id })
+      setNewAccountName('')
+      message.success('客户创建成功')
+    } catch (error: any) {
+      message.error(error.message || '创建客户失败')
+    }
   }
 
   const handleSubmit = async () => {
@@ -114,32 +118,30 @@ const CustomerCaseManagement: React.FC = () => {
       const values = await form.validateFields()
       setSubmitting(true)
 
+      const data = {
+        name: values.name,
+        accountId: values.accountId || null,
+        partner: values.partner || null,
+        useCaseIds: values.useCaseIds || [],
+        challenge: values.challenge || null,
+        solution: values.solution || null,
+        benefit: values.benefit || null,
+      }
+
       if (editingCase) {
-        const updateData: UpdateCustomerCaseRequest = {
-          name: values.name,
-          description: values.description,
-        }
-        await customerCaseService.update(editingCase.id, updateData)
+        await customerCaseService.update(editingCase.id, data)
         message.success('客户案例更新成功')
       } else {
-        const createData: CreateCustomerCaseRequest = {
-          solutionId: values.solutionId,
-          useCaseId: values.useCaseId,
-          name: values.name,
-          description: values.description,
-        }
-        await customerCaseService.create(createData)
+        await customerCaseService.create(data)
         message.success('客户案例创建成功')
       }
 
       setModalVisible(false)
       form.resetFields()
       setEditingCase(null)
-      setSelectedSolutionId(null)
-      setUseCasesForSolution([])
       await fetchCustomerCases()
     } catch (error: any) {
-      if (error.errorFields) return // form validation error
+      if (error.errorFields) return
       message.error(error.message || '操作失败')
     } finally {
       setSubmitting(false)
@@ -148,15 +150,11 @@ const CustomerCaseManagement: React.FC = () => {
 
   const handleDocumentUpload = async (fileName: string, fileContent: string, contentType: string) => {
     if (!selectedCase) return
-
     try {
       await customerCaseService.uploadDocument(selectedCase.id, { fileName, fileContent, contentType })
       await fetchCustomerCases()
-      // Update selected case
       const updated = customerCases.find((cc) => cc.id === selectedCase.id)
-      if (updated) {
-        setSelectedCase(updated)
-      }
+      if (updated) setSelectedCase(updated)
     } catch (error: any) {
       throw error
     }
@@ -172,56 +170,70 @@ const CustomerCaseManagement: React.FC = () => {
     }
   }
 
-  const getSolutionName = (solutionId: string) => {
-    const solution = solutions.find((s) => s.id === solutionId)
-    return solution?.name || solutionId
+  const getAccountName = (accountId?: string) => {
+    if (!accountId) return '-'
+    const account = accounts.find((a) => a.id === accountId)
+    return account?.name || accountId
+  }
+
+  const getUseCaseNames = (useCaseIds?: string[]) => {
+    if (!useCaseIds || useCaseIds.length === 0) return '-'
+    return useCaseIds.map(id => {
+      const uc = useCases.find(u => u.id === id)
+      return uc?.name || id.substring(0, 8)
+    }).join(', ')
   }
 
   const columns = [
     {
-      title: '客户案例名称',
+      title: '案例名称',
       dataIndex: 'name',
       key: 'name',
-      width: 200,
+      width: 180,
     },
     {
-      title: '解决方案',
-      dataIndex: 'solutionId',
-      key: 'solutionId',
+      title: '客户',
+      dataIndex: 'accountId',
+      key: 'accountId',
+      width: 120,
+      render: (accountId?: string) => getAccountName(accountId),
+    },
+    {
+      title: '合作伙伴',
+      dataIndex: 'partner',
+      key: 'partner',
+      width: 120,
+      render: (v?: string) => v || '-',
+    },
+    {
+      title: '关联用例',
+      dataIndex: 'useCaseIds',
+      key: 'useCaseIds',
       width: 150,
-      render: (solutionId: string) => <Tag color="blue">{getSolutionName(solutionId)}</Tag>,
+      render: (useCaseIds?: string[]) => (
+        <span title={getUseCaseNames(useCaseIds)}>
+          {useCaseIds && useCaseIds.length > 0 ? `${useCaseIds.length} 个用例` : '-'}
+        </span>
+      ),
     },
     {
-      title: '用例',
-      dataIndex: 'useCaseId',
-      key: 'useCaseId',
-      width: 150,
-      render: (useCaseId: string) => <Tag color="cyan">{useCaseId.substring(0, 8)}...</Tag>,
-    },
-    {
-      title: '描述',
-      dataIndex: 'description',
-      key: 'description',
+      title: '业务挑战',
+      dataIndex: 'challenge',
+      key: 'challenge',
       ellipsis: true,
+      render: (v?: string) => v || '-',
     },
     {
-      title: '文档数量',
+      title: '文档',
       dataIndex: 'documents',
       key: 'documents',
-      width: 100,
+      width: 80,
       render: (documents: any[]) => documents?.length || 0,
-    },
-    {
-      title: '创建时间',
-      dataIndex: 'createdAt',
-      key: 'createdAt',
-      width: 180,
-      render: (text: string) => new Date(text).toLocaleString('zh-CN'),
     },
     {
       title: '操作',
       key: 'actions',
-      width: 250,
+      width: 200,
       fixed: 'right' as const,
       render: (_: unknown, record: CustomerCase) => (
         <Space>
@@ -233,7 +245,6 @@ const CustomerCaseManagement: React.FC = () => {
           </Button>
           <Popconfirm
             title="确定要删除此客户案例吗？"
-            description="删除后将无法恢复。"
             onConfirm={() => handleDelete(record.id)}
             okText="确定"
             cancelText="取消"
@@ -250,9 +261,7 @@ const CustomerCaseManagement: React.FC = () => {
   return (
     <Card>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-        <Title level={4} style={{ margin: 0 }}>
-          客户案例管理
-        </Title>
+        <Title level={4} style={{ margin: 0 }}>客户案例管理</Title>
         <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
           新增客户案例
         </Button>
@@ -275,71 +284,88 @@ const CustomerCaseManagement: React.FC = () => {
           setModalVisible(false)
           form.resetFields()
           setEditingCase(null)
-          setSelectedSolutionId(null)
-          setUseCasesForSolution([])
         }}
         confirmLoading={submitting}
         okText="保存"
         cancelText="取消"
-        width={600}
+        width={700}
       >
         <Form form={form} layout="vertical">
           <Form.Item
-            name="solutionId"
-            label="解决方案"
-            rules={[{ required: true, message: '请选择解决方案' }]}
-          >
-            <Select
-              placeholder="请选择解决方案"
-              onChange={handleSolutionChange}
-              disabled={!!editingCase}
-              showSearch
-              filterOption={(input, option) =>
-                ((option?.children as unknown) as string).toLowerCase().includes(input.toLowerCase())
-              }
-            >
-              {solutions.map((solution) => (
-                <Option key={solution.id} value={solution.id}>
-                  {solution.name}
-                </Option>
-              ))}
-            </Select>
-          </Form.Item>
-          <Form.Item name="useCaseId" label="用例" rules={[{ required: true, message: '请选择用例' }]}>
-            <Select
-              placeholder={selectedSolutionId ? '请选择用例' : '请先选择解决方案'}
-              disabled={!selectedSolutionId || !!editingCase}
-              showSearch
-              filterOption={(input, option) =>
-                ((option?.children as unknown) as string).toLowerCase().includes(input.toLowerCase())
-              }
-            >
-              {useCasesForSolution.map((useCase) => (
-                <Option key={useCase.id} value={useCase.id}>
-                  {useCase.name}
-                </Option>
-              ))}
-            </Select>
-          </Form.Item>
-          <Form.Item
             name="name"
             label="客户案例名称"
-            rules={[
-              { required: true, message: '请输入客户案例名称' },
-              { max: 100, message: '客户案例名称不能超过100个字符' },
-            ]}
+            rules={[{ required: true, message: '请输入客户案例名称' }]}
           >
             <Input placeholder="请输入客户案例名称" />
           </Form.Item>
-          <Form.Item
-            name="description"
-            label="客户案例描述"
-            rules={[
-              { required: true, message: '请输入客户案例描述' },
-              { max: 1000, message: '客户案例描述不能超过1000个字符' },
-            ]}
-          >
-            <TextArea rows={4} placeholder="请输入客户案例描述" />
+
+          <Form.Item name="accountId" label="客户">
+            <Select
+              placeholder="请选择或搜索客户"
+              showSearch
+              allowClear
+              filterOption={(input, option) =>
+                ((option?.children as unknown) as string)?.toLowerCase().includes(input.toLowerCase())
+              }
+              dropdownRender={(menu) => (
+                <>
+                  {menu}
+                  <Divider style={{ margin: '8px 0' }} />
+                  <Space style={{ padding: '0 8px 4px' }}>
+                    <Input
+                      placeholder="新增客户名称"
+                      value={newAccountName}
+                      onChange={(e) => setNewAccountName(e.target.value)}
+                      onKeyDown={(e) => e.stopPropagation()}
+                    />
+                    <Button type="text" icon={<PlusOutlined />} onClick={handleAddAccount}>
+                      新增
+                    </Button>
+                  </Space>
+                </>
+              )}
+            >
+              {accounts.map((account) => (
+                <Select.Option key={account.id} value={account.id}>
+                  {account.name}
+                </Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
+
+          <Form.Item name="partner" label="合作伙伴">
+            <Input placeholder="请输入合作伙伴" />
+          </Form.Item>
+
+          <Form.Item name="useCaseIds" label="关联用例（可选，支持多选）">
+            <Select
+              mode="multiple"
+              placeholder="请选择关联用例"
+              allowClear
+              maxTagCount="responsive"
+              showSearch
+              filterOption={(input, option) =>
+                ((option?.children as unknown) as string)?.toLowerCase().includes(input.toLowerCase())
+              }
+            >
+              {useCases.map((uc) => (
+                <Select.Option key={uc.id} value={uc.id}>
+                  {uc.name}
+                </Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
+
+          <Form.Item name="challenge" label="业务挑战">
+            <TextArea rows={3} placeholder="请输入业务挑战" />
+          </Form.Item>
+
+          <Form.Item name="solution" label="解决方案">
+            <TextArea rows={3} placeholder="请输入解决方案描述" />
+          </Form.Item>
+
+          <Form.Item name="benefit" label="收益">
+            <TextArea rows={3} placeholder="请输入收益" />
           </Form.Item>
         </Form>
       </Modal>
@@ -352,13 +378,7 @@ const CustomerCaseManagement: React.FC = () => {
           setSelectedCase(null)
         }}
         footer={[
-          <Button
-            key="close"
-            onClick={() => {
-              setDocumentModalVisible(false)
-              setSelectedCase(null)
-            }}
-          >
+          <Button key="close" onClick={() => { setDocumentModalVisible(false); setSelectedCase(null) }}>
             关闭
           </Button>,
         ]}
@@ -369,7 +389,6 @@ const CustomerCaseManagement: React.FC = () => {
             documents={selectedCase.documents || []}
             onUpload={handleDocumentUpload}
             onDelete={async () => {
-              // Customer case documents don't have individual delete endpoint
               message.info('请通过删除客户案例来删除文档')
             }}
           />

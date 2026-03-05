@@ -2,21 +2,37 @@ import { api } from './api'
 import { CustomerCase, Document } from '../types'
 
 export interface CreateCustomerCaseRequest {
-  solutionId: string
-  useCaseId: string
   name: string
-  description: string
+  accountId?: string
+  partner?: string
+  useCaseIds?: string[]
+  challenge?: string
+  solution?: string
+  benefit?: string
 }
 
 export interface UpdateCustomerCaseRequest {
   name?: string
-  description?: string
+  accountId?: string
+  partner?: string
+  useCaseIds?: string[]
+  challenge?: string
+  solution?: string
+  benefit?: string
 }
 
 export interface UploadDocumentRequest {
   fileName: string
   fileContent: string // base64 encoded
   contentType?: string
+}
+
+export interface Account {
+  id: string
+  name: string
+  type: string
+  description?: string
+  createdAt: string
 }
 
 export const customerCaseService = {
@@ -31,4 +47,9 @@ export const customerCaseService = {
 
   uploadDocument: (id: string, data: UploadDocumentRequest) =>
     api.post<{ document: Document; message: string }>(`/specialist/customer-cases/${id}/documents`, data),
+}
+
+export const accountService = {
+  list: () => api.get<Account[]>('/specialist/accounts'),
+  create: (data: { name: string; type: string }) => api.post<Account>('/specialist/accounts', data),
 }
