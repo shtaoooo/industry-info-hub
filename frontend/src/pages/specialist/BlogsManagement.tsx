@@ -491,7 +491,7 @@ const BlogsManagement: React.FC = () => {
             label="作者"
             rules={[{ required: true, message: '请输入作者' }]}
           >
-            <Input placeholder="请输入作者名�? />
+            <Input placeholder="请输入作者名称" />
           </Form.Item>
           <Form.Item name="publishedAt" label="发布时间">
             <Input type="datetime-local" style={{ width: '100%' }} />
