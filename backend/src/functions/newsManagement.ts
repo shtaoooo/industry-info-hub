@@ -371,39 +371,39 @@ export async function handler(event: any): Promise<APIGatewayProxyResult> {
     }
 
     // News Feeds routes
-    // GET /admin/news-feeds?industryId=xxx
-    if (method === 'GET' && (path === '/admin/news-feeds' || path === '/admin/news-feeds/')) {
+    // GET /admin/news-feeds or /specialist/news-feeds
+    if (method === 'GET' && (path === '/admin/news-feeds' || path === '/admin/news-feeds/' || path === '/specialist/news-feeds' || path === '/specialist/news-feeds/')) {
       return await listNewsFeeds(event, user)
     }
 
-    // POST /admin/news-feeds
-    if (method === 'POST' && (path === '/admin/news-feeds' || path === '/admin/news-feeds/')) {
+    // POST /admin/news-feeds or /specialist/news-feeds
+    if (method === 'POST' && (path === '/admin/news-feeds' || path === '/admin/news-feeds/' || path === '/specialist/news-feeds' || path === '/specialist/news-feeds/')) {
       return await createNewsFeed(event, user)
     }
 
-    // DELETE /admin/news-feeds/{id}
-    if (method === 'DELETE' && path.match(/\/admin\/news-feeds\/[^/]+$/)) {
+    // DELETE /admin/news-feeds/{id} or /specialist/news-feeds/{id}
+    if (method === 'DELETE' && (path.match(/\/admin\/news-feeds\/[^/]+$/) || path.match(/\/specialist\/news-feeds\/[^/]+$/))) {
       return await deleteNewsFeed(event, user)
     }
 
     // News routes
-    // GET /admin/news
-    if (method === 'GET' && (path === '/admin/news' || path === '/admin/news/')) {
+    // GET /admin/news or /specialist/news
+    if (method === 'GET' && (path === '/admin/news' || path === '/admin/news/' || path === '/specialist/news' || path === '/specialist/news/')) {
       return await listNews(event, user)
     }
 
-    // POST /admin/news
-    if (method === 'POST' && (path === '/admin/news' || path === '/admin/news/')) {
+    // POST /admin/news or /specialist/news
+    if (method === 'POST' && (path === '/admin/news' || path === '/admin/news/' || path === '/specialist/news' || path === '/specialist/news/')) {
       return await createNews(event, user)
     }
 
-    // PUT /admin/news/{id}
-    if (method === 'PUT' && path.match(/\/admin\/news\/[^/]+$/)) {
+    // PUT /admin/news/{id} or /specialist/news/{id}
+    if (method === 'PUT' && (path.match(/\/admin\/news\/[^/]+$/) || path.match(/\/specialist\/news\/[^/]+$/))) {
       return await updateNews(event, user)
     }
 
-    // DELETE /admin/news/{id}
-    if (method === 'DELETE' && path.match(/\/admin\/news\/[^/]+$/)) {
+    // DELETE /admin/news/{id} or /specialist/news/{id}
+    if (method === 'DELETE' && (path.match(/\/admin\/news\/[^/]+$/) || path.match(/\/specialist\/news\/[^/]+$/))) {
       return await deleteNews(event, user)
     }
 
