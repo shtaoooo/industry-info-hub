@@ -201,7 +201,6 @@ export class IndustryPortalStack extends cdk.Stack {
         requireSymbols: true,
       },
       customAttributes: {
-        role: new cognito.StringAttribute({ mutable: true }),
         roles: new cognito.StringAttribute({ mutable: true }),
         assignedIndustries: new cognito.StringAttribute({ mutable: true }),
       },
@@ -303,11 +302,6 @@ export class IndustryPortalStack extends cdk.Stack {
       },
       removalPolicy: cdk.RemovalPolicy.DESTROY, // Changed from RETAIN to DESTROY for dev environment
     });
-
-    // Cognito 不允许通过 CloudFormation 修改/删除已有的 Schema 属性
-    // 使用 escape hatch 移除 Schema 属性，避免每次部署都触发更新失败
-    const cfnUserPool = userPool.node.defaultChild as cognito.CfnUserPool;
-    cfnUserPool.addPropertyDeletionOverride('Schema');
 
     const userPoolClient = userPool.addClient('WebClient', {
       userPoolClientName: 'IndustryPortalWebClient',

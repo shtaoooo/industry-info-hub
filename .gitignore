@@ -56,3 +56,6 @@ cdk/cdk.context.json
 # Deploy scripts
 git-push-and-deploy.bat
 deploy-cdk.bat
+
+# DynamoDB backups
+dynamodb-backup*/
