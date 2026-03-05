@@ -510,6 +510,7 @@ export class IndustryPortalStack extends cdk.Stack {
     accountsTable.grantReadData(newsManagementFn);
     blogsTable.grantReadWriteData(blogsManagementFn);
     industriesTable.grantReadData(blogsManagementFn);
+    useCasesTable.grantReadData(blogsManagementFn);
     accountsTable.grantReadData(blogsManagementFn);
     accountsTable.grantReadWriteData(accountsManagementFn);
 
