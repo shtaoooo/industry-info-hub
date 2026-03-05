@@ -206,14 +206,13 @@ export class IndustryPortalStack extends cdk.Stack {
         assignedIndustries: new cognito.StringAttribute({ mutable: true }),
       },
       // 配置邮件发送
-      // 注意：需要先在SES中验证发件邮箱地址
-      email: cognito.UserPoolEmail.withSES({
-        fromEmail: 'noreply@industry-portal.com', // 替换为你的发件邮箱
-        fromName: '行业信息门户', // 发件人名称
-        replyTo: 'support@industry-portal.com', // 可选：回复邮箱
-        sesRegion: this.region, // SES区域
-        // sesVerifiedDomain: 'industry-portal.com', // 可选：如果使用域名验证
-      }),
+      // 注意：需要先在SES中验证发件邮箱地址后再启用
+      // email: cognito.UserPoolEmail.withSES({
+      //   fromEmail: 'noreply@industry-portal.com',
+      //   fromName: '行业信息门户',
+      //   replyTo: 'support@industry-portal.com',
+      //   sesRegion: this.region,
+      // }),
       // 自定义邮件模板
       userInvitation: {
         emailSubject: '欢迎加入行业信息门户',
