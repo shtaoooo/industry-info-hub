@@ -17,26 +17,43 @@ export async function createUser(event: APIGatewayProxyEvent): Promise<APIGatewa
     requireRole(currentUser, 'admin')
     
     const body = JSON.parse(event.body || '{}')
-    const { email, role, assignedIndustries } = body
+    const { email, role, roles, assignedIndustries } = body
     
-    if (!email || !role) {
-      return errorResponse('VALIDATION_ERROR', 'Email and role are required', 400)
+    if (!email) {
+      return errorResponse('VALIDATION_ERROR', 'Email is required', 400)
     }
     
-    if (!['admin', 'specialist', 'user'].includes(role)) {
-      return errorResponse('VALIDATION_ERROR', 'Invalid role', 400)
+    // Support both single role and multiple roles
+    let userRoles: ('admin' | 'specialist' | 'user')[] = []
+    if (roles && Array.isArray(roles) && roles.length > 0) {
+      userRoles = roles
+    } else if (role) {
+      userRoles = [role]
+    } else {
+      return errorResponse('VALIDATION_ERROR', 'Role or roles are required', 400)
     }
+    
+    // Validate all roles
+    for (const r of userRoles) {
+      if (!['admin', 'specialist', 'user'].includes(r)) {
+        return errorResponse('VALIDATION_ERROR', `Invalid role: ${r}`, 400)
+      }
+    }
+    
+    // Primary role is the first one
+    const primaryRole = userRoles[0]
     
     // Create user in Cognito
-    const cognitoResponse = await createCognitoUser(email, role, assignedIndustries)
+    const cognitoResponse = await createCognitoUser(email, primaryRole, assignedIndustries, userRoles)
     const userId = cognitoResponse.User?.Username || ''
     
     // Store user metadata in DynamoDB
     const user: User = {
       userId,
       email,
-      role,
-      assignedIndustries: role === 'specialist' ? assignedIndustries : undefined,
+      role: primaryRole,
+      roles: userRoles,
+      assignedIndustries: userRoles.includes('specialist') ? assignedIndustries : undefined,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     }
@@ -136,42 +153,69 @@ export async function updateUser(event: APIGatewayProxyEvent): Promise<APIGatewa
     }
     
     const body = JSON.parse(event.body || '{}')
-    const { role, assignedIndustries } = body
+    const { role, roles, assignedIndustries } = body
+    
+    // Support both single role and multiple roles
+    let userRoles: ('admin' | 'specialist' | 'user')[] | undefined
+    if (roles && Array.isArray(roles) && roles.length > 0) {
+      userRoles = roles
+      // Validate all roles
+      for (const r of userRoles) {
+        if (!['admin', 'specialist', 'user'].includes(r)) {
+          return errorResponse('VALIDATION_ERROR', `Invalid role: ${r}`, 400)
+        }
+      }
+    } else if (role) {
+      if (!['admin', 'specialist', 'user'].includes(role)) {
+        return errorResponse('VALIDATION_ERROR', 'Invalid role', 400)
+      }
+      userRoles = [role]
+    }
+    
+    // Primary role is the first one
+    const primaryRole = userRoles ? userRoles[0] : undefined
     
     // Update Cognito
-    await updateCognitoUser(userId, role, assignedIndustries)
+    await updateCognitoUser(userId, primaryRole, assignedIndustries, userRoles)
     
     // Update DynamoDB
-    const updateExpressions: string[] = []
-    const expressionAttributeNames: Record<string, string> = {}
-    const expressionAttributeValues: Record<string, any> = {}
+    const updateData: any = {
+      PK: `USER#${userId}`,
+      SK: 'METADATA',
+      userId,
+      updatedAt: new Date().toISOString(),
+    }
     
-    if (role) {
-      updateExpressions.push('#role = :role')
-      expressionAttributeNames['#role'] = 'role'
-      expressionAttributeValues[':role'] = role
+    if (primaryRole) {
+      updateData.role = primaryRole
+    }
+    
+    if (userRoles) {
+      updateData.roles = userRoles
     }
     
     if (assignedIndustries !== undefined) {
-      updateExpressions.push('#assignedIndustries = :assignedIndustries')
-      expressionAttributeNames['#assignedIndustries'] = 'assignedIndustries'
-      expressionAttributeValues[':assignedIndustries'] = assignedIndustries
+      updateData.assignedIndustries = assignedIndustries
     }
     
-    updateExpressions.push('#updatedAt = :updatedAt')
-    expressionAttributeNames['#updatedAt'] = 'updatedAt'
-    expressionAttributeValues[':updatedAt'] = new Date().toISOString()
+    // Get existing user data first
+    const existingResult = await docClient.send(new GetCommand({
+      TableName: USERS_TABLE,
+      Key: {
+        PK: `USER#${userId}`,
+        SK: 'METADATA',
+      },
+    }))
+    
+    // Merge with existing data
+    const mergedData = {
+      ...existingResult.Item,
+      ...updateData,
+    }
     
     await docClient.send(new PutCommand({
       TableName: USERS_TABLE,
-      Item: {
-        PK: `USER#${userId}`,
-        SK: 'METADATA',
-        userId,
-        role,
-        assignedIndustries,
-        updatedAt: new Date().toISOString(),
-      },
+      Item: mergedData,
     }))
     
     // Get updated user
