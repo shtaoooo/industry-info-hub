@@ -4,7 +4,7 @@ import { SubIndustry } from '../types'
 export interface CreateSubIndustryRequest {
   industryId: string
   name: string
-  definition: string
+  definition?: string
   definitionCn?: string
   typicalGlobalCompanies?: string[]
   typicalChineseCompanies?: string[]
