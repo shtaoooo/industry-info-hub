@@ -66,7 +66,7 @@ const BlogsManagement: React.FC = () => {
       const data = await subIndustryService.listAll()
       setSubIndustries(data)
     } catch (error: any) {
-      message.error(error.message || '获取子行业列表失�?)
+      message.error(error.message || '获取子行业列表失败')
     }
   }, [])
   const fetchUseCases = useCallback(async () => {
@@ -96,7 +96,7 @@ const BlogsManagement: React.FC = () => {
     setEditingBlog(blog)
     // Set up cascading selects based on existing data
     if (blog.useCaseIds && blog.useCaseIds.length > 0) {
-      // 找到第一个use case来设置级联选择�?
+      // 找到第一个use case来设置级联选择器
       const firstUseCaseId = blog.useCaseIds[0]
       const useCase = useCases.find(uc => uc.id === firstUseCaseId)
       if (useCase) {
@@ -280,7 +280,7 @@ const BlogsManagement: React.FC = () => {
       width: 200,
     },
     {
-      title: '所属行�?,
+      title: '所属行业',
       dataIndex: 'industryId',
       key: 'industryId',
       width: 120,
@@ -300,7 +300,7 @@ const BlogsManagement: React.FC = () => {
         }} title={getUseCaseNames(useCaseIds)}>
           {useCaseIds && useCaseIds.length > 0 ? (
             <span>
-              {useCaseIds.length} 个用�?
+              {useCaseIds.length} 个用例
             </span>
           ) : '-'}
         </div>
@@ -313,7 +313,7 @@ const BlogsManagement: React.FC = () => {
       ellipsis: true,
     },
     {
-      title: '作�?,
+      title: '作者',
       dataIndex: 'author',
       key: 'author',
       width: 100,
@@ -364,7 +364,7 @@ const BlogsManagement: React.FC = () => {
         dataSource={blogs}
         rowKey="id"
         loading={loading}
-        pagination={{ pageSize: 10, showTotal: (total) => `�?${total} 条` }}
+        pagination={{ pageSize: 10, showTotal: (total) => `共 ${total} 条` }}
         scroll={{ x: 1400 }}
       />
       <Modal
@@ -388,11 +388,11 @@ const BlogsManagement: React.FC = () => {
         <Form form={form} layout="vertical">
           <Form.Item
             name="industryId"
-            label="所属行�?
-            rules={[{ required: true, message: '请选择所属行�? }]}
+            label="所属行业"
+            rules={[{ required: true, message: '请选择所属行业' }]}
           >
             <Select 
-              placeholder="请选择所属行�?
+              placeholder="请选择所属行业"
               onChange={handleIndustryChange}
             >
               {industries.map((industry) => (
@@ -408,7 +408,7 @@ const BlogsManagement: React.FC = () => {
             tooltip="选择子行业后可以关联到具体的用例"
           >
             <Select 
-              placeholder="请选择二级子行�?
+              placeholder="请选择二级子行业"
               onChange={handleTier2Change}
               disabled={!selectedIndustry}
               allowClear
@@ -423,10 +423,10 @@ const BlogsManagement: React.FC = () => {
           {tier3Options.length > 0 && (
             <Form.Item
               name="tier3SubIndustryId"
-              label="三级子行�?
+              label="三级子行业"
             >
               <Select 
-                placeholder="请选择三级子行�?
+                placeholder="请选择三级子行业"
                 onChange={handleTier3Change}
                 allowClear
               >
@@ -441,7 +441,7 @@ const BlogsManagement: React.FC = () => {
           <Form.Item
             name="useCaseIds"
             label="关联用例（可选）"
-            tooltip="可以选择多个用例，该博客会显示在所有选中用例的详情页�?
+            tooltip="可以选择多个用例，该博客会显示在所有选中用例的详情页中"
           >
             <Select 
               mode="multiple"
@@ -461,24 +461,24 @@ const BlogsManagement: React.FC = () => {
             name="title"
             label="标题"
             rules={[
-              { required: true, message: '请输入标�? },
-              { max: 200, message: '标题不能超过200个字�? },
+              { required: true, message: '请输入标题' },
+              { max: 200, message: '标题不能超过200个字符' },
             ]}
           >
-            <Input placeholder="请输入博客标�? />
+            <Input placeholder="请输入博客标题" />
           </Form.Item>
           <Form.Item
             name="summary"
             label="摘要"
             rules={[
-              { required: true, message: '请输入摘�? },
-              { max: 500, message: '摘要不能超过500个字�? },
+              { required: true, message: '请输入摘要' },
+              { max: 500, message: '摘要不能超过500个字符' },
             ]}
           >
-            <TextArea rows={3} placeholder="请输入博客摘�? />
+            <TextArea rows={3} placeholder="请输入博客摘要" />
           </Form.Item>
           <Form.Item name="content" label="内容">
-            <TextArea rows={6} placeholder="请输入博客内�? />
+            <TextArea rows={6} placeholder="请输入博客内容" />
           </Form.Item>
           <Form.Item name="imageUrl" label="图片URL">
             <Input placeholder="请输入图片URL" />
@@ -488,8 +488,8 @@ const BlogsManagement: React.FC = () => {
           </Form.Item>
           <Form.Item
             name="author"
-            label="作�?
-            rules={[{ required: true, message: '请输入作�? }]}
+            label="作者"
+            rules={[{ required: true, message: '请输入作者' }]}
           >
             <Input placeholder="请输入作者名�? />
           </Form.Item>
