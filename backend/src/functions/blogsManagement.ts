@@ -266,23 +266,23 @@ export async function handler(event: any): Promise<APIGatewayProxyResult> {
       return errorResponse('FORBIDDEN', '权限不足', 403)
     }
 
-    // GET /admin/blogs
-    if (method === 'GET' && (path === '/admin/blogs' || path === '/admin/blogs/')) {
+    // GET /admin/blogs or /specialist/blogs
+    if (method === 'GET' && (path === '/admin/blogs' || path === '/admin/blogs/' || path === '/specialist/blogs' || path === '/specialist/blogs/')) {
       return await listBlogs(event, user)
     }
 
-    // POST /admin/blogs
-    if (method === 'POST' && (path === '/admin/blogs' || path === '/admin/blogs/')) {
+    // POST /admin/blogs or /specialist/blogs
+    if (method === 'POST' && (path === '/admin/blogs' || path === '/admin/blogs/' || path === '/specialist/blogs' || path === '/specialist/blogs/')) {
       return await createBlog(event, user)
     }
 
-    // PUT /admin/blogs/{id}
-    if (method === 'PUT' && path.match(/\/admin\/blogs\/[^/]+$/)) {
+    // PUT /admin/blogs/{id} or /specialist/blogs/{id}
+    if (method === 'PUT' && (path.match(/\/admin\/blogs\/[^/]+$/) || path.match(/\/specialist\/blogs\/[^/]+$/))) {
       return await updateBlog(event, user)
     }
 
-    // DELETE /admin/blogs/{id}
-    if (method === 'DELETE' && path.match(/\/admin\/blogs\/[^/]+$/)) {
+    // DELETE /admin/blogs/{id} or /specialist/blogs/{id}
+    if (method === 'DELETE' && (path.match(/\/admin\/blogs\/[^/]+$/) || path.match(/\/specialist\/blogs\/[^/]+$/))) {
       return await deleteBlog(event, user)
     }
 
