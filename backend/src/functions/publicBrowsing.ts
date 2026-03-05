@@ -151,45 +151,31 @@ export async function listUseCases(event: APIGatewayProxyEvent): Promise<APIGate
       return errorResponse('VALIDATION_ERROR', '子行业ID不能为空', 400)
     }
 
-    // Get sub-industry details
-    let subIndustry: any = null
-    const industries = await docClient.send(
-      new ScanCommand({
-        TableName: TABLE_NAMES.INDUSTRIES,
-        FilterExpression: 'SK = :sk',
+    // Use GSI to look up sub-industry by id directly (single query instead of scanning all industries)
+    const subIndustryResult = await docClient.send(
+      new QueryCommand({
+        TableName: TABLE_NAMES.SUB_INDUSTRIES,
+        IndexName: 'IdIndex',
+        KeyConditionExpression: 'id = :id',
         ExpressionAttributeValues: {
-          ':sk': 'METADATA',
+          ':id': subIndustryId,
         },
       })
     )
 
-    for (const industry of industries.Items || []) {
-      const result = await docClient.send(
-        new GetCommand({
-          TableName: TABLE_NAMES.SUB_INDUSTRIES,
-          Key: {
-            PK: `INDUSTRY#${industry.id}`,
-            SK: `SUBINDUSTRY#${subIndustryId}`,
-          },
-        })
-      )
-
-      if (result.Item) {
-        subIndustry = {
-          id: result.Item.id,
-          industryId: result.Item.industryId,
-          name: result.Item.name,
-          definition: result.Item.definition,
-          definitionCn: result.Item.definitionCn,
-          typicalGlobalCompanies: result.Item.typicalGlobalCompanies || [],
-          typicalChineseCompanies: result.Item.typicalChineseCompanies || [],
-        }
-        break
-      }
+    if (!subIndustryResult.Items || subIndustryResult.Items.length === 0) {
+      return errorResponse('NOT_FOUND', '子行业不存在', 404)
     }
 
-    if (!subIndustry) {
-      return errorResponse('NOT_FOUND', '子行业不存在', 404)
+    const subIndustryItem = subIndustryResult.Items[0]
+    const subIndustry = {
+      id: subIndustryItem.id,
+      industryId: subIndustryItem.industryId,
+      name: subIndustryItem.name,
+      definition: subIndustryItem.definition,
+      definitionCn: subIndustryItem.definitionCn,
+      typicalGlobalCompanies: subIndustryItem.typicalGlobalCompanies || [],
+      typicalChineseCompanies: subIndustryItem.typicalChineseCompanies || [],
     }
 
     const result = await docClient.send(
@@ -245,60 +231,38 @@ export async function getUseCaseDetails(event: APIGatewayProxyEvent): Promise<AP
       return errorResponse('VALIDATION_ERROR', '用例ID不能为空', 400)
     }
 
-    // Find the use case
-    const industries = await docClient.send(
-      new ScanCommand({
-        TableName: TABLE_NAMES.INDUSTRIES,
-        FilterExpression: 'SK = :sk',
+    // Use GSI to look up use case by id directly (single query instead of nested scan)
+    const result = await docClient.send(
+      new QueryCommand({
+        TableName: TABLE_NAMES.USE_CASES,
+        IndexName: 'IdIndex',
+        KeyConditionExpression: 'id = :id',
         ExpressionAttributeValues: {
-          ':sk': 'METADATA',
+          ':id': useCaseId,
         },
       })
     )
 
-    for (const industry of industries.Items || []) {
-      const subIndustries = await docClient.send(
-        new QueryCommand({
-          TableName: TABLE_NAMES.SUB_INDUSTRIES,
-          KeyConditionExpression: 'PK = :pk',
-          ExpressionAttributeValues: {
-            ':pk': `INDUSTRY#${industry.id}`,
-          },
-        })
-      )
-
-      for (const subIndustry of subIndustries.Items || []) {
-        const result = await docClient.send(
-          new GetCommand({
-            TableName: TABLE_NAMES.USE_CASES,
-            Key: {
-              PK: `SUBINDUSTRY#${subIndustry.id}`,
-              SK: `USECASE#${useCaseId}`,
-            },
-          })
-        )
-
-        if (result.Item) {
-          const useCase = {
-            id: result.Item.id,
-            subIndustryId: result.Item.subIndustryId,
-            industryId: result.Item.industryId,
-            name: result.Item.name,
-            description: result.Item.description,
-            businessScenario: result.Item.businessScenario,
-            customerPainPoints: result.Item.customerPainPoints,
-            targetAudience: result.Item.targetAudience,
-            communicationScript: result.Item.communicationScript,
-            documents: result.Item.documents || [],
-            createdAt: result.Item.createdAt,
-          }
-
-          return successResponse(useCase)
-        }
-      }
+    if (!result.Items || result.Items.length === 0) {
+      return errorResponse('NOT_FOUND', '用例不存在', 404)
     }
 
-    return errorResponse('NOT_FOUND', '用例不存在', 404)
+    const item = result.Items[0]
+    const useCase = {
+      id: item.id,
+      subIndustryId: item.subIndustryId,
+      industryId: item.industryId,
+      name: item.name,
+      description: item.description,
+      businessScenario: item.businessScenario,
+      customerPainPoints: item.customerPainPoints,
+      targetAudience: item.targetAudience,
+      communicationScript: item.communicationScript,
+      documents: item.documents || [],
+      createdAt: item.createdAt,
+    }
+
+    return successResponse(useCase)
   } catch (error: any) {
     console.error('Error getting use case details:', error)
     return errorResponse('INTERNAL_ERROR', '获取用例详情失败', 500)

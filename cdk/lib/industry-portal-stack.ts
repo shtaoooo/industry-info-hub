@@ -41,6 +41,12 @@ export class IndustryPortalStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
+    // GSI to look up sub-industry by id directly (avoids scanning all industries)
+    subIndustriesTable.addGlobalSecondaryIndex({
+      indexName: 'IdIndex',
+      partitionKey: { name: 'id', type: dynamodb.AttributeType.STRING },
+    });
+
     const useCasesTable = new dynamodb.Table(this, 'UseCasesTable', {
       tableName: 'IndustryPortal-UseCases',
       partitionKey: { name: 'PK', type: dynamodb.AttributeType.STRING },
@@ -49,6 +55,12 @@ export class IndustryPortalStack extends cdk.Stack {
       pointInTimeRecovery: true,
       encryption: dynamodb.TableEncryption.AWS_MANAGED,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    // GSI to look up use case by id directly (avoids nested scan of industries+sub-industries)
+    useCasesTable.addGlobalSecondaryIndex({
+      indexName: 'IdIndex',
+      partitionKey: { name: 'id', type: dynamodb.AttributeType.STRING },
     });
 
     const solutionsTable = new dynamodb.Table(this, 'SolutionsTable', {
