@@ -4,6 +4,29 @@
   box-sizing: border-box;
 }
 
+/* ===== 禁止文本选择和复制 ===== */
+body,
+html,
+* {
+  -webkit-user-select: none; /* Safari */
+  -moz-user-select: none; /* Firefox */
+  -ms-user-select: none; /* IE10+/Edge */
+  user-select: none; /* Standard */
+  -webkit-touch-callout: none; /* iOS Safari */
+}
+
+/* 允许输入框和文本域可以选择（用户需要编辑） */
+input,
+textarea,
+[contenteditable="true"],
+.ant-input,
+.ant-input-number-input {
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+  user-select: text !important;
+}
+
 :root {
   --apple-bg: #fbfbfd;
   --apple-card-bg: #ffffff;

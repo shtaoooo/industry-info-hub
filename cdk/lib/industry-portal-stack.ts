@@ -205,6 +205,103 @@ export class IndustryPortalStack extends cdk.Stack {
         roles: new cognito.StringAttribute({ mutable: true }),
         assignedIndustries: new cognito.StringAttribute({ mutable: true }),
       },
+      // 配置邮件发送
+      // 注意：需要先在SES中验证发件邮箱地址
+      email: cognito.UserPoolEmail.withSES({
+        fromEmail: 'noreply@industry-portal.com', // 替换为你的发件邮箱
+        fromName: '行业信息门户', // 发件人名称
+        replyTo: 'support@industry-portal.com', // 可选：回复邮箱
+        sesRegion: this.region, // SES区域
+        // sesVerifiedDomain: 'industry-portal.com', // 可选：如果使用域名验证
+      }),
+      // 自定义邮件模板
+      userInvitation: {
+        emailSubject: '欢迎加入行业信息门户',
+        emailBody: `
+          <html>
+            <head>
+              <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                .header { background-color: #0071e3; color: white; padding: 20px; text-align: center; }
+                .content { background-color: #f5f5f7; padding: 30px; }
+                .button { background-color: #0071e3; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block; margin: 20px 0; }
+                .footer { text-align: center; padding: 20px; color: #86868b; font-size: 12px; }
+                .credentials { background-color: white; padding: 15px; border-radius: 8px; margin: 20px 0; }
+              </style>
+            </head>
+            <body>
+              <div class="container">
+                <div class="header">
+                  <h1>欢迎加入行业信息门户</h1>
+                </div>
+                <div class="content">
+                  <p>您好，</p>
+                  <p>管理员已为您创建了行业信息门户的账户。请使用以下凭证登录系统：</p>
+                  <div class="credentials">
+                    <p><strong>用户名：</strong>{username}</p>
+                    <p><strong>临时密码：</strong>{####}</p>
+                  </div>
+                  <p>首次登录时，系统会要求您设置新密码。</p>
+                  <p>密码要求：</p>
+                  <ul>
+                    <li>至少8个字符</li>
+                    <li>包含大写字母</li>
+                    <li>包含小写字母</li>
+                    <li>包含数字</li>
+                    <li>包含特殊字符</li>
+                  </ul>
+                  <a href="https://your-domain.com/login" class="button">立即登录</a>
+                  <p>如有任何问题，请联系系统管理员。</p>
+                </div>
+                <div class="footer">
+                  <p>此邮件由系统自动发送，请勿回复。</p>
+                  <p>&copy; 2024 行业信息门户. All rights reserved.</p>
+                </div>
+              </div>
+            </body>
+          </html>
+        `,
+        smsMessage: '您的用户名是 {username}，临时密码是 {####}',
+      },
+      // 自定义验证邮件模板
+      userVerification: {
+        emailSubject: '验证您的邮箱地址',
+        emailBody: `
+          <html>
+            <head>
+              <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                .header { background-color: #0071e3; color: white; padding: 20px; text-align: center; }
+                .content { background-color: #f5f5f7; padding: 30px; }
+                .code { background-color: white; padding: 15px; border-radius: 8px; margin: 20px 0; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px; }
+                .footer { text-align: center; padding: 20px; color: #86868b; font-size: 12px; }
+              </style>
+            </head>
+            <body>
+              <div class="container">
+                <div class="header">
+                  <h1>验证您的邮箱地址</h1>
+                </div>
+                <div class="content">
+                  <p>您好，</p>
+                  <p>感谢您注册行业信息门户。请使用以下验证码完成邮箱验证：</p>
+                  <div class="code">{####}</div>
+                  <p>此验证码将在24小时后过期。</p>
+                  <p>如果您没有注册此账户，请忽略此邮件。</p>
+                </div>
+                <div class="footer">
+                  <p>此邮件由系统自动发送，请勿回复。</p>
+                  <p>&copy; 2024 行业信息门户. All rights reserved.</p>
+                </div>
+              </div>
+            </body>
+          </html>
+        `,
+        emailStyle: cognito.VerificationEmailStyle.CODE,
+        smsMessage: '您的验证码是 {####}',
+      },
       removalPolicy: cdk.RemovalPolicy.DESTROY, // Changed from RETAIN to DESTROY for dev environment
     });
 

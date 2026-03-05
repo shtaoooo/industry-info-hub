@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { ConfigProvider } from 'antd'
 import zhCN from 'antd/locale/zh_CN'
+import { useEffect } from 'react'
 import { AuthProvider } from './contexts/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import LoginPage from './pages/LoginPage'
@@ -36,6 +37,103 @@ function TrailingSlashRedirect() {
 }
 
 function App() {
+  useEffect(() => {
+    // 禁止右键菜单
+    const handleContextMenu = (e: MouseEvent) => {
+      e.preventDefault()
+      return false
+    }
+
+    // 禁止复制快捷键 (Ctrl+C / Cmd+C)
+    const handleCopy = (e: ClipboardEvent) => {
+      // 允许在输入框中复制
+      const target = e.target as HTMLElement
+      if (
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.contentEditable === 'true'
+      ) {
+        return
+      }
+      e.preventDefault()
+      return false
+    }
+
+    // 禁止选择快捷键 (Ctrl+A / Cmd+A)
+    const handleSelectAll = (e: KeyboardEvent) => {
+      // 允许在输入框中全选
+      const target = e.target as HTMLElement
+      if (
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.contentEditable === 'true'
+      ) {
+        return
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+        e.preventDefault()
+        return false
+      }
+    }
+
+    // 禁止打印快捷键 (Ctrl+P / Cmd+P)
+    const handlePrint = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+        e.preventDefault()
+        return false
+      }
+    }
+
+    // 禁止保存快捷键 (Ctrl+S / Cmd+S)
+    const handleSave = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault()
+        return false
+      }
+    }
+
+    // 禁止查看源代码快捷键 (Ctrl+U / Cmd+U)
+    const handleViewSource = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'u') {
+        e.preventDefault()
+        return false
+      }
+    }
+
+    // 禁止开发者工具快捷键 (F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C)
+    const handleDevTools = (e: KeyboardEvent) => {
+      if (
+        e.key === 'F12' ||
+        ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'I' || e.key === 'i')) ||
+        ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'J' || e.key === 'j')) ||
+        ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'C' || e.key === 'c'))
+      ) {
+        e.preventDefault()
+        return false
+      }
+    }
+
+    // 添加事件监听
+    document.addEventListener('contextmenu', handleContextMenu)
+    document.addEventListener('copy', handleCopy)
+    document.addEventListener('keydown', handleSelectAll)
+    document.addEventListener('keydown', handlePrint)
+    document.addEventListener('keydown', handleSave)
+    document.addEventListener('keydown', handleViewSource)
+    document.addEventListener('keydown', handleDevTools)
+
+    // 清理函数
+    return () => {
+      document.removeEventListener('contextmenu', handleContextMenu)
+      document.removeEventListener('copy', handleCopy)
+      document.removeEventListener('keydown', handleSelectAll)
+      document.removeEventListener('keydown', handlePrint)
+      document.removeEventListener('keydown', handleSave)
+      document.removeEventListener('keydown', handleViewSource)
+      document.removeEventListener('keydown', handleDevTools)
+    }
+  }, [])
+
   return (
     <ConfigProvider
       locale={zhCN}
