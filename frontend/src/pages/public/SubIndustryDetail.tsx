@@ -27,6 +27,10 @@ const SubIndustryDetail: React.FC = () => {
     setLoading(true)
     try {
       const data = await publicService.listUseCases(id)
+      console.log('Use cases data:', data.useCases)
+      data.useCases.forEach(uc => {
+        console.log(`UseCase: ${uc.name}, recommendationScore: ${uc.recommendationScore}, type: ${typeof uc.recommendationScore}`)
+      })
       setSubIndustry(data.subIndustry)
       setUseCases(data.useCases)
     } catch (error: any) {
@@ -124,11 +128,13 @@ const SubIndustryDetail: React.FC = () => {
                   <div style={{ marginBottom: 12, fontSize: 16 }}>
                     {Array.from({ length: 5 }, (_, i) => {
                       const score = useCase.recommendationScore || 3
+                      const isActive = i < score
+                      console.log(`Star ${i}, score: ${score}, isActive: ${isActive}`)
                       return (
                         <span
                           key={i}
                           style={{
-                            color: i < score ? '#ffb800' : '#d2d2d7',
+                            color: isActive ? '#ffb800' : '#d2d2d7',
                             marginRight: 2,
                           }}
                         >
