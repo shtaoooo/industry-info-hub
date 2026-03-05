@@ -640,6 +640,23 @@ export class IndustryPortalStack extends cdk.Stack {
     addRoute('/specialist/customer-cases/{id}', apigatewayv2.HttpMethod.DELETE, customerCaseManagementFn);
     addRoute('/specialist/customer-cases/{id}/documents', apigatewayv2.HttpMethod.POST, customerCaseManagementFn);
 
+    // Specialist routes - News Management
+    addRoute('/specialist/news', apigatewayv2.HttpMethod.GET, newsManagementFn);
+    addRoute('/specialist/news', apigatewayv2.HttpMethod.POST, newsManagementFn);
+    addRoute('/specialist/news/{id}', apigatewayv2.HttpMethod.PUT, newsManagementFn);
+    addRoute('/specialist/news/{id}', apigatewayv2.HttpMethod.DELETE, newsManagementFn);
+
+    // Specialist routes - News Feeds Management
+    addRoute('/specialist/news-feeds', apigatewayv2.HttpMethod.GET, newsManagementFn);
+    addRoute('/specialist/news-feeds', apigatewayv2.HttpMethod.POST, newsManagementFn);
+    addRoute('/specialist/news-feeds/{id}', apigatewayv2.HttpMethod.DELETE, newsManagementFn);
+
+    // Specialist routes - Blogs Management
+    addRoute('/specialist/blogs', apigatewayv2.HttpMethod.GET, blogsManagementFn);
+    addRoute('/specialist/blogs', apigatewayv2.HttpMethod.POST, blogsManagementFn);
+    addRoute('/specialist/blogs/{id}', apigatewayv2.HttpMethod.PUT, blogsManagementFn);
+    addRoute('/specialist/blogs/{id}', apigatewayv2.HttpMethod.DELETE, blogsManagementFn);
+
     // Public routes
     addRoute('/public/industries', apigatewayv2.HttpMethod.GET, publicBrowsingFn);
     addRoute('/public/industries/{id}', apigatewayv2.HttpMethod.GET, publicBrowsingFn);
@@ -685,6 +702,7 @@ export class IndustryPortalStack extends cdk.Stack {
 
     // News Agent route
     addRoute('/admin/news-agent/search', apigatewayv2.HttpMethod.POST, newsAgentOrchestratorFn);
+    addRoute('/specialist/news-agent/search', apigatewayv2.HttpMethod.POST, newsAgentOrchestratorFn);
 
     // CloudFront OAI for S3 (commented out - not using CloudFront for now)
     // const oai = new cloudfront.OriginAccessIdentity(this, 'OAI', {

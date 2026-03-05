@@ -46,21 +46,21 @@ interface AgentNewsItem {
 }
 
 const newsService = {
-  list: () => api.get<News[]>('/admin/news'),
-  create: (data: Partial<News>) => api.post<News>('/admin/news', data),
-  update: (id: string, data: Partial<News>) => api.put<News>(`/admin/news/${id}`, data),
-  delete: (id: string) => api.delete<void>(`/admin/news/${id}`),
+  list: () => api.get<News[]>('/specialist/news'),
+  create: (data: Partial<News>) => api.post<News>('/specialist/news', data),
+  update: (id: string, data: Partial<News>) => api.put<News>(`/specialist/news/${id}`, data),
+  delete: (id: string) => api.delete<void>(`/specialist/news/${id}`),
 }
 
 const newsFeedService = {
-  list: (industryId: string) => api.get<NewsFeed[]>(`/admin/news-feeds?industryId=${industryId}`),
-  create: (data: Partial<NewsFeed>) => api.post<NewsFeed>('/admin/news-feeds', data),
-  delete: (id: string) => api.delete<void>(`/admin/news-feeds/${id}`),
+  list: (industryId: string) => api.get<NewsFeed[]>(`/specialist/news-feeds?industryId=${industryId}`),
+  create: (data: Partial<NewsFeed>) => api.post<NewsFeed>('/specialist/news-feeds', data),
+  delete: (id: string) => api.delete<void>(`/specialist/news-feeds/${id}`),
 }
 
 const newsAgentService = {
   search: (industryId: string, query: string) =>
-    api.post<{ news: AgentNewsItem[]; message?: string }>('/admin/news-agent/search', { industryId, query }),
+    api.post<{ news: AgentNewsItem[]; message?: string }>('/specialist/news-agent/search', { industryId, query }),
 }
 
 const NewsManagement: React.FC = () => {

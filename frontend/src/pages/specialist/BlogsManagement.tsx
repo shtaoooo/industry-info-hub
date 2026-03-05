@@ -24,10 +24,10 @@ const { TextArea } = Input
 const { Option } = Select
 
 const blogsService = {
-  list: () => api.get<Blog[]>('/admin/blogs'),
-  create: (data: Partial<Blog>) => api.post<Blog>('/admin/blogs', data),
-  update: (id: string, data: Partial<Blog>) => api.put<Blog>(`/admin/blogs/${id}`, data),
-  delete: (id: string) => api.delete<void>(`/admin/blogs/${id}`),
+  list: () => api.get<Blog[]>('/specialist/blogs'),
+  create: (data: Partial<Blog>) => api.post<Blog>('/specialist/blogs', data),
+  update: (id: string, data: Partial<Blog>) => api.put<Blog>(`/specialist/blogs/${id}`, data),
+  delete: (id: string) => api.delete<void>(`/specialist/blogs/${id}`),
 }
 
 
