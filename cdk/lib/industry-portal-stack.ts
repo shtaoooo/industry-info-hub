@@ -27,7 +27,14 @@ export class IndustryPortalStack extends cdk.Stack {
       pointInTimeRecovery: true,
       encryption: dynamodb.TableEncryption.AWS_MANAGED,
       stream: dynamodb.StreamViewType.NEW_AND_OLD_IMAGES,
-      removalPolicy: cdk.RemovalPolicy.DESTROY, // Changed from RETAIN for dev environment
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    // GSI: query visible industries without Scan
+    industriesTable.addGlobalSecondaryIndex({
+      indexName: 'VisibilityIndex',
+      partitionKey: { name: 'isVisibleStr', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'createdAt', type: dynamodb.AttributeType.STRING },
     });
 
     const subIndustriesTable = new dynamodb.Table(this, 'SubIndustriesTable', {
@@ -41,10 +48,11 @@ export class IndustryPortalStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
-    // GSI to look up sub-industry by id directly (avoids scanning all industries)
+    // GSI: query sub-industries by industry, sorted by priority
     subIndustriesTable.addGlobalSecondaryIndex({
-      indexName: 'IdIndex',
-      partitionKey: { name: 'id', type: dynamodb.AttributeType.STRING },
+      indexName: 'IndustryIndex',
+      partitionKey: { name: 'industryId', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'priority', type: dynamodb.AttributeType.NUMBER },
     });
 
     const useCasesTable = new dynamodb.Table(this, 'UseCasesTable', {
@@ -57,10 +65,18 @@ export class IndustryPortalStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
-    // GSI to look up use case by id directly (avoids nested scan of industries+sub-industries)
+    // GSI: query use cases by sub-industry, sorted by recommendationScore (desc)
     useCasesTable.addGlobalSecondaryIndex({
-      indexName: 'IdIndex',
-      partitionKey: { name: 'id', type: dynamodb.AttributeType.STRING },
+      indexName: 'SubIndustryIndex',
+      partitionKey: { name: 'subIndustryId', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'recommendationScore', type: dynamodb.AttributeType.NUMBER },
+    });
+
+    // GSI: query use cases by industry
+    useCasesTable.addGlobalSecondaryIndex({
+      indexName: 'IndustryIndex',
+      partitionKey: { name: 'industryId', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'createdAt', type: dynamodb.AttributeType.STRING },
     });
 
     const solutionsTable = new dynamodb.Table(this, 'SolutionsTable', {
