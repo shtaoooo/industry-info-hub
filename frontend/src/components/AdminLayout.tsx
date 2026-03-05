@@ -1,5 +1,6 @@
 import React from 'react'
-import { Layout, Menu, Button, Space, Tag } from 'antd'
+import { Layout, Menu, Button, Space, Tag, Dropdown } from 'antd'
+import type { MenuProps } from 'antd'
 import {
   BankOutlined,
   LogoutOutlined,
@@ -13,6 +14,8 @@ import {
   TeamOutlined,
   NotificationOutlined,
   ReadOutlined,
+  SwapOutlined,
+  DownOutlined,
 } from '@ant-design/icons'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
@@ -24,7 +27,7 @@ interface AdminLayoutProps {
 }
 
 const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
-  const { user, logout } = useAuth()
+  const { user, currentRole, logout, switchRole } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -46,6 +49,20 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     }
   }
 
+  const handleRoleSwitch = (role: 'admin' | 'specialist' | 'user') => {
+    switchRole(role)
+    // 切换角色后导航到首页
+    navigate('/')
+  }
+
+  // 创建角色切换菜单
+  const roleMenuItems: MenuProps['items'] = user?.roles.map(role => ({
+    key: role,
+    label: getRoleLabel(role),
+    icon: role === currentRole ? <SwapOutlined /> : null,
+    onClick: () => handleRoleSwitch(role),
+  })) || []
+
   const allMenuItems = [
     { key: '/', icon: <HomeOutlined />, label: '首页', roles: ['admin', 'specialist'] },
     { key: '/admin/industries', icon: <BankOutlined />, label: '行业管理', roles: ['admin'] },
@@ -60,9 +77,9 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     { key: '/specialist/blogs', icon: <ReadOutlined />, label: '博客管理', roles: ['admin', 'specialist'] },
   ]
 
-  // 根据用户角色过滤菜单项
+  // 根据用户当前角色过滤菜单项
   const menuItems = allMenuItems
-    .filter(item => item.roles.includes(user?.role || ''))
+    .filter(item => item.roles.includes(currentRole || ''))
     .map(({ roles, ...item }) => item)
 
   return (
@@ -113,18 +130,36 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
           <Space>
             <UserOutlined style={{ color: '#86868b', fontSize: 16 }} />
             <span style={{ color: '#1d1d1f', fontSize: 14 }}>{user?.email}</span>
-            <Tag
-              style={{
-                background: '#f5f5f7',
-                color: '#1d1d1f',
-                border: '1px solid #d2d2d7',
-                borderRadius: 12,
-                padding: '4px 12px',
-                fontSize: 12,
-              }}
-            >
-              {getRoleLabel(user?.role || '')}
-            </Tag>
+            {user && user.roles.length > 1 ? (
+              <Dropdown menu={{ items: roleMenuItems }} trigger={['click']}>
+                <Tag
+                  style={{
+                    background: '#f5f5f7',
+                    color: '#1d1d1f',
+                    border: '1px solid #d2d2d7',
+                    borderRadius: 12,
+                    padding: '4px 12px',
+                    fontSize: 12,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {getRoleLabel(currentRole || '')} <DownOutlined style={{ fontSize: 10 }} />
+                </Tag>
+              </Dropdown>
+            ) : (
+              <Tag
+                style={{
+                  background: '#f5f5f7',
+                  color: '#1d1d1f',
+                  border: '1px solid #d2d2d7',
+                  borderRadius: 12,
+                  padding: '4px 12px',
+                  fontSize: 12,
+                }}
+              >
+                {getRoleLabel(currentRole || '')}
+              </Tag>
+            )}
             <Button
               type="text"
               icon={<LogoutOutlined />}

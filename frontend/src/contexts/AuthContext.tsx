@@ -7,9 +7,11 @@ interface AuthContextType {
   loading: boolean
   isAuthenticated: boolean
   needsNewPassword: boolean
+  currentRole: 'admin' | 'specialist' | 'user' | null
   login: (email: string, password: string) => Promise<void>
   confirmNewPassword: (newPassword: string) => Promise<void>
   logout: () => Promise<void>
+  switchRole: (role: 'admin' | 'specialist' | 'user') => void
   hasRole: (role: string | string[]) => boolean
   hasIndustryAccess: (industryId: string) => boolean
   refreshUser: () => Promise<void>
@@ -33,6 +35,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const [needsNewPassword, setNeedsNewPassword] = useState(false)
+  const [currentRole, setCurrentRole] = useState<'admin' | 'specialist' | 'user' | null>(null)
 
   const loadUser = async () => {
     try {
@@ -52,16 +55,42 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         console.warn('Failed to parse assignedIndustries, ignoring')
       }
 
+      // Parse roles safely - support both single role and multiple roles
+      let roles: ('admin' | 'specialist' | 'user')[] = []
+      const singleRole = (attributes['custom:role'] as 'admin' | 'specialist' | 'user') || 'user'
+      
+      try {
+        const rolesRaw = attributes['custom:roles']
+        if (rolesRaw) {
+          roles = JSON.parse(rolesRaw)
+        } else {
+          // Fallback to single role for backward compatibility
+          roles = [singleRole]
+        }
+      } catch {
+        console.warn('Failed to parse roles, using single role')
+        roles = [singleRole]
+      }
+
       // Extract user information from Cognito
       const userData: User = {
         userId: currentUser.userId,
         email: attributes.email || '',
-        role: (attributes['custom:role'] as 'admin' | 'specialist' | 'user') || 'user',
+        role: singleRole, // 保留用于向后兼容
+        roles: roles,
         assignedIndustries,
       }
       
-      console.log('User loaded:', userData.email, 'role:', userData.role)
+      console.log('User loaded:', userData.email, 'roles:', userData.roles)
       setUser(userData)
+      
+      // Set current role from localStorage or default to first role
+      const savedRole = localStorage.getItem('currentRole') as 'admin' | 'specialist' | 'user' | null
+      if (savedRole && roles.includes(savedRole)) {
+        setCurrentRole(savedRole)
+      } else {
+        setCurrentRole(roles[0] || 'user')
+      }
     } catch (error) {
       console.error('Error loading user:', error)
       setUser(null)
@@ -116,26 +145,35 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       await signOut()
       setUser(null)
+      setCurrentRole(null)
+      localStorage.removeItem('currentRole')
     } catch (error) {
       console.error('Logout error:', error)
       throw error
     }
   }
 
-  const hasRole = (role: string | string[]): boolean => {
-    if (!user) return false
-    if (Array.isArray(role)) {
-      return role.includes(user.role)
+  const switchRole = (role: 'admin' | 'specialist' | 'user') => {
+    if (user && user.roles.includes(role)) {
+      setCurrentRole(role)
+      localStorage.setItem('currentRole', role)
     }
-    return user.role === role
+  }
+
+  const hasRole = (role: string | string[]): boolean => {
+    if (!user || !currentRole) return false
+    if (Array.isArray(role)) {
+      return role.includes(currentRole)
+    }
+    return currentRole === role
   }
 
   const hasIndustryAccess = (industryId: string): boolean => {
-    if (!user) return false
+    if (!user || !currentRole) return false
     // Admin has access to all industries
-    if (user.role === 'admin') return true
+    if (currentRole === 'admin') return true
     // Specialist has access to assigned industries
-    if (user.role === 'specialist' && user.assignedIndustries) {
+    if (currentRole === 'specialist' && user.assignedIndustries) {
       return user.assignedIndustries.includes(industryId)
     }
     return false
@@ -150,9 +188,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     loading,
     isAuthenticated: !!user,
     needsNewPassword,
+    currentRole,
     login,
     confirmNewPassword,
     logout,
+    switchRole,
     hasRole,
     hasIndustryAccess,
     refreshUser,

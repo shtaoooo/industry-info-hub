@@ -79,7 +79,8 @@ export interface Document {
 export interface User {
   userId: string
   email: string
-  role: 'admin' | 'specialist' | 'user'
+  role: 'admin' | 'specialist' | 'user' // 保留用于向后兼容
+  roles: ('admin' | 'specialist' | 'user')[] // 新增：用户拥有的所有角色
   assignedIndustries?: string[]
 }
 
