@@ -201,6 +201,7 @@ export class IndustryPortalStack extends cdk.Stack {
         requireSymbols: true,
       },
       customAttributes: {
+        role: new cognito.StringAttribute({ mutable: true }),
         roles: new cognito.StringAttribute({ mutable: true }),
         assignedIndustries: new cognito.StringAttribute({ mutable: true }),
       },

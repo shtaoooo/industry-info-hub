@@ -1,0 +1,14 @@
+[
+  {
+    "Name": "email",
+    "Value": "taosheng@nwcdcloud.cn"
+  },
+  {
+    "Name": "email_verified",
+    "Value": "true"
+  },
+  {
+    "Name": "custom:role",
+    "Value": "admin"
+  }
+]
