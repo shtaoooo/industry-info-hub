@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   Table,
   Button,
@@ -11,6 +11,7 @@ import {
   Popconfirm,
   Typography,
   Card,
+  Tag,
 } from 'antd'
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
 import { Blog, Industry, SubIndustry, UseCase } from '../../types'
@@ -18,15 +19,18 @@ import { industryService } from '../../services/industryService'
 import { subIndustryService } from '../../services/subIndustryService'
 import { useCaseService } from '../../services/useCaseService'
 import { api } from '../../services/api'
+
 const { Title } = Typography
 const { TextArea } = Input
 const { Option } = Select
+
 const blogsService = {
   list: () => api.get<Blog[]>('/specialist/blogs'),
   create: (data: Partial<Blog>) => api.post<Blog>('/specialist/blogs', data),
   update: (id: string, data: Partial<Blog>) => api.put<Blog>(`/specialist/blogs/${id}`, data),
   delete: (id: string) => api.delete<void>(`/specialist/blogs/${id}`),
 }
+
 const BlogsManagement: React.FC = () => {
   const [blogs, setBlogs] = useState<Blog[]>([])
   const [industries, setIndustries] = useState<Industry[]>([])
@@ -37,11 +41,8 @@ const BlogsManagement: React.FC = () => {
   const [editingBlog, setEditingBlog] = useState<Blog | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [form] = Form.useForm()
-  // Cascading select states
-  const [selectedIndustry, setSelectedIndustry] = useState<string | null>(null)
-  const [tier2Options, setTier2Options] = useState<SubIndustry[]>([])
-  const [tier3Options, setTier3Options] = useState<SubIndustry[]>([])
-  const [useCaseOptions, setUseCaseOptions] = useState<UseCase[]>([])
+  const [filterIndustryId, setFilterIndustryId] = useState<string | null>(null)
+
   const fetchBlogs = useCallback(async () => {
     setLoading(true)
     try {
@@ -53,102 +54,43 @@ const BlogsManagement: React.FC = () => {
       setLoading(false)
     }
   }, [])
-  const fetchIndustries = useCallback(async () => {
-    try {
-      const data = await industryService.list()
-      setIndustries(data)
-    } catch (error: any) {
-      message.error(error.message || '获取行业列表失败')
-    }
-  }, [])
-  const fetchSubIndustries = useCallback(async () => {
-    try {
-      const data = await subIndustryService.listAll()
-      setSubIndustries(data)
-    } catch (error: any) {
-      message.error(error.message || '获取子行业列表失败')
-    }
-  }, [])
-  const fetchUseCases = useCallback(async () => {
-    try {
-      const data = await useCaseService.list()
-      setUseCases(data)
-    } catch (error: any) {
-      message.error(error.message || '获取用例列表失败')
-    }
-  }, [])
+
   useEffect(() => {
     fetchBlogs()
-    fetchIndustries()
-    fetchSubIndustries()
-    fetchUseCases()
-  }, [fetchBlogs, fetchIndustries, fetchSubIndustries, fetchUseCases])
-  const handleCreate = () => {
-    setEditingBlog(null)
-    form.resetFields()
-    setSelectedIndustry(null)
-    setTier2Options([])
-    setTier3Options([])
-    setUseCaseOptions([])
-    setModalVisible(true)
-  }
-  const handleEdit = (blog: Blog) => {
-    setEditingBlog(blog)
-    // Set up cascading selects based on existing data
-    if (blog.useCaseIds && blog.useCaseIds.length > 0) {
-      // 找到第一个use case来设置级联选择器
-      const firstUseCaseId = blog.useCaseIds[0]
-      const useCase = useCases.find(uc => uc.id === firstUseCaseId)
-      if (useCase) {
-        const subIndustry = subIndustries.find(si => si.id === useCase.subIndustryId)
-        // Set industry
-        setSelectedIndustry(blog.industryId)
-        const tier2List = subIndustries.filter(si => si.industryId === blog.industryId && (!si.level || si.level === 'Tier2-individual' || si.level === 'Tier2-Group'))
-        setTier2Options(tier2List)
-        if (subIndustry?.level === 'Tier3' && subIndustry.parentSubIndustryId) {
-          // It's a Tier3, set up parent Tier2
-          const tier3List = subIndustries.filter(si => si.parentSubIndustryId === subIndustry.parentSubIndustryId)
-          setTier3Options(tier3List)
-          // Set use cases for Tier3
-          const ucList = useCases.filter(uc => uc.subIndustryId === useCase.subIndustryId)
-          setUseCaseOptions(ucList)
-          form.setFieldsValue({
-            industryId: blog.industryId,
-            tier2SubIndustryId: subIndustry.parentSubIndustryId,
-            tier3SubIndustryId: useCase.subIndustryId,
-            useCaseIds: blog.useCaseIds,
-            title: blog.title,
-            summary: blog.summary,
-            content: blog.content,
-            imageUrl: blog.imageUrl,
-            externalUrl: blog.externalUrl,
-            author: blog.author,
-            publishedAt: blog.publishedAt ? new Date(blog.publishedAt).toISOString().slice(0, 16) : null,
-          })
-        } else {
-          // It's a Tier2
-          // Set use cases for Tier2
-          const ucList = useCases.filter(uc => uc.subIndustryId === useCase.subIndustryId)
-          setUseCaseOptions(ucList)
-          form.setFieldsValue({
-            industryId: blog.industryId,
-            tier2SubIndustryId: useCase.subIndustryId,
-            tier3SubIndustryId: undefined,
-            useCaseIds: blog.useCaseIds,
-            title: blog.title,
-            summary: blog.summary,
-            content: blog.content,
-            imageUrl: blog.imageUrl,
-            externalUrl: blog.externalUrl,
-            author: blog.author,
-            publishedAt: blog.publishedAt ? new Date(blog.publishedAt).toISOString().slice(0, 16) : null,
-          })
-        }
+    industryService.list().then(setIndustries).catch(() => {})
+    subIndustryService.listAll().then(setSubIndustries).catch(() => {})
+    useCaseService.list().then(setUseCases).catch(() => {})
+  }, [fetchBlogs])
+
+  // Build use case options grouped by sub-industry, filtered by selected industry
+  const useCaseSelectOptions = useMemo(() => {
+    const filtered = filterIndustryId
+      ? useCases.filter(uc => {
+          const si = subIndustries.find(s => s.id === uc.subIndustryId)
+          return si?.industryId === filterIndustryId
+        })
+      : useCases
+
+    // Group by subIndustry
+    const groups: Record<string, { label: string; cases: UseCase[] }> = {}
+    filtered.forEach(uc => {
+      const si = subIndustries.find(s => s.id === uc.subIndustryId)
+      const key = uc.subIndustryId
+      if (!groups[key]) {
+        groups[key] = { label: si?.name || key, cases: [] }
       }
-    } else {
-      // No use case associated
+      groups[key].cases.push(uc)
+    })
+    return groups
+  }, [useCases, subIndustries, filterIndustryId])
+
+  const openModal = (blog?: Blog) => {
+    if (blog) {
+      setEditingBlog(blog)
+      setFilterIndustryId(blog.industryId || null)
       form.setFieldsValue({
         industryId: blog.industryId,
+        useCaseIds: blog.useCaseIds || [],
         title: blog.title,
         summary: blog.summary,
         content: blog.content,
@@ -157,66 +99,24 @@ const BlogsManagement: React.FC = () => {
         author: blog.author,
         publishedAt: blog.publishedAt ? new Date(blog.publishedAt).toISOString().slice(0, 16) : null,
       })
+    } else {
+      setEditingBlog(null)
+      setFilterIndustryId(null)
+      form.resetFields()
     }
     setModalVisible(true)
   }
-  const handleIndustryChange = (industryId: string) => {
-    setSelectedIndustry(industryId)
-    // Clear downstream selections
-    form.setFieldsValue({
-      tier2SubIndustryId: undefined,
-      tier3SubIndustryId: undefined,
-      useCaseIds: undefined,
-    })
-    // Load Tier2 sub-industries for this industry
-    const tier2List = subIndustries.filter(si => 
-      si.industryId === industryId && 
-      (!si.level || si.level === 'Tier2-individual' || si.level === 'Tier2-Group')
-    )
-    setTier2Options(tier2List)
-    setTier3Options([])
-    setUseCaseOptions([])
+
+  const handleIndustryChange = (val: string) => {
+    setFilterIndustryId(val || null)
+    // Clear use case selection when industry changes
+    form.setFieldValue('useCaseIds', [])
   }
-  const handleTier2Change = (tier2Id: string) => {
-    console.log('Tier2 changed:', tier2Id)
-    // Clear downstream selections
-    form.setFieldsValue({
-      tier3SubIndustryId: undefined,
-      useCaseIds: undefined,
-    })
-    const tier2 = subIndustries.find(si => si.id === tier2Id)
-    console.log('Found tier2:', tier2)
-    if (tier2?.level === 'Tier2-Group') {
-      // Load Tier3 options
-      const tier3List = subIndustries.filter(si => si.parentSubIndustryId === tier2Id)
-      console.log('Tier3 options:', tier3List)
-      setTier3Options(tier3List)
-      setUseCaseOptions([])
-    } else {
-      // It's Tier2-individual, load use cases directly
-      setTier3Options([])
-      const ucList = useCases.filter(uc => uc.subIndustryId === tier2Id)
-      console.log('Use case options for Tier2:', ucList)
-      setUseCaseOptions(ucList)
-    }
-  }
-  const handleTier3Change = (tier3Id: string) => {
-    console.log('Tier3 changed:', tier3Id)
-    // Clear use case selection
-    form.setFieldsValue({
-      useCaseIds: undefined,
-    })
-    // Load use cases for this Tier3
-    const ucList = useCases.filter(uc => uc.subIndustryId === tier3Id)
-    console.log('Use case options for Tier3:', ucList)
-    setUseCaseOptions(ucList)
-  }
+
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields()
       setSubmitting(true)
-      console.log('Form values:', values)
-      console.log('useCaseOptions:', useCaseOptions)
       const data = {
         industryId: values.industryId,
         useCaseIds: values.useCaseIds || [],
@@ -228,7 +128,6 @@ const BlogsManagement: React.FC = () => {
         author: values.author,
         publishedAt: values.publishedAt ? new Date(values.publishedAt).toISOString() : undefined,
       }
-      console.log('Submitting data:', data)
       if (editingBlog) {
         await blogsService.update(editingBlog.id, data)
         message.success('博客更新成功')
@@ -239,10 +138,7 @@ const BlogsManagement: React.FC = () => {
       setModalVisible(false)
       form.resetFields()
       setEditingBlog(null)
-      setSelectedIndustry(null)
-      setTier2Options([])
-      setTier3Options([])
-      setUseCaseOptions([])
+      setFilterIndustryId(null)
       await fetchBlogs()
     } catch (error: any) {
       if (error.errorFields) return
@@ -251,6 +147,7 @@ const BlogsManagement: React.FC = () => {
       setSubmitting(false)
     }
   }
+
   const handleDelete = async (id: string) => {
     try {
       await blogsService.delete(id)
@@ -260,64 +157,36 @@ const BlogsManagement: React.FC = () => {
       message.error(error.message || '删除失败')
     }
   }
-  const getIndustryName = (industryId: string) => {
-    const industry = industries.find((i) => i.id === industryId)
-    return industry?.name || industryId
-  }
+
+  const getIndustryName = (industryId: string) =>
+    industries.find(i => i.id === industryId)?.name || industryId
+
   const getUseCaseNames = (useCaseIds?: string[]) => {
     if (!useCaseIds || useCaseIds.length === 0) return '-'
-    const names = useCaseIds.map(id => {
-      const useCase = useCases.find((uc) => uc.id === id)
-      return useCase?.name || id
-    })
-    return names.join(', ')
+    return useCaseIds.map(id => useCases.find(uc => uc.id === id)?.name || id).join(', ')
   }
+
   const columns = [
-    {
-      title: '标题',
-      dataIndex: 'title',
-      key: 'title',
-      width: 200,
-    },
+    { title: '标题', dataIndex: 'title', key: 'title', width: 200 },
     {
       title: '所属行业',
       dataIndex: 'industryId',
       key: 'industryId',
       width: 120,
-      render: (industryId: string) => getIndustryName(industryId),
+      render: (id: string) => getIndustryName(id),
     },
     {
       title: '关联用例',
       dataIndex: 'useCaseIds',
       key: 'useCaseIds',
       width: 200,
-      render: (useCaseIds?: string[]) => (
-        <div style={{ 
-          maxWidth: 200, 
-          overflow: 'hidden', 
-          textOverflow: 'ellipsis', 
-          whiteSpace: 'nowrap' 
-        }} title={getUseCaseNames(useCaseIds)}>
-          {useCaseIds && useCaseIds.length > 0 ? (
-            <span>
-              {useCaseIds.length} 个用例
-            </span>
-          ) : '-'}
-        </div>
-      ),
+      render: (ids?: string[]) =>
+        ids && ids.length > 0 ? (
+          <span title={getUseCaseNames(ids)}>{ids.length} 个用例</span>
+        ) : '-',
     },
-    {
-      title: '摘要',
-      dataIndex: 'summary',
-      key: 'summary',
-      ellipsis: true,
-    },
-    {
-      title: '作者',
-      dataIndex: 'author',
-      key: 'author',
-      width: 100,
-    },
+    { title: '摘要', dataIndex: 'summary', key: 'summary', ellipsis: true },
+    { title: '作者', dataIndex: 'author', key: 'author', width: 100 },
     {
       title: '发布时间',
       dataIndex: 'publishedAt',
@@ -332,7 +201,7 @@ const BlogsManagement: React.FC = () => {
       fixed: 'right' as const,
       render: (_: unknown, record: Blog) => (
         <Space>
-          <Button type="link" icon={<EditOutlined />} onClick={() => handleEdit(record)}>
+          <Button type="link" icon={<EditOutlined />} onClick={() => openModal(record)}>
             编辑
           </Button>
           <Popconfirm
@@ -349,13 +218,14 @@ const BlogsManagement: React.FC = () => {
       ),
     },
   ]
+
   return (
     <Card>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
         <Title level={4} style={{ margin: 0 }}>
           博客管理
         </Title>
-        <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
+        <Button type="primary" icon={<PlusOutlined />} onClick={() => openModal()}>
           新增博客
         </Button>
       </div>
@@ -375,10 +245,7 @@ const BlogsManagement: React.FC = () => {
           setModalVisible(false)
           form.resetFields()
           setEditingBlog(null)
-          setSelectedIndustry(null)
-          setTier2Options([])
-          setTier3Options([])
-          setUseCaseOptions([])
+          setFilterIndustryId(null)
         }}
         confirmLoading={submitting}
         okText="保存"
@@ -391,72 +258,40 @@ const BlogsManagement: React.FC = () => {
             label="所属行业"
             rules={[{ required: true, message: '请选择所属行业' }]}
           >
-            <Select 
-              placeholder="请选择所属行业"
-              onChange={handleIndustryChange}
-            >
-              {industries.map((industry) => (
-                <Option key={industry.id} value={industry.id}>
-                  {industry.name}
-                </Option>
+            <Select placeholder="请选择所属行业" onChange={handleIndustryChange} allowClear>
+              {industries.map(i => (
+                <Option key={i.id} value={i.id}>{i.name}</Option>
               ))}
             </Select>
           </Form.Item>
-          <Form.Item
-            name="tier2SubIndustryId"
-            label="二级子行业（可选）"
-            tooltip="选择子行业后可以关联到具体的用例"
-          >
-            <Select 
-              placeholder="请选择二级子行业"
-              onChange={handleTier2Change}
-              disabled={!selectedIndustry}
-              allowClear
-            >
-              {tier2Options.map((si) => (
-                <Option key={si.id} value={si.id}>
-                  {si.name}
-                </Option>
-              ))}
-            </Select>
-          </Form.Item>
-          {tier3Options.length > 0 && (
-            <Form.Item
-              name="tier3SubIndustryId"
-              label="三级子行业"
-            >
-              <Select 
-                placeholder="请选择三级子行业"
-                onChange={handleTier3Change}
-                allowClear
-              >
-                {tier3Options.map((si) => (
-                  <Option key={si.id} value={si.id}>
-                    {si.name}
-                  </Option>
-                ))}
-              </Select>
-            </Form.Item>
-          )}
+
           <Form.Item
             name="useCaseIds"
-            label="关联用例（可选）"
-            tooltip="可以选择多个用例，该博客会显示在所有选中用例的详情页中"
+            label="关联用例（可多选，支持跨子行业）"
+            tooltip="可选择任意子行业下的用例，选择行业后可缩小范围"
           >
-            <Select 
+            <Select
               mode="multiple"
-              placeholder="请选择关联用例"
-              disabled={useCaseOptions.length === 0}
-              allowClear
+              placeholder="搜索并选择用例"
+              showSearch
+              filterOption={(input, option) =>
+                (option?.label as string)?.toLowerCase().includes(input.toLowerCase())
+              }
               maxTagCount="responsive"
+              allowClear
             >
-              {useCaseOptions.map((uc) => (
-                <Option key={uc.id} value={uc.id}>
-                  {uc.name}
-                </Option>
+              {Object.entries(useCaseSelectOptions).map(([siId, group]) => (
+                <Select.OptGroup key={siId} label={<Tag color="blue">{group.label}</Tag>}>
+                  {group.cases.map(uc => (
+                    <Option key={uc.id} value={uc.id} label={uc.name}>
+                      {uc.name}
+                    </Option>
+                  ))}
+                </Select.OptGroup>
               ))}
             </Select>
           </Form.Item>
+
           <Form.Item
             name="title"
             label="标题"
@@ -501,4 +336,5 @@ const BlogsManagement: React.FC = () => {
     </Card>
   )
 }
+
 export default BlogsManagement
