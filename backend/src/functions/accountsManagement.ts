@@ -3,7 +3,7 @@ import { GetCommand, PutCommand, DeleteCommand, ScanCommand } from '@aws-sdk/lib
 import { randomUUID } from 'crypto'
 import { successResponse, errorResponse } from '../utils/response'
 import { docClient, TABLE_NAMES } from '../utils/dynamodb'
-import { getUserFromEvent } from '../utils/auth'
+import { getUserFromEvent, hasRole } from '../utils/auth'
 
 /**
  * List all accounts
@@ -176,7 +176,7 @@ export async function handler(event: APIGatewayProxyEvent): Promise<APIGatewayPr
   try {
     // Verify authentication
     const user = getUserFromEvent(event)
-    if (!user || !['admin', 'specialist'].includes(user.role)) {
+    if (!user || !hasRole(user, ['admin', 'specialist'])) {
       return errorResponse('FORBIDDEN', '权限不足', 403)
     }
 

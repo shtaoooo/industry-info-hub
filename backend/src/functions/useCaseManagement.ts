@@ -17,7 +17,7 @@ function generateId(): string {
  */
 async function checkSubIndustryAccess(user: any, subIndustryId: string): Promise<{ hasAccess: boolean; industryId?: string }> {
   // Admin has access to everything
-  if (user.role === 'admin') {
+  if (user.roles?.includes('admin')) {
     return { hasAccess: true }
   }
 

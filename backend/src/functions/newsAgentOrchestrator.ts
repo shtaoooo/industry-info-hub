@@ -12,7 +12,7 @@ import {
 import { ScanCommand } from '@aws-sdk/lib-dynamodb'
 import { successResponse, errorResponse } from '../utils/response'
 import { docClient, TABLE_NAMES } from '../utils/dynamodb'
-import { getUserFromEvent, hasIndustryAccess } from '../utils/auth'
+import { getUserFromEvent, hasRole, hasIndustryAccess } from '../utils/auth'
 
 const bedrockAgentClient = new BedrockAgentRuntimeClient({ region: 'us-east-2' })
 
@@ -187,7 +187,7 @@ export async function handler(event: any): Promise<APIGatewayProxyResult> {
 
   try {
     const user = getUserFromEvent(event)
-    if (!user || !['admin', 'specialist'].includes(user.role)) {
+    if (!user || !hasRole(user, ['admin', 'specialist'])) {
       return errorResponse('FORBIDDEN', '权限不足', 403)
     }
 

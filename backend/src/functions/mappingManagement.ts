@@ -10,7 +10,7 @@ import { UseCaseSolutionMapping } from '../types'
  */
 async function checkUseCaseAccess(user: any, useCaseId: string): Promise<boolean> {
   // Admin has access to everything
-  if (user.role === 'admin') {
+  if (user.roles?.includes('admin')) {
     return true
   }
 

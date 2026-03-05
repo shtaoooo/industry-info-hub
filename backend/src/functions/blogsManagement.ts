@@ -3,7 +3,7 @@ import { GetCommand, PutCommand, DeleteCommand, ScanCommand } from '@aws-sdk/lib
 import { randomUUID } from 'crypto'
 import { successResponse, errorResponse } from '../utils/response'
 import { docClient, TABLE_NAMES } from '../utils/dynamodb'
-import { getUserFromEvent, hasIndustryAccess } from '../utils/auth'
+import { getUserFromEvent, hasRole, hasIndustryAccess } from '../utils/auth'
 
 /**
  * List all blogs
@@ -24,7 +24,7 @@ async function listBlogs(event: APIGatewayProxyEvent, user: any): Promise<APIGat
     let items = result.Items || []
 
     // Specialist can only see blogs in their assigned industries
-    if (user.role === 'specialist') {
+    if (user.roles.includes('specialist') && !user.roles.includes('admin')) {
       const assignedIndustries = user.assignedIndustries || []
       items = items.filter((item) => assignedIndustries.includes(item.industryId))
     }
@@ -314,7 +314,7 @@ export async function handler(event: any): Promise<APIGatewayProxyResult> {
   try {
     // Verify authentication
     const user = getUserFromEvent(event)
-    if (!user || !['admin', 'specialist'].includes(user.role)) {
+    if (!user || !hasRole(user, ['admin', 'specialist'])) {
       return errorResponse('FORBIDDEN', '权限不足', 403)
     }
 
