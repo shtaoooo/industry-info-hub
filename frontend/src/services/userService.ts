@@ -3,12 +3,14 @@ import { User } from '../types'
 
 export interface CreateUserRequest {
   email: string
-  role: 'admin' | 'specialist' | 'user'
+  role?: 'admin' | 'specialist' | 'user' // 单角色，用于向后兼容
+  roles?: ('admin' | 'specialist' | 'user')[] // 多角色
   assignedIndustries?: string[]
 }
 
 export interface UpdateUserRequest {
-  role?: 'admin' | 'specialist' | 'user'
+  role?: 'admin' | 'specialist' | 'user' // 单角色，用于向后兼容
+  roles?: ('admin' | 'specialist' | 'user')[] // 多角色
   assignedIndustries?: string[]
 }
 

@@ -65,7 +65,7 @@ const UserManagement: React.FC = () => {
     setEditingUser(user)
     form.setFieldsValue({
       email: user.email,
-      role: user.role,
+      roles: user.roles || [user.role], // 支持多角色或单角色
       assignedIndustries: user.assignedIndustries || [],
     })
     setModalVisible(true)
@@ -88,8 +88,8 @@ const UserManagement: React.FC = () => {
       if (editingUser) {
         // Update existing user
         const updateData: UpdateUserRequest = {
-          role: values.role,
-          assignedIndustries: values.role === 'specialist' ? values.assignedIndustries : undefined,
+          roles: values.roles,
+          assignedIndustries: values.roles.includes('specialist') ? values.assignedIndustries : undefined,
         }
         await userService.update(editingUser.userId, updateData)
         message.success('更新用户成功')
@@ -97,8 +97,8 @@ const UserManagement: React.FC = () => {
         // Create new user
         const createData: CreateUserRequest = {
           email: values.email,
-          role: values.role,
-          assignedIndustries: values.role === 'specialist' ? values.assignedIndustries : undefined,
+          roles: values.roles,
+          assignedIndustries: values.roles.includes('specialist') ? values.assignedIndustries : undefined,
         }
         await userService.create(createData)
         message.success('创建用户成功')
@@ -130,9 +130,16 @@ const UserManagement: React.FC = () => {
     },
     {
       title: '角色',
-      dataIndex: 'role',
-      key: 'role',
-      render: (role: string) => getRoleTag(role),
+      dataIndex: 'roles',
+      key: 'roles',
+      render: (roles: string[] | undefined, record: User) => {
+        const userRoles = roles || [record.role]
+        return (
+          <Space wrap>
+            {userRoles.map(role => getRoleTag(role))}
+          </Space>
+        )
+      },
     },
     {
       title: '分配的行业',
@@ -189,7 +196,8 @@ const UserManagement: React.FC = () => {
     },
   ]
 
-  const selectedRole = Form.useWatch('role', form)
+  const selectedRoles = Form.useWatch('roles', form)
+  const needsIndustries = selectedRoles && selectedRoles.includes('specialist')
 
   return (
     <div>
@@ -234,7 +242,7 @@ const UserManagement: React.FC = () => {
           form={form}
           layout="vertical"
           initialValues={{
-            role: 'user',
+            roles: ['user'],
             assignedIndustries: [],
           }}
         >
@@ -254,21 +262,26 @@ const UserManagement: React.FC = () => {
 
           <Form.Item
             label="角色"
-            name="role"
-            rules={[{ required: true, message: '请选择角色' }]}
+            name="roles"
+            rules={[{ required: true, message: '请至少选择一个角色' }]}
+            tooltip="可以选择多个角色，用户可以在不同角色之间切换"
           >
-            <Select placeholder="选择角色">
+            <Select 
+              mode="multiple"
+              placeholder="选择角色（可多选）"
+            >
               <Option value="admin">管理员</Option>
               <Option value="specialist">行业专员</Option>
               <Option value="user">普通用户</Option>
             </Select>
           </Form.Item>
 
-          {selectedRole === 'specialist' && (
+          {needsIndustries && (
             <Form.Item
               label="分配的行业"
               name="assignedIndustries"
               rules={[{ required: true, message: '请至少选择一个行业' }]}
+              tooltip="行业专员需要分配管理的行业"
             >
               <Select
                 mode="multiple"
