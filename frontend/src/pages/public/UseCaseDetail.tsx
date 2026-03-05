@@ -1,8 +1,8 @@
-﻿import React, { useState, useEffect } from 'react'
+﻿import React, { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Layout, Spin, message, Button, Empty } from 'antd'
-import { ArrowLeftOutlined, FileTextOutlined, BulbOutlined, UserOutlined, ExclamationCircleOutlined, CommentOutlined, FileOutlined, ReadOutlined } from '@ant-design/icons'
-import { publicService, PublicUseCase, PublicSolution, PublicBlog } from '../../services/publicService'
+import { ArrowLeftOutlined, FileTextOutlined, BulbOutlined, UserOutlined, ExclamationCircleOutlined, CommentOutlined, FileOutlined, ReadOutlined, LeftOutlined, RightOutlined, TeamOutlined } from '@ant-design/icons'
+import { publicService, PublicUseCase, PublicSolution, PublicBlog, PublicCustomerCase } from '../../services/publicService'
 import { DocumentDownloadList } from '../../components/DocumentDownloadList'
 import MarkdownText from '../../components/MarkdownText'
 
@@ -14,7 +14,9 @@ const UseCaseDetail: React.FC = () => {
   const [useCase, setUseCase] = useState<PublicUseCase | null>(null)
   const [solutions, setSolutions] = useState<PublicSolution[]>([])
   const [blogs, setBlogs] = useState<PublicBlog[]>([])
+  const [customerCases, setCustomerCases] = useState<PublicCustomerCase[]>([])
   const [loading, setLoading] = useState(true)
+  const casesScrollRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (id) {
@@ -26,19 +28,32 @@ const UseCaseDetail: React.FC = () => {
     if (!id) return
     setLoading(true)
     try {
-      const [useCaseData, solutionsData, blogsData] = await Promise.all([
+      const [useCaseData, solutionsData, blogsData, customerCasesData] = await Promise.all([
         publicService.getUseCase(id),
         publicService.getSolutionsForUseCase(id),
-        publicService.getUseCaseBlogs(id).catch(() => []), // 如果没有blogs也不报错
+        publicService.getUseCaseBlogs(id).catch(() => []),
+        publicService.getUseCaseCustomerCases(id).catch(() => []),
       ])
       setUseCase(useCaseData)
       setSolutions(solutionsData)
       setBlogs(blogsData)
+      setCustomerCases(customerCasesData)
     } catch (error: any) {
       console.error('Failed to load use case data:', error)
       message.error('加载用例信息失败')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const scrollCases = (direction: 'left' | 'right') => {
+    if (casesScrollRef.current) {
+      const containerWidth = casesScrollRef.current.clientWidth
+      const cardWidth = (containerWidth - 48) / 3 + 24
+      casesScrollRef.current.scrollBy({
+        left: direction === 'left' ? -cardWidth : cardWidth,
+        behavior: 'smooth',
+      })
     }
   }
 
@@ -231,6 +246,83 @@ const UseCaseDetail: React.FC = () => {
                 <DocumentDownloadList documents={useCase.documents} />
               </div>
             </div>
+          )}
+
+          {/* 客户案例部分 */}
+          {customerCases.length > 0 && (
+            <>
+              <div style={{ marginBottom: 24, marginTop: 48, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <h2 style={{ display: 'flex', alignItems: 'center', fontSize: 28, fontWeight: 700, margin: 0, color: '#1d1d1f' }}>
+                  <TeamOutlined style={{ marginRight: 12, color: '#0071e3', fontSize: 32 }} />
+                  相关客户案例
+                </h2>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <Button shape="circle" icon={<LeftOutlined />} onClick={() => scrollCases('left')} style={{ border: '1px solid #d2d2d7' }} />
+                  <Button shape="circle" icon={<RightOutlined />} onClick={() => scrollCases('right')} style={{ border: '1px solid #d2d2d7' }} />
+                </div>
+              </div>
+
+              <div
+                ref={casesScrollRef}
+                style={{
+                  display: 'flex',
+                  gap: 24,
+                  overflowX: 'auto',
+                  scrollbarWidth: 'none',
+                  msOverflowStyle: 'none',
+                  paddingBottom: 8,
+                }}
+              >
+                {customerCases.map((item) => (
+                  <div
+                    key={item.id}
+                    className="apple-card"
+                    style={{
+                      padding: 0,
+                      overflow: 'hidden',
+                      transition: 'transform 0.3s ease',
+                      minWidth: 'calc((100% - 48px) / 3)',
+                      maxWidth: 'calc((100% - 48px) / 3)',
+                      flexShrink: 0,
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-4px)' }}
+                    onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)' }}
+                  >
+                    {/* 顶部色条 */}
+                    <div style={{ height: 6, background: 'linear-gradient(90deg, #0071e3 0%, #34aadc 100%)' }} />
+                    <div style={{ padding: 24 }}>
+                      <div style={{ fontSize: 12, color: '#86868b', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        客户案例
+                      </div>
+                      <h4 style={{ fontSize: 18, fontWeight: 600, color: '#1d1d1f', margin: '0 0 12px 0', lineHeight: 1.3 }}>
+                        {item.name}
+                      </h4>
+                      {item.partner && (
+                        <div style={{ fontSize: 13, color: '#0071e3', marginBottom: 8, fontWeight: 500 }}>
+                          合作伙伴：{item.partner}
+                        </div>
+                      )}
+                      {item.challenge && (
+                        <div style={{ marginBottom: 8 }}>
+                          <div style={{ fontSize: 12, color: '#86868b', marginBottom: 4, fontWeight: 600 }}>挑战</div>
+                          <p style={{ fontSize: 13, color: '#6e6e73', lineHeight: 1.6, margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                            {item.challenge}
+                          </p>
+                        </div>
+                      )}
+                      {item.benefit && (
+                        <div>
+                          <div style={{ fontSize: 12, color: '#86868b', marginBottom: 4, fontWeight: 600 }}>收益</div>
+                          <p style={{ fontSize: 13, color: '#6e6e73', lineHeight: 1.6, margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                            {item.benefit}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
 
           {/* 相关解决方案标题 */}

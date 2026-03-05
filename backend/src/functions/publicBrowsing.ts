@@ -431,6 +431,49 @@ export async function getSolutionMarkdown(event: APIGatewayProxyEvent): Promise<
 }
 
 /**
+ * Get customer cases for a use case
+ * GET /public/use-cases/{id}/customer-cases
+ */
+export async function getCustomerCasesForUseCase(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+  try {
+    const useCaseId = event.pathParameters?.id
+    if (!useCaseId) {
+      return errorResponse('VALIDATION_ERROR', '用例ID不能为空', 400)
+    }
+
+    const result = await docClient.send(
+      new ScanCommand({
+        TableName: TABLE_NAMES.CUSTOMER_CASES,
+        FilterExpression: 'SK = :sk',
+        ExpressionAttributeValues: {
+          ':sk': 'METADATA',
+        },
+      })
+    )
+
+    const customerCases = (result.Items || [])
+      .filter((item) => item.useCaseIds && item.useCaseIds.includes(useCaseId))
+      .map((item) => ({
+        id: item.id,
+        name: item.name,
+        accountId: item.accountId,
+        partner: item.partner,
+        useCaseIds: item.useCaseIds || [],
+        challenge: item.challenge,
+        solution: item.solution,
+        benefit: item.benefit,
+        documents: item.documents || [],
+        createdAt: item.createdAt,
+      }))
+
+    return successResponse(customerCases)
+  } catch (error: any) {
+    console.error('Error getting customer cases for use case:', error)
+    return errorResponse('INTERNAL_ERROR', '获取客户案例列表失败', 500)
+  }
+}
+
+/**
  * Get customer cases for a solution
  * GET /public/solutions/{id}/customer-cases
  * Note: Now customer cases are stored independently with PK: CUSTOMERCASE#id
@@ -761,6 +804,11 @@ export async function handler(event: any): Promise<APIGatewayProxyResult> {
     // GET /public/use-cases/{id}/blogs
     if (method === 'GET' && path.match(/\/public\/use-cases\/[^/]+\/blogs\/?$/)) {
       return await getUseCaseBlogs(event)
+    }
+
+    // GET /public/use-cases/{id}/customer-cases
+    if (method === 'GET' && path.match(/\/public\/use-cases\/[^/]+\/customer-cases\/?$/)) {
+      return await getCustomerCasesForUseCase(event)
     }
 
     // GET /public/solutions/{id}

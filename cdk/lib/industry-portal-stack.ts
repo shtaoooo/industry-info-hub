@@ -668,6 +668,7 @@ export class IndustryPortalStack extends cdk.Stack {
     addRoute('/public/use-cases/{id}', apigatewayv2.HttpMethod.GET, publicBrowsingFn);
     addRoute('/public/use-cases/{id}/solutions', apigatewayv2.HttpMethod.GET, publicBrowsingFn);
     addRoute('/public/use-cases/{id}/blogs', apigatewayv2.HttpMethod.GET, publicBrowsingFn);
+    addRoute('/public/use-cases/{id}/customer-cases', apigatewayv2.HttpMethod.GET, publicBrowsingFn);
     addRoute('/public/solutions/{id}', apigatewayv2.HttpMethod.GET, publicBrowsingFn);
     addRoute('/public/solutions/{id}/detail-markdown', apigatewayv2.HttpMethod.GET, publicBrowsingFn);
     addRoute('/public/solutions/{id}/customer-cases', apigatewayv2.HttpMethod.GET, publicBrowsingFn);
