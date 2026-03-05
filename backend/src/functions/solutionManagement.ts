@@ -323,24 +323,6 @@ export async function deleteSolution(event: APIGatewayProxyEvent): Promise<APIGa
       return errorResponse('NOT_FOUND', '解决方案不存在', 404)
     }
 
-    // Check for customer cases referencing this solution
-    const customerCases = await docClient.send(
-      new QueryCommand({
-        TableName: TABLE_NAMES.CUSTOMER_CASES,
-        KeyConditionExpression: 'PK = :pk',
-        ExpressionAttributeValues: {
-          ':pk': `SOLUTION#${solutionId}`,
-        },
-        Limit: 1,
-      })
-    )
-
-    if (customerCases.Items && customerCases.Items.length > 0) {
-      return errorResponse('CONFLICT', '该解决方案被客户案例引用，无法删除。请先删除相关客户案例。', 409, {
-        dependency: 'customer-cases',
-      })
-    }
-
     // Delete markdown file from S3 if exists
     if (existing.Item.detailMarkdownUrl) {
       const s3Key = `solutions/${solutionId}/detail.md`

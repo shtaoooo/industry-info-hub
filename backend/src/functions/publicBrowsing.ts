@@ -433,6 +433,8 @@ export async function getSolutionMarkdown(event: APIGatewayProxyEvent): Promise<
 /**
  * Get customer cases for a solution
  * GET /public/solutions/{id}/customer-cases
+ * Note: Now customer cases are stored independently with PK: CUSTOMERCASE#id
+ * We scan and filter by checking if the solution is referenced
  */
 export async function getCustomerCasesForSolution(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   try {
@@ -441,22 +443,26 @@ export async function getCustomerCasesForSolution(event: APIGatewayProxyEvent): 
       return errorResponse('VALIDATION_ERROR', '解决方案ID不能为空', 400)
     }
 
+    // Customer cases are now stored independently, scan all
     const result = await docClient.send(
-      new QueryCommand({
+      new ScanCommand({
         TableName: TABLE_NAMES.CUSTOMER_CASES,
-        KeyConditionExpression: 'PK = :pk',
+        FilterExpression: 'SK = :sk',
         ExpressionAttributeValues: {
-          ':pk': `SOLUTION#${solutionId}`,
+          ':sk': 'METADATA',
         },
       })
     )
 
     const customerCases = (result.Items || []).map((item) => ({
       id: item.id,
-      solutionId: item.solutionId,
-      useCaseId: item.useCaseId,
       name: item.name,
-      description: item.description,
+      accountId: item.accountId,
+      partner: item.partner,
+      useCaseIds: item.useCaseIds || [],
+      challenge: item.challenge,
+      solution: item.solution,
+      benefit: item.benefit,
       documents: item.documents || [],
       createdAt: item.createdAt,
     }))

@@ -234,24 +234,6 @@ export async function deleteMapping(event: APIGatewayProxyEvent): Promise<APIGat
       return errorResponse('NOT_FOUND', '关联不存在', 404)
     }
 
-    // Check if there are customer cases depending on this mapping
-    const customerCases = await docClient.send(
-      new QueryCommand({
-        TableName: TABLE_NAMES.CUSTOMER_CASES,
-        KeyConditionExpression: 'PK = :pk',
-        FilterExpression: 'useCaseId = :useCaseId',
-        ExpressionAttributeValues: {
-          ':pk': `SOLUTION#${solutionId}`,
-          ':useCaseId': useCaseId,
-        },
-        Limit: 1,
-      })
-    )
-
-    if (customerCases.Items && customerCases.Items.length > 0) {
-      return errorResponse('CONFLICT', '存在依赖该关联的客户案例，无法解除关联', 409, { dependency: 'customer-cases' })
-    }
-
     // Delete mapping
     await docClient.send(
       new DeleteCommand({

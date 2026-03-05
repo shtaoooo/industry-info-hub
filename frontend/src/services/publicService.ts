@@ -50,10 +50,13 @@ export interface PublicSolution {
 
 export interface PublicCustomerCase {
   id: string
-  solutionId: string
-  useCaseId: string
   name: string
-  description: string
+  accountId?: string
+  partner?: string
+  useCaseIds?: string[]
+  challenge?: string
+  solution?: string
+  benefit?: string
   documents?: any[]
   createdAt: string
 }
