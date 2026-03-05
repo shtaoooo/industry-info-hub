@@ -45,6 +45,11 @@ connect_ec2.cfg.example
 Industry_definition.csv
 SECURITY_CHECKLIST.md
 
+# Sensitive scripts and temp files
+set_amplify_env.py
+amplify-env-update.json
+*-attributes.json
+
 # CDK
 cdk/cdk.out/
 cdk/*.js
