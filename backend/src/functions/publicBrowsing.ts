@@ -594,6 +594,8 @@ export async function getCustomerCaseDetail(event: APIGatewayProxyEvent): Promis
     const caseId = event.pathParameters?.id
     if (!caseId) return errorResponse('VALIDATION_ERROR', '案例ID不能为空', 400)
 
+    console.log(`[CustomerCaseDetail] Fetching customer case: ${caseId}`)
+
     const result = await docClient.send(
       new GetCommand({
         TableName: TABLE_NAMES.CUSTOMER_CASES,
@@ -601,28 +603,41 @@ export async function getCustomerCaseDetail(event: APIGatewayProxyEvent): Promis
       })
     )
 
-    if (!result.Item) return errorResponse('NOT_FOUND', '客户案例不存在', 404)
+    if (!result.Item) {
+      console.log(`[CustomerCaseDetail] Customer case not found: ${caseId}`)
+      return errorResponse('NOT_FOUND', '客户案例不存在', 404)
+    }
 
     const item = result.Item
+    console.log(`[CustomerCaseDetail] Customer case found: ${item.name}, accountId: ${item.accountId}`)
 
     // Fetch account info if accountId exists
     let account = null
     if (item.accountId) {
-      const accountResult = await docClient.send(
-        new GetCommand({
-          TableName: TABLE_NAMES.ACCOUNTS,
-          Key: { PK: `ACCOUNT#${item.accountId}`, SK: 'METADATA' },
-        })
-      )
-      if (accountResult.Item) {
-        account = {
-          id: accountResult.Item.id,
-          name: accountResult.Item.name,
-          type: accountResult.Item.type,
-          description: accountResult.Item.description,
-          logoUrl: accountResult.Item.logoUrl,
-          website: accountResult.Item.website,
+      try {
+        console.log(`[CustomerCaseDetail] Fetching account: ${item.accountId}`)
+        const accountResult = await docClient.send(
+          new GetCommand({
+            TableName: TABLE_NAMES.ACCOUNTS,
+            Key: { PK: `ACCOUNT#${item.accountId}`, SK: 'METADATA' },
+          })
+        )
+        if (accountResult.Item) {
+          account = {
+            id: accountResult.Item.id,
+            name: accountResult.Item.name,
+            type: accountResult.Item.type,
+            description: accountResult.Item.description,
+            logoUrl: accountResult.Item.logoUrl,
+            website: accountResult.Item.website,
+          }
+          console.log(`[CustomerCaseDetail] Account found: ${account.name}`)
+        } else {
+          console.warn(`[CustomerCaseDetail] Account not found in ACCOUNTS table: ${item.accountId}`)
         }
+      } catch (accountError: any) {
+        console.error(`[CustomerCaseDetail] Error fetching account ${item.accountId}:`, accountError)
+        // Continue without account info instead of failing the entire request
       }
     }
 
@@ -640,7 +655,13 @@ export async function getCustomerCaseDetail(event: APIGatewayProxyEvent): Promis
       account,
     })
   } catch (error: any) {
-    console.error('Error getting customer case detail:', error)
+    console.error('[CustomerCaseDetail] Error getting customer case detail:', error)
+    console.error('[CustomerCaseDetail] Error details:', {
+      message: error.message,
+      code: error.code,
+      statusCode: error.statusCode,
+      stack: error.stack,
+    })
     return errorResponse('INTERNAL_ERROR', '获取客户案例详情失败', 500)
   }
 }
