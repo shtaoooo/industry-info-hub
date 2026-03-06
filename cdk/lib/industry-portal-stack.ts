@@ -122,10 +122,10 @@ export class IndustryPortalStack extends cdk.Stack {
       sortKey: { name: 'createdAt', type: dynamodb.AttributeType.STRING },
     });
 
-    // GSI: query all customer cases sorted by creation time (for listing)
+    // GSI: query customer cases by industryId (for specialist filtering)
     customerCasesTable.addGlobalSecondaryIndex({
-      indexName: 'CreatedAtIndex',
-      partitionKey: { name: 'entityType', type: dynamodb.AttributeType.STRING },
+      indexName: 'IndustryIndex',
+      partitionKey: { name: 'industryId', type: dynamodb.AttributeType.STRING },
       sortKey: { name: 'createdAt', type: dynamodb.AttributeType.STRING },
     });
 

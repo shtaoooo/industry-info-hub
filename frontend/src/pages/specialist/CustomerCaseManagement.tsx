@@ -118,11 +118,20 @@ const CustomerCaseManagement: React.FC = () => {
       const values = await form.validateFields()
       setSubmitting(true)
 
+      // Derive industryId from selected use cases
+      const selectedUseCaseIds: string[] = values.useCaseIds || []
+      let industryId: string | null = null
+      if (selectedUseCaseIds.length > 0) {
+        const firstUseCase = useCases.find((uc) => uc.id === selectedUseCaseIds[0])
+        industryId = firstUseCase?.industryId || null
+      }
+
       const data = {
         name: values.name,
+        industryId,
         accountId: values.accountId || null,
         partner: values.partner || null,
-        useCaseIds: values.useCaseIds || [],
+        useCaseIds: selectedUseCaseIds,
         challenge: values.challenge || null,
         solution: values.solution || null,
         benefit: values.benefit || null,

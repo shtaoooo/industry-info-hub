@@ -1,5 +1,5 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
-import { PutCommand, GetCommand, DeleteCommand, QueryCommand } from '@aws-sdk/lib-dynamodb'
+import { PutCommand, GetCommand, DeleteCommand, ScanCommand, QueryCommand } from '@aws-sdk/lib-dynamodb'
 import { PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
 import { successResponse, errorResponse } from '../utils/response'
 import { getUserFromEvent, requireRole } from '../utils/auth'
@@ -11,73 +11,63 @@ import { randomUUID } from 'crypto'
 /**
  * List customer cases
  * GET /specialist/customer-cases
- * Uses CreatedAtIndex GSI to avoid Scan
- * Supports pagination via limit and lastEvaluatedKey query parameters
+ * - admin: Scan all cases
+ * - specialist: Query IndustryIndex GSI for each assigned industry
  */
 async function listCustomerCases(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   try {
     const user = getUserFromEvent(event)
     requireRole(user, ['admin', 'specialist'])
 
-    // Parse pagination parameters
-    const limit = event.queryStringParameters?.limit ? parseInt(event.queryStringParameters.limit, 10) : 50
-    const lastKey = event.queryStringParameters?.lastKey ? JSON.parse(decodeURIComponent(event.queryStringParameters.lastKey)) : undefined
+    let items: any[] = []
 
-    // Use GSI to query all customer cases efficiently
-    const queryParams: any = {
-      TableName: TABLE_NAMES.CUSTOMER_CASES,
-      IndexName: 'CreatedAtIndex',
-      KeyConditionExpression: 'entityType = :type',
-      ExpressionAttributeValues: { ':type': 'CUSTOMER_CASE' },
-      ScanIndexForward: false, // Sort by createdAt descending
-      Limit: Math.min(limit, 100), // Cap at 100
-    }
-
-    if (lastKey) {
-      queryParams.ExclusiveStartKey = lastKey
-    }
-
-    const result = await docClient.send(new QueryCommand(queryParams))
-
-    let items = result.Items || []
-
-    // Specialist: filter by assigned industries via useCaseIds
-    if (user!.role === 'specialist') {
+    if (user!.role === 'admin') {
+      // Admin: scan all customer cases
+      const result = await docClient.send(
+        new ScanCommand({
+          TableName: TABLE_NAMES.CUSTOMER_CASES,
+          FilterExpression: 'SK = :sk',
+          ExpressionAttributeValues: { ':sk': 'METADATA' },
+        })
+      )
+      items = result.Items || []
+    } else {
+      // Specialist: query by each assigned industry in parallel
       const assignedIndustries = user!.assignedIndustries || []
+      if (assignedIndustries.length === 0) {
+        return successResponse([])
+      }
 
-      // Build useCaseId -> industryId map using IndustryIndex GSI
-      // Optimized: Query all assigned industries in parallel
-      const useCaseIndustryMap: Record<string, string> = {}
-      
       const queryPromises = assignedIndustries.map((industryId) =>
         docClient.send(
           new QueryCommand({
-            TableName: TABLE_NAMES.USE_CASES,
+            TableName: TABLE_NAMES.CUSTOMER_CASES,
             IndexName: 'IndustryIndex',
             KeyConditionExpression: 'industryId = :industryId',
             ExpressionAttributeValues: { ':industryId': industryId },
-            ProjectionExpression: 'id, industryId', // Only fetch needed fields
+            ScanIndexForward: false,
           })
         )
       )
 
       const results = await Promise.all(queryPromises)
+      const seen = new Set<string>()
       for (const result of results) {
-        for (const uc of result.Items || []) {
-          if (uc.id) useCaseIndustryMap[uc.id] = uc.industryId
+        for (const item of result.Items || []) {
+          if (!seen.has(item.id)) {
+            seen.add(item.id)
+            items.push(item)
+          }
         }
       }
-
-      items = items.filter((item) => {
-        const ucIds: string[] = item.useCaseIds || []
-        if (ucIds.length === 0) return true
-        return ucIds.some((ucId) => assignedIndustries.includes(useCaseIndustryMap[ucId]))
-      })
+      // Sort by createdAt descending
+      items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     }
 
     const cases = items.map((item) => ({
       id: item.id,
       name: item.name,
+      industryId: item.industryId || null,
       accountId: item.accountId || null,
       partner: item.partner || null,
       useCaseIds: item.useCaseIds || [],
@@ -108,7 +98,7 @@ async function createCustomerCase(event: APIGatewayProxyEvent): Promise<APIGatew
     requireRole(user, ['admin', 'specialist'])
 
     const body = JSON.parse(event.body || '{}')
-    const { name, accountId, partner, useCaseIds, challenge, solution, benefit } = body
+    const { name, accountId, partner, useCaseIds, industryId, challenge, solution, benefit } = body
 
     if (!name || typeof name !== 'string' || name.trim().length === 0) {
       return errorResponse('VALIDATION_ERROR', '客户案例名称不能为空', 400)
@@ -121,6 +111,7 @@ async function createCustomerCase(event: APIGatewayProxyEvent): Promise<APIGatew
       PK: id,
       SK: 'METADATA',
       id,
+      industryId: industryId || null, // Required for IndustryIndex GSI
       name: name.trim(),
       accountId: accountId || null,
       partner: partner || null,
@@ -171,12 +162,13 @@ async function updateCustomerCase(event: APIGatewayProxyEvent): Promise<APIGatew
     if (!existing.Item) return errorResponse('NOT_FOUND', '客户案例不存在', 404)
 
     const body = JSON.parse(event.body || '{}')
-    const { name, accountId, partner, useCaseIds, challenge, solution, benefit } = body
+    const { name, accountId, partner, useCaseIds, industryId, challenge, solution, benefit } = body
 
     const now = new Date().toISOString()
     const updatedItem = {
       ...existing.Item,
       name: name !== undefined ? name.trim() : existing.Item.name,
+      industryId: industryId !== undefined ? industryId : existing.Item.industryId,
       accountId: accountId !== undefined ? accountId : existing.Item.accountId,
       partner: partner !== undefined ? partner : existing.Item.partner,
       useCaseIds: useCaseIds !== undefined ? (Array.isArray(useCaseIds) ? useCaseIds : []) : (existing.Item.useCaseIds || []),
