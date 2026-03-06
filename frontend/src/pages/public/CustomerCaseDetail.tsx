@@ -1,20 +1,27 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Layout, Spin, message, Button, Empty, Modal } from 'antd'
+import { Layout, Spin, message, Button, Empty, Modal, Input } from 'antd'
 import {
   ArrowLeftOutlined,
   FilePdfOutlined,
   GlobalOutlined,
+  EditOutlined,
+  SaveOutlined,
+  CloseOutlined,
 } from '@ant-design/icons'
 import { publicService, PublicCustomerCase } from '../../services/publicService'
 import { documentService } from '../../services/documentService'
+import { customerCaseService } from '../../services/customerCaseService'
+import { useAuth } from '../../contexts/AuthContext'
 import MarkdownText from '../../components/MarkdownText'
 
 const { Content } = Layout
+const { TextArea } = Input
 
 const CustomerCaseDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const { hasRole } = useAuth()
   const [customerCase, setCustomerCase] = useState<PublicCustomerCase | null>(null)
   const [loading, setLoading] = useState(true)
   const [pdfUrl, setPdfUrl] = useState<string | null>(null)
@@ -22,6 +29,9 @@ const CustomerCaseDetail: React.FC = () => {
   const [loadingDocId, setLoadingDocId] = useState<string | null>(null)
   const [markdownContent, setMarkdownContent] = useState<string>('')
   const [loadingMarkdown, setLoadingMarkdown] = useState(false)
+  const [isEditMode, setIsEditMode] = useState(false)
+  const [editedMarkdown, setEditedMarkdown] = useState<string>('')
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     if (id) loadData()
@@ -69,6 +79,37 @@ const CustomerCaseDetail: React.FC = () => {
       setLoadingDocId(null)
     }
   }
+
+  const handleDoubleClick = () => {
+    if (hasRole('specialist') || hasRole('admin')) {
+      setEditedMarkdown(markdownContent)
+      setIsEditMode(true)
+    }
+  }
+
+  const handleSaveMarkdown = async () => {
+    if (!id) return
+    setSaving(true)
+    try {
+      await customerCaseService.update(id, {
+        detailMarkdown: editedMarkdown,
+      })
+      setMarkdownContent(editedMarkdown)
+      setIsEditMode(false)
+      message.success('详细内容保存成功')
+    } catch (error: any) {
+      message.error(error.message || '保存失败')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleCancelEdit = () => {
+    setIsEditMode(false)
+    setEditedMarkdown('')
+  }
+
+  const isSpecialistOrAdmin = hasRole('specialist') || hasRole('admin')
 
   if (loading) {
     return (
@@ -185,15 +226,95 @@ const CustomerCaseDetail: React.FC = () => {
           {/* 详细内容 (Markdown) */}
           {markdownContent && (
             <div className="apple-card" style={{ padding: 32, marginBottom: 24 }}>
-              <h3 style={{ margin: '0 0 20px 0', fontSize: 22, fontWeight: 600 }}>详细内容</h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                <h3 style={{ margin: 0, fontSize: 22, fontWeight: 600 }}>详细内容</h3>
+                {isSpecialistOrAdmin && !isEditMode && (
+                  <Button
+                    type="text"
+                    icon={<EditOutlined />}
+                    onClick={handleDoubleClick}
+                    style={{ color: '#0071e3' }}
+                  >
+                    编辑
+                  </Button>
+                )}
+                {isEditMode && (
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <Button
+                      type="primary"
+                      icon={<SaveOutlined />}
+                      onClick={handleSaveMarkdown}
+                      loading={saving}
+                    >
+                      保存
+                    </Button>
+                    <Button
+                      icon={<CloseOutlined />}
+                      onClick={handleCancelEdit}
+                      disabled={saving}
+                    >
+                      取消
+                    </Button>
+                  </div>
+                )}
+              </div>
               {loadingMarkdown ? (
                 <div style={{ textAlign: 'center', padding: 40 }}>
                   <Spin />
                 </div>
+              ) : isEditMode ? (
+                <div>
+                  <TextArea
+                    value={editedMarkdown}
+                    onChange={(e) => setEditedMarkdown(e.target.value)}
+                    rows={20}
+                    style={{ 
+                      fontSize: 14, 
+                      fontFamily: 'Monaco, Menlo, "Ubuntu Mono", Consolas, monospace',
+                      lineHeight: 1.6
+                    }}
+                    placeholder="请输入Markdown格式的详细内容"
+                  />
+                  <div style={{ 
+                    marginTop: 12, 
+                    padding: 12, 
+                    background: '#f5f5f7', 
+                    borderRadius: 8,
+                    fontSize: 13,
+                    color: '#6e6e73'
+                  }}>
+                    💡 提示：支持Markdown格式，包括标题、列表、表格、代码块等。双击内容区域可进入编辑模式。
+                  </div>
+                </div>
               ) : (
-                <MarkdownText style={{ fontSize: 16, lineHeight: 1.8, color: '#1d1d1f' }}>
-                  {markdownContent}
-                </MarkdownText>
+                <div
+                  onDoubleClick={handleDoubleClick}
+                  style={{ 
+                    cursor: isSpecialistOrAdmin ? 'pointer' : 'default',
+                    position: 'relative'
+                  }}
+                  title={isSpecialistOrAdmin ? '双击编辑' : ''}
+                >
+                  <MarkdownText style={{ fontSize: 16, lineHeight: 1.8, color: '#1d1d1f' }}>
+                    {markdownContent}
+                  </MarkdownText>
+                  {isSpecialistOrAdmin && (
+                    <div style={{
+                      position: 'absolute',
+                      top: 0,
+                      right: 0,
+                      padding: '4px 8px',
+                      background: 'rgba(0, 113, 227, 0.1)',
+                      borderRadius: 4,
+                      fontSize: 12,
+                      color: '#0071e3',
+                      opacity: 0.6,
+                      pointerEvents: 'none'
+                    }}>
+                      双击编辑
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           )}
