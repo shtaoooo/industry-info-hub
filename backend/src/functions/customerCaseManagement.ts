@@ -90,11 +90,7 @@ async function listCustomerCases(event: APIGatewayProxyEvent): Promise<APIGatewa
       createdBy: item.createdBy,
     }))
 
-    return successResponse({
-      items: cases,
-      lastEvaluatedKey: result.LastEvaluatedKey ? encodeURIComponent(JSON.stringify(result.LastEvaluatedKey)) : null,
-      count: cases.length,
-    })
+    return successResponse(cases)
   } catch (error: any) {
     if (error.message === 'Insufficient permissions') return errorResponse('FORBIDDEN', '权限不足', 403)
     console.error('Error listing customer cases:', error)
