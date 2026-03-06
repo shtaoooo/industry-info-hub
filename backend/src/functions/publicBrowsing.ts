@@ -586,6 +586,66 @@ export async function getBlogDetail(event: APIGatewayProxyEvent): Promise<APIGat
 }
 
 /**
+ * Get customer case detail
+ * GET /public/customer-cases/{id}
+ */
+export async function getCustomerCaseDetail(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+  try {
+    const caseId = event.pathParameters?.id
+    if (!caseId) return errorResponse('VALIDATION_ERROR', '案例ID不能为空', 400)
+
+    const result = await docClient.send(
+      new GetCommand({
+        TableName: TABLE_NAMES.CUSTOMER_CASES,
+        Key: { PK: caseId, SK: 'METADATA' },
+      })
+    )
+
+    if (!result.Item) return errorResponse('NOT_FOUND', '客户案例不存在', 404)
+
+    const item = result.Item
+
+    // Fetch account info if accountId exists
+    let account = null
+    if (item.accountId) {
+      const accountResult = await docClient.send(
+        new GetCommand({
+          TableName: TABLE_NAMES.ACCOUNTS,
+          Key: { PK: `ACCOUNT#${item.accountId}`, SK: 'METADATA' },
+        })
+      )
+      if (accountResult.Item) {
+        account = {
+          id: accountResult.Item.id,
+          name: accountResult.Item.name,
+          type: accountResult.Item.type,
+          description: accountResult.Item.description,
+          logoUrl: accountResult.Item.logoUrl,
+          website: accountResult.Item.website,
+        }
+      }
+    }
+
+    return successResponse({
+      id: item.id,
+      name: item.name,
+      accountId: item.accountId,
+      partner: item.partner,
+      useCaseIds: item.useCaseIds || [],
+      challenge: item.challenge,
+      solution: item.solution,
+      benefit: item.benefit,
+      documents: item.documents || [],
+      createdAt: item.createdAt,
+      account,
+    })
+  } catch (error: any) {
+    console.error('Error getting customer case detail:', error)
+    return errorResponse('INTERNAL_ERROR', '获取客户案例详情失败', 500)
+  }
+}
+
+/**
  * Get blogs for a use case
  * GET /public/use-cases/{id}/blogs
  */
@@ -680,6 +740,9 @@ export async function handler(event: any): Promise<APIGatewayProxyResult> {
     }
     if (method === 'GET' && path.match(/\/public\/blogs\/[^/]+\/?$/)) {
       return await getBlogDetail(event)
+    }
+    if (method === 'GET' && path.match(/\/public\/customer-cases\/[^/]+\/?$/)) {
+      return await getCustomerCaseDetail(event)
     }
 
     return errorResponse('NOT_FOUND', '接口不存在', 404)

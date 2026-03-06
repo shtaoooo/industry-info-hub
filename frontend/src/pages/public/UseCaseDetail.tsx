@@ -277,6 +277,7 @@ const UseCaseDetail: React.FC = () => {
                   <div
                     key={item.id}
                     className="apple-card"
+                    onClick={() => navigate(`/public/customer-cases/${item.id}`)}
                     style={{
                       padding: 0,
                       overflow: 'hidden',
@@ -284,6 +285,7 @@ const UseCaseDetail: React.FC = () => {
                       minWidth: 'calc((100% - 48px) / 3)',
                       maxWidth: 'calc((100% - 48px) / 3)',
                       flexShrink: 0,
+                      cursor: 'pointer',
                     }}
                     onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-4px)' }}
                     onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)' }}

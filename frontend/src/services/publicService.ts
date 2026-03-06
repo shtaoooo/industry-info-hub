@@ -59,6 +59,16 @@ export interface PublicCustomerCase {
   benefit?: string
   documents?: any[]
   createdAt: string
+  account?: PublicAccount | null
+}
+
+export interface PublicAccount {
+  id: string
+  name: string
+  type: string
+  description?: string
+  logoUrl?: string
+  website?: string
 }
 
 export interface PublicNews {
@@ -130,4 +140,7 @@ export const publicService = {
   
   getCustomerCases: (solutionId: string) =>
     api.get<PublicCustomerCase[]>(`/public/solutions/${solutionId}/customer-cases`),
+
+  getCustomerCase: (id: string) =>
+    api.get<PublicCustomerCase>(`/public/customer-cases/${id}`),
 }

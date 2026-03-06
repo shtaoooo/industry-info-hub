@@ -530,6 +530,7 @@ export class IndustryPortalStack extends cdk.Stack {
     newsTable.grantReadData(publicBrowsingFn);
     blogsTable.grantReadData(publicBrowsingFn);
     accountsTable.grantReadData(publicBrowsingFn);
+    accountsTable.grantReadData(publicBrowsingFn);
     usersTable.grantReadWriteData(userManagementFn);
     newsTable.grantReadWriteData(newsManagementFn);
     newsFeedsTable.grantReadWriteData(newsManagementFn);
@@ -700,6 +701,7 @@ export class IndustryPortalStack extends cdk.Stack {
     addRoute('/public/solutions/{id}', apigatewayv2.HttpMethod.GET, publicBrowsingFn);
     addRoute('/public/solutions/{id}/detail-markdown', apigatewayv2.HttpMethod.GET, publicBrowsingFn);
     addRoute('/public/solutions/{id}/customer-cases', apigatewayv2.HttpMethod.GET, publicBrowsingFn);
+    addRoute('/public/customer-cases/{id}', apigatewayv2.HttpMethod.GET, publicBrowsingFn);
     addRoute('/public/documents/{id}/download', apigatewayv2.HttpMethod.GET, documentDownloadFn);
 
     // Admin routes - News Management

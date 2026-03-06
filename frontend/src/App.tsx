@@ -21,6 +21,7 @@ import SolutionDetail from './pages/public/SolutionDetail'
 import IndustryDetail from './pages/public/IndustryDetail'
 import SubIndustryDetail from './pages/public/SubIndustryDetail'
 import UseCaseDetail from './pages/public/UseCaseDetail'
+import CustomerCaseDetail from './pages/public/CustomerCaseDetail'
 import NewsDetail from './pages/public/NewsDetail'
 import BlogDetail from './pages/public/BlogDetail'
 import NewsListPage from './pages/public/NewsListPage'
@@ -269,6 +270,7 @@ function App() {
             <Route path="/public/industries/:id" element={<IndustryDetail />} />
             <Route path="/public/sub-industries/:id" element={<SubIndustryDetail />} />
             <Route path="/public/use-cases/:id" element={<UseCaseDetail />} />
+            <Route path="/public/customer-cases/:id" element={<CustomerCaseDetail />} />
             <Route path="/public/news/:id" element={<NewsDetail />} />
             <Route path="/public/blogs/:id" element={<BlogDetail />} />
             <Route path="/public/industries/:id/news" element={<NewsListPage />} />
