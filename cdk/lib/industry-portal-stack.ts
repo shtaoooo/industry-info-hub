@@ -55,12 +55,6 @@ export class IndustryPortalStack extends cdk.Stack {
       sortKey: { name: 'priority', type: dynamodb.AttributeType.NUMBER },
     });
 
-    // GSI: query sub-industries by id (for manual GSI compatibility)
-    subIndustriesTable.addGlobalSecondaryIndex({
-      indexName: 'IdIndex',
-      partitionKey: { name: 'id', type: dynamodb.AttributeType.STRING },
-    });
-
     const useCasesTable = new dynamodb.Table(this, 'UseCasesTable', {
       tableName: 'IndustryPortal-UseCases',
       partitionKey: { name: 'PK', type: dynamodb.AttributeType.STRING },
@@ -78,18 +72,12 @@ export class IndustryPortalStack extends cdk.Stack {
       sortKey: { name: 'recommendationScore', type: dynamodb.AttributeType.NUMBER },
     });
 
-    // GSI: query use cases by industry
-    useCasesTable.addGlobalSecondaryIndex({
-      indexName: 'IndustryIndex',
-      partitionKey: { name: 'industryId', type: dynamodb.AttributeType.STRING },
-      sortKey: { name: 'createdAt', type: dynamodb.AttributeType.STRING },
-    });
-
-    // GSI: query use cases by id (for manual GSI compatibility)
-    useCasesTable.addGlobalSecondaryIndex({
-      indexName: 'IdIndex',
-      partitionKey: { name: 'id', type: dynamodb.AttributeType.STRING },
-    });
+    // TODO: Add IndustryIndex GSI in next deployment
+    // useCasesTable.addGlobalSecondaryIndex({
+    //   indexName: 'IndustryIndex',
+    //   partitionKey: { name: 'industryId', type: dynamodb.AttributeType.STRING },
+    //   sortKey: { name: 'createdAt', type: dynamodb.AttributeType.STRING },
+    // });
 
     const solutionsTable = new dynamodb.Table(this, 'SolutionsTable', {
       tableName: 'IndustryPortal-Solutions',
