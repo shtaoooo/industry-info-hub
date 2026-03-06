@@ -368,9 +368,7 @@ export async function getCustomerCasesForUseCase(event: APIGatewayProxyEvent): P
         accountId: item.accountId,
         partner: item.partner,
         useCaseIds: item.useCaseIds || [],
-        challenge: item.challenge,
-        solution: item.solution,
-        benefit: item.benefit,
+        summary: item.summary,
         documents: item.documents || [],
         createdAt: item.createdAt,
       }))
@@ -407,9 +405,7 @@ export async function getCustomerCasesForSolution(event: APIGatewayProxyEvent): 
         accountId: item.accountId,
         partner: item.partner,
         useCaseIds: item.useCaseIds || [],
-        challenge: item.challenge,
-        solution: item.solution,
-        benefit: item.benefit,
+        summary: item.summary,
         documents: item.documents || [],
         createdAt: item.createdAt,
       }))
@@ -448,9 +444,7 @@ export async function getCustomerCasesForAccount(event: APIGatewayProxyEvent): P
       accountId: item.accountId,
       partner: item.partner,
       useCaseIds: item.useCaseIds || [],
-      challenge: item.challenge,
-      solution: item.solution,
-      benefit: item.benefit,
+      summary: item.summary,
       documents: item.documents || [],
       createdAt: item.createdAt,
     }))
@@ -488,9 +482,7 @@ export async function getCustomerCasesForIndustry(event: APIGatewayProxyEvent): 
       accountId: item.accountId,
       partner: item.partner,
       useCaseIds: item.useCaseIds || [],
-      challenge: item.challenge,
-      solution: item.solution,
-      benefit: item.benefit,
+      summary: item.summary,
       createdAt: item.createdAt,
     }))
 
@@ -727,15 +719,28 @@ export async function getCustomerCaseDetail(event: APIGatewayProxyEvent): Promis
       }
     }
 
+    // Generate presigned URL for detail markdown if exists
+    let detailMarkdownUrl = null
+    if (item.detailMarkdownS3Key) {
+      try {
+        detailMarkdownUrl = await getSignedUrl(
+          s3Client,
+          new GetObjectCommand({ Bucket: BUCKET_NAME, Key: item.detailMarkdownS3Key }),
+          { expiresIn: 3600 }
+        )
+      } catch (s3Error: any) {
+        console.error(`[CustomerCaseDetail] Error generating presigned URL for markdown:`, s3Error)
+      }
+    }
+
     return successResponse({
       id: item.id,
       name: item.name,
       accountId: item.accountId,
       partner: item.partner,
       useCaseIds: item.useCaseIds || [],
-      challenge: item.challenge,
-      solution: item.solution,
-      benefit: item.benefit,
+      summary: item.summary,
+      detailMarkdownUrl,
       documents: item.documents || [],
       createdAt: item.createdAt,
       account,

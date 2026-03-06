@@ -6,9 +6,9 @@ export interface CreateCustomerCaseRequest {
   accountId?: string
   partner?: string
   useCaseIds?: string[]
-  challenge?: string
-  solution?: string
-  benefit?: string
+  industryId?: string | null
+  summary?: string
+  detailMarkdown?: string
 }
 
 export interface UpdateCustomerCaseRequest {
@@ -16,9 +16,9 @@ export interface UpdateCustomerCaseRequest {
   accountId?: string
   partner?: string
   useCaseIds?: string[]
-  challenge?: string
-  solution?: string
-  benefit?: string
+  industryId?: string | null
+  summary?: string
+  detailMarkdown?: string
 }
 
 export interface UploadDocumentRequest {

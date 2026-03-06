@@ -88,9 +88,7 @@ const CustomerCaseManagement: React.FC = () => {
       accountId: record.accountId || undefined,
       partner: record.partner || undefined,
       useCaseIds: record.useCaseIds || [],
-      challenge: record.challenge || undefined,
-      solution: record.solution || undefined,
-      benefit: record.benefit || undefined,
+      summary: record.summary || undefined,
     })
     setModalVisible(true)
   }
@@ -132,9 +130,8 @@ const CustomerCaseManagement: React.FC = () => {
         accountId: values.accountId || null,
         partner: values.partner || null,
         useCaseIds: selectedUseCaseIds,
-        challenge: values.challenge || null,
-        solution: values.solution || null,
-        benefit: values.benefit || null,
+        summary: values.summary || null,
+        detailMarkdown: values.detailMarkdown || null,
       }
 
       if (editingCase) {
@@ -226,9 +223,9 @@ const CustomerCaseManagement: React.FC = () => {
       ),
     },
     {
-      title: '业务挑战',
-      dataIndex: 'challenge',
-      key: 'challenge',
+      title: '简要描述',
+      dataIndex: 'summary',
+      key: 'summary',
       ellipsis: true,
       render: (v?: string) => v || '-',
     },
@@ -365,16 +362,12 @@ const CustomerCaseManagement: React.FC = () => {
             </Select>
           </Form.Item>
 
-          <Form.Item name="challenge" label="业务挑战">
-            <TextArea rows={3} placeholder="请输入业务挑战" />
+          <Form.Item name="summary" label="简要描述">
+            <TextArea rows={3} placeholder="请输入简要描述" />
           </Form.Item>
 
-          <Form.Item name="solution" label="解决方案">
-            <TextArea rows={3} placeholder="请输入解决方案描述" />
-          </Form.Item>
-
-          <Form.Item name="benefit" label="收益">
-            <TextArea rows={3} placeholder="请输入收益" />
+          <Form.Item name="detailMarkdown" label="详细内容">
+            <TextArea rows={6} placeholder="请输入详细内容（支持Markdown格式）" />
           </Form.Item>
         </Form>
       </Modal>

@@ -71,9 +71,8 @@ async function listCustomerCases(event: APIGatewayProxyEvent): Promise<APIGatewa
       accountId: item.accountId || null,
       partner: item.partner || null,
       useCaseIds: item.useCaseIds || [],
-      challenge: item.challenge || null,
-      solution: item.solution || null,
-      benefit: item.benefit || null,
+      summary: item.summary || null,
+      detailMarkdownS3Key: item.detailMarkdownS3Key || null,
       documents: item.documents || [],
       createdAt: item.createdAt,
       updatedAt: item.updatedAt,
@@ -98,7 +97,7 @@ async function createCustomerCase(event: APIGatewayProxyEvent): Promise<APIGatew
     requireRole(user, ['admin', 'specialist'])
 
     const body = JSON.parse(event.body || '{}')
-    const { name, accountId, partner, useCaseIds, industryId, challenge, solution, benefit } = body
+    const { name, accountId, partner, useCaseIds, industryId, summary, detailMarkdown } = body
 
     if (!name || typeof name !== 'string' || name.trim().length === 0) {
       return errorResponse('VALIDATION_ERROR', '客户案例名称不能为空', 400)
@@ -107,31 +106,39 @@ async function createCustomerCase(event: APIGatewayProxyEvent): Promise<APIGatew
     const id = randomUUID()
     const now = new Date().toISOString()
 
+    // Upload detail markdown to S3 if provided
+    let detailMarkdownS3Key: string | null = null
+    if (detailMarkdown && typeof detailMarkdown === 'string' && detailMarkdown.trim().length > 0) {
+      detailMarkdownS3Key = `docs/customerCase/${id}.md`
+      await s3Client.send(
+        new PutObjectCommand({
+          Bucket: BUCKET_NAME,
+          Key: detailMarkdownS3Key,
+          Body: Buffer.from(detailMarkdown, 'utf-8'),
+          ContentType: 'text/markdown',
+          ServerSideEncryption: 'AES256',
+        })
+      )
+    }
+
     const caseItem = {
       PK: id,
       SK: 'METADATA',
       id,
-      industryId: industryId || null, // Required for IndustryIndex GSI
+      industryId: industryId || null,
       name: name.trim(),
       accountId: accountId || null,
       partner: partner || null,
       useCaseIds: Array.isArray(useCaseIds) ? useCaseIds : [],
-      challenge: challenge || null,
-      solution: solution || null,
-      benefit: benefit || null,
+      summary: summary || null,
+      detailMarkdownS3Key,
       documents: [],
       createdAt: now,
       updatedAt: now,
       createdBy: user!.userId,
     }
 
-    await docClient.send(
-      new PutCommand({
-        TableName: TABLE_NAMES.CUSTOMER_CASES,
-        Item: caseItem,
-      })
-    )
-
+    await docClient.send(new PutCommand({ TableName: TABLE_NAMES.CUSTOMER_CASES, Item: caseItem }))
     return successResponse(caseItem, 201)
   } catch (error: any) {
     if (error.message === 'Insufficient permissions') return errorResponse('FORBIDDEN', '权限不足', 403)
@@ -153,16 +160,29 @@ async function updateCustomerCase(event: APIGatewayProxyEvent): Promise<APIGatew
     if (!customerCaseId) return errorResponse('VALIDATION_ERROR', '客户案例ID不能为空', 400)
 
     const existing = await docClient.send(
-      new GetCommand({
-        TableName: TABLE_NAMES.CUSTOMER_CASES,
-        Key: { PK: customerCaseId, SK: 'METADATA' },
-      })
+      new GetCommand({ TableName: TABLE_NAMES.CUSTOMER_CASES, Key: { PK: customerCaseId, SK: 'METADATA' } })
     )
-
     if (!existing.Item) return errorResponse('NOT_FOUND', '客户案例不存在', 404)
 
     const body = JSON.parse(event.body || '{}')
-    const { name, accountId, partner, useCaseIds, industryId, challenge, solution, benefit } = body
+    const { name, accountId, partner, useCaseIds, industryId, summary, detailMarkdown } = body
+
+    // Upload detail markdown to S3 if provided
+    let detailMarkdownS3Key = existing.Item.detailMarkdownS3Key || null
+    if (detailMarkdown !== undefined) {
+      if (detailMarkdown && detailMarkdown.trim().length > 0) {
+        detailMarkdownS3Key = `docs/customerCase/${customerCaseId}.md`
+        await s3Client.send(
+          new PutObjectCommand({
+            Bucket: BUCKET_NAME,
+            Key: detailMarkdownS3Key,
+            Body: Buffer.from(detailMarkdown, 'utf-8'),
+            ContentType: 'text/markdown',
+            ServerSideEncryption: 'AES256',
+          })
+        )
+      }
+    }
 
     const now = new Date().toISOString()
     const updatedItem = {
@@ -172,19 +192,12 @@ async function updateCustomerCase(event: APIGatewayProxyEvent): Promise<APIGatew
       accountId: accountId !== undefined ? accountId : existing.Item.accountId,
       partner: partner !== undefined ? partner : existing.Item.partner,
       useCaseIds: useCaseIds !== undefined ? (Array.isArray(useCaseIds) ? useCaseIds : []) : (existing.Item.useCaseIds || []),
-      challenge: challenge !== undefined ? challenge : existing.Item.challenge,
-      solution: solution !== undefined ? solution : existing.Item.solution,
-      benefit: benefit !== undefined ? benefit : existing.Item.benefit,
+      summary: summary !== undefined ? summary : existing.Item.summary,
+      detailMarkdownS3Key,
       updatedAt: now,
     }
 
-    await docClient.send(
-      new PutCommand({
-        TableName: TABLE_NAMES.CUSTOMER_CASES,
-        Item: updatedItem,
-      })
-    )
-
+    await docClient.send(new PutCommand({ TableName: TABLE_NAMES.CUSTOMER_CASES, Item: updatedItem }))
     return successResponse(updatedItem)
   } catch (error: any) {
     if (error.message === 'Insufficient permissions') return errorResponse('FORBIDDEN', '权限不足', 403)
@@ -214,11 +227,24 @@ async function deleteCustomerCase(event: APIGatewayProxyEvent): Promise<APIGatew
 
     if (!existing.Item) return errorResponse('NOT_FOUND', '客户案例不存在', 404)
 
+    // Delete all documents from S3
     for (const doc of existing.Item.documents || []) {
       try {
         await s3Client.send(new DeleteObjectCommand({ Bucket: BUCKET_NAME, Key: doc.s3Key }))
       } catch (s3Error) {
         console.error('Error deleting document from S3:', s3Error)
+      }
+    }
+
+    // Delete detail markdown file from S3 if exists
+    if (existing.Item.detailMarkdownS3Key) {
+      try {
+        await s3Client.send(new DeleteObjectCommand({ 
+          Bucket: BUCKET_NAME, 
+          Key: existing.Item.detailMarkdownS3Key 
+        }))
+      } catch (s3Error) {
+        console.error('Error deleting markdown from S3:', s3Error)
       }
     }
 

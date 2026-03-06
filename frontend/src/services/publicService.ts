@@ -54,9 +54,8 @@ export interface PublicCustomerCase {
   accountId?: string
   partner?: string
   useCaseIds?: string[]
-  challenge?: string
-  solution?: string
-  benefit?: string
+  summary?: string
+  detailMarkdownUrl?: string
   documents?: any[]
   createdAt: string
   account?: PublicAccount | null

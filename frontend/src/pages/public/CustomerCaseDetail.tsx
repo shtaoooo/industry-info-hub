@@ -3,9 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { Layout, Spin, message, Button, Empty, Modal } from 'antd'
 import {
   ArrowLeftOutlined,
-  ExclamationCircleOutlined,
-  BulbOutlined,
-  RiseOutlined,
   FilePdfOutlined,
   GlobalOutlined,
 } from '@ant-design/icons'
@@ -23,6 +20,8 @@ const CustomerCaseDetail: React.FC = () => {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null)
   const [pdfModalVisible, setPdfModalVisible] = useState(false)
   const [loadingDocId, setLoadingDocId] = useState<string | null>(null)
+  const [markdownContent, setMarkdownContent] = useState<string>('')
+  const [loadingMarkdown, setLoadingMarkdown] = useState(false)
 
   useEffect(() => {
     if (id) loadData()
@@ -34,6 +33,22 @@ const CustomerCaseDetail: React.FC = () => {
     try {
       const data = await publicService.getCustomerCase(id)
       setCustomerCase(data)
+      
+      // Fetch markdown content if URL exists
+      if (data.detailMarkdownUrl) {
+        setLoadingMarkdown(true)
+        try {
+          const response = await fetch(data.detailMarkdownUrl)
+          if (response.ok) {
+            const text = await response.text()
+            setMarkdownContent(text)
+          }
+        } catch (error) {
+          console.error('Failed to fetch markdown:', error)
+        } finally {
+          setLoadingMarkdown(false)
+        }
+      }
     } catch (error: any) {
       console.error('Failed to load customer case:', error)
       message.error('加载客户案例失败')
@@ -157,60 +172,29 @@ const CustomerCaseDetail: React.FC = () => {
             </div>
           )}
 
-          {/* 挑战 */}
-          {customerCase.challenge && (
+          {/* 简要描述 */}
+          {customerCase.summary && (
             <div className="apple-card" style={{ padding: 32, marginBottom: 24 }}>
-              <div style={{ display: 'flex', alignItems: 'center', marginBottom: 20 }}>
-                <div style={{
-                  width: 40, height: 40, borderRadius: 10,
-                  background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: 12
-                }}>
-                  <ExclamationCircleOutlined style={{ fontSize: 20, color: '#fff' }} />
-                </div>
-                <h3 style={{ margin: 0, fontSize: 22, fontWeight: 600 }}>面临挑战</h3>
-              </div>
-              <MarkdownText style={{ paddingLeft: 52, fontSize: 16, lineHeight: 1.8, color: '#1d1d1f' }}>
-                {customerCase.challenge}
-              </MarkdownText>
+              <h3 style={{ margin: '0 0 16px 0', fontSize: 22, fontWeight: 600 }}>简要描述</h3>
+              <p style={{ fontSize: 16, lineHeight: 1.8, color: '#1d1d1f', margin: 0 }}>
+                {customerCase.summary}
+              </p>
             </div>
           )}
 
-          {/* 解决方案 */}
-          {customerCase.solution && (
+          {/* 详细内容 (Markdown) */}
+          {markdownContent && (
             <div className="apple-card" style={{ padding: 32, marginBottom: 24 }}>
-              <div style={{ display: 'flex', alignItems: 'center', marginBottom: 20 }}>
-                <div style={{
-                  width: 40, height: 40, borderRadius: 10,
-                  background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: 12
-                }}>
-                  <BulbOutlined style={{ fontSize: 20, color: '#fff' }} />
+              <h3 style={{ margin: '0 0 20px 0', fontSize: 22, fontWeight: 600 }}>详细内容</h3>
+              {loadingMarkdown ? (
+                <div style={{ textAlign: 'center', padding: 40 }}>
+                  <Spin />
                 </div>
-                <h3 style={{ margin: 0, fontSize: 22, fontWeight: 600 }}>解决方案</h3>
-              </div>
-              <MarkdownText style={{ paddingLeft: 52, fontSize: 16, lineHeight: 1.8, color: '#1d1d1f' }}>
-                {customerCase.solution}
-              </MarkdownText>
-            </div>
-          )}
-
-          {/* 收益 */}
-          {customerCase.benefit && (
-            <div className="apple-card" style={{ padding: 32, marginBottom: 24 }}>
-              <div style={{ display: 'flex', alignItems: 'center', marginBottom: 20 }}>
-                <div style={{
-                  width: 40, height: 40, borderRadius: 10,
-                  background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: 12
-                }}>
-                  <RiseOutlined style={{ fontSize: 20, color: '#fff' }} />
-                </div>
-                <h3 style={{ margin: 0, fontSize: 22, fontWeight: 600 }}>客户收益</h3>
-              </div>
-              <MarkdownText style={{ paddingLeft: 52, fontSize: 16, lineHeight: 1.8, color: '#1d1d1f' }}>
-                {customerCase.benefit}
-              </MarkdownText>
+              ) : (
+                <MarkdownText style={{ fontSize: 16, lineHeight: 1.8, color: '#1d1d1f' }}>
+                  {markdownContent}
+                </MarkdownText>
+              )}
             </div>
           )}
 
@@ -275,7 +259,6 @@ const CustomerCaseDetail: React.FC = () => {
         style={{ top: 20 }}
         styles={{ body: { padding: 0, height: '85vh' } }}
         title="文档预览"
-        destroyOnClose
       >
         {pdfUrl && (
           <iframe

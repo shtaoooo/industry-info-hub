@@ -63,9 +63,9 @@ export interface CustomerCase {
   accountId?: string // 客户（从account表选择）
   partner?: string // 合作伙伴
   useCaseIds?: string[] // 关联的use case IDs（支持多个）
-  challenge?: string // 业务挑战
-  solution?: string // 解决方案描述
-  benefit?: string // 收益
+  industryId?: string // 行业ID（从useCaseIds派生）
+  summary?: string // 简要描述
+  detailMarkdownS3Key?: string // S3中markdown文件的key
   documents: Document[]
   createdAt: string
   updatedAt: string
