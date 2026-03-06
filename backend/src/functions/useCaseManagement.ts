@@ -2,7 +2,7 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
 import { PutCommand, GetCommand, DeleteCommand, QueryCommand, ScanCommand } from '@aws-sdk/lib-dynamodb'
 import { PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
 import { successResponse, errorResponse } from '../utils/response'
-import { getUserFromEvent, requireRole, hasIndustryAccess } from '../utils/auth'
+import { getUserFromEvent, requireRole, hasRole, hasIndustryAccess } from '../utils/auth'
 import { docClient, TABLE_NAMES } from '../utils/dynamodb'
 import { s3Client, BUCKET_NAME } from '../utils/s3'
 import { UseCase, Document } from '../types'
@@ -83,7 +83,7 @@ export async function listUseCases(event: APIGatewayProxyEvent): Promise<APIGate
 
     const useCases: UseCase[] = []
 
-    if (user!.role === 'admin') {
+    if (hasRole(user, 'admin')) {
       // Admin: scan all use cases
       const result = await docClient.send(
         new ScanCommand({

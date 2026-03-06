@@ -463,6 +463,45 @@ export async function getCustomerCasesForAccount(event: APIGatewayProxyEvent): P
 }
 
 /**
+ * Get customer cases for an industry
+ * GET /public/industries/{id}/customer-cases
+ * Uses IndustryIndex GSI: PK=industryId, SK=createdAt
+ */
+export async function getCustomerCasesForIndustry(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+  try {
+    const industryId = event.pathParameters?.id
+    if (!industryId) return errorResponse('VALIDATION_ERROR', '行业ID不能为空', 400)
+
+    const result = await docClient.send(
+      new QueryCommand({
+        TableName: TABLE_NAMES.CUSTOMER_CASES,
+        IndexName: 'IndustryIndex',
+        KeyConditionExpression: 'industryId = :industryId',
+        ExpressionAttributeValues: { ':industryId': industryId },
+        ScanIndexForward: false,
+      })
+    )
+
+    const customerCases = (result.Items || []).map((item) => ({
+      id: item.id,
+      name: item.name,
+      accountId: item.accountId,
+      partner: item.partner,
+      useCaseIds: item.useCaseIds || [],
+      challenge: item.challenge,
+      solution: item.solution,
+      benefit: item.benefit,
+      createdAt: item.createdAt,
+    }))
+
+    return successResponse(customerCases)
+  } catch (error: any) {
+    console.error('Error getting customer cases for industry:', error)
+    return errorResponse('INTERNAL_ERROR', '获取行业客户案例失败', 500)
+  }
+}
+
+/**
  * Get news for an industry
  * GET /public/industries/{id}/news
  */
@@ -802,6 +841,9 @@ export async function handler(event: any): Promise<APIGatewayProxyResult> {
     }
     if (method === 'GET' && path.match(/\/public\/industries\/[^/]+\/blogs\/?$/)) {
       return await getIndustryBlogs(event)
+    }
+    if (method === 'GET' && path.match(/\/public\/industries\/[^/]+\/customer-cases\/?$/)) {
+      return await getCustomerCasesForIndustry(event)
     }
     if (method === 'GET' && path.match(/\/public\/news\/[^/]+\/?$/)) {
       return await getNewsDetail(event)

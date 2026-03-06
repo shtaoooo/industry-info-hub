@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Layout, Spin, message, Button, Empty } from 'antd'
-import { ArrowLeftOutlined, BankOutlined, ApartmentOutlined, LeftOutlined, RightOutlined } from '@ant-design/icons'
-import { publicService, PublicIndustry, PublicSubIndustry, PublicNews, PublicBlog } from '../../services/publicService'
+import { ArrowLeftOutlined, BankOutlined, ApartmentOutlined, LeftOutlined, RightOutlined, TeamOutlined } from '@ant-design/icons'
+import { publicService, PublicIndustry, PublicSubIndustry, PublicNews, PublicBlog, PublicCustomerCase } from '../../services/publicService'
 
 const { Content } = Layout
 
@@ -13,9 +13,11 @@ const IndustryDetail: React.FC = () => {
   const [subIndustries, setSubIndustries] = useState<PublicSubIndustry[]>([])
   const [news, setNews] = useState<PublicNews[]>([])
   const [blogs, setBlogs] = useState<PublicBlog[]>([])
+  const [customerCases, setCustomerCases] = useState<PublicCustomerCase[]>([])
   const [loading, setLoading] = useState(true)
   const [expandedTier2, setExpandedTier2] = useState<Set<string>>(new Set())
   const newsScrollRef = useRef<HTMLDivElement>(null)
+  const casesScrollRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (id) {
@@ -33,12 +35,14 @@ const IndustryDetail: React.FC = () => {
       ])
       setIndustry(industryData)
       setSubIndustries(subIndustriesData)
-      const [newsData, blogsData] = await Promise.all([
+      const [newsData, blogsData, customerCasesData] = await Promise.all([
         publicService.getIndustryNews(id, 5).catch(() => [] as PublicNews[]),
         publicService.getIndustryBlogs(id, 5).catch(() => [] as PublicBlog[]),
+        publicService.getIndustryCustomerCases(id).catch(() => [] as PublicCustomerCase[]),
       ])
       setNews(newsData)
       setBlogs(blogsData)
+      setCustomerCases(customerCasesData)
     } catch (error: any) {
       console.error('Failed to load industry data:', error)
       message.error('加载行业信息失败')
@@ -66,8 +70,19 @@ const IndustryDetail: React.FC = () => {
   const scrollNews = (direction: 'left' | 'right') => {
     if (newsScrollRef.current) {
       const containerWidth = newsScrollRef.current.clientWidth
-      const cardWidth = (containerWidth - 48) / 3 + 24 // card width + gap
+      const cardWidth = (containerWidth - 48) / 3 + 24
       newsScrollRef.current.scrollBy({
+        left: direction === 'left' ? -cardWidth : cardWidth,
+        behavior: 'smooth',
+      })
+    }
+  }
+
+  const scrollCases = (direction: 'left' | 'right') => {
+    if (casesScrollRef.current) {
+      const containerWidth = casesScrollRef.current.clientWidth
+      const cardWidth = (containerWidth - 48) / 3 + 24
+      casesScrollRef.current.scrollBy({
         left: direction === 'left' ? -cardWidth : cardWidth,
         behavior: 'smooth',
       })
@@ -267,19 +282,9 @@ const IndustryDetail: React.FC = () => {
                             >
                               {subIndustry.name}
                             </div>
-                            {typeof subIndustry.priority === 'number' && (
+                            {typeof subIndustry.priority === 'number' && subIndustry.priority > 0 && (
                               <div style={{ fontSize: 12 }}>
-                                {Array.from({ length: 5 }, (_, i) => (
-                                  <span
-                                    key={i}
-                                    style={{
-                                      color: i < (subIndustry.priority ?? 0) ? '#ffb800' : '#d2d2d7',
-                                      marginRight: 1,
-                                    }}
-                                  >
-                                    ⭐
-                                  </span>
-                                ))}
+                                {'⭐'.repeat(subIndustry.priority)}
                               </div>
                             )}
                           </div>
@@ -405,19 +410,9 @@ const IndustryDetail: React.FC = () => {
                               >
                                 {tier3.name}
                               </div>
-                              {typeof tier3.priority === 'number' && (
+                              {typeof tier3.priority === 'number' && tier3.priority > 0 && (
                                 <div style={{ fontSize: 12 }}>
-                                  {Array.from({ length: tier3.priority }, (_, i) => (
-                                    <span
-                                      key={i}
-                                      style={{
-                                        color: '#ffb800',
-                                        marginRight: 1,
-                                      }}
-                                    >
-                                      ⭐
-                                    </span>
-                                  ))}
+                                  {'⭐'.repeat(tier3.priority)}
                                 </div>
                               )}
                             </div>
@@ -550,9 +545,86 @@ const IndustryDetail: React.FC = () => {
             </>
           )}
 
-          {/* Blogs Section */}
-          {blogs.length > 0 && (
+          {/* Customer Cases Section */}
+          {customerCases.length > 0 && (
             <>
+              <div style={{ marginTop: 80, marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <h3 style={{ display: 'flex', alignItems: 'center', color: '#1d1d1f', fontSize: 32, fontWeight: 600, margin: 0 }}>
+                  <TeamOutlined style={{ marginRight: 12, color: '#0071e3', fontSize: 32 }} />
+                  客户案例
+                </h3>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <Button shape="circle" icon={<LeftOutlined />} onClick={() => scrollCases('left')} style={{ border: '1px solid #d2d2d7' }} />
+                  <Button shape="circle" icon={<RightOutlined />} onClick={() => scrollCases('right')} style={{ border: '1px solid #d2d2d7' }} />
+                </div>
+              </div>
+
+              <div
+                ref={casesScrollRef}
+                style={{
+                  display: 'flex',
+                  gap: 24,
+                  overflowX: 'auto',
+                  scrollbarWidth: 'none',
+                  msOverflowStyle: 'none',
+                  paddingBottom: 8,
+                }}
+              >
+                {customerCases.map((item) => (
+                  <div
+                    key={item.id}
+                    className="apple-card"
+                    onClick={() => navigate(`/public/customer-cases/${item.id}`)}
+                    style={{
+                      padding: 0,
+                      overflow: 'hidden',
+                      transition: 'transform 0.3s ease',
+                      minWidth: 'calc((100% - 48px) / 3)',
+                      maxWidth: 'calc((100% - 48px) / 3)',
+                      flexShrink: 0,
+                      cursor: 'pointer',
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-4px)' }}
+                    onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)' }}
+                  >
+                    <div style={{ height: 6, background: 'linear-gradient(90deg, #0071e3 0%, #34aadc 100%)' }} />
+                    <div style={{ padding: 24 }}>
+                      <div style={{ fontSize: 12, color: '#86868b', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        客户案例
+                      </div>
+                      <h4 style={{ fontSize: 18, fontWeight: 600, color: '#1d1d1f', margin: '0 0 12px 0', lineHeight: 1.3 }}>
+                        {item.name}
+                      </h4>
+                      {item.partner && (
+                        <div style={{ fontSize: 13, color: '#0071e3', marginBottom: 8, fontWeight: 500 }}>
+                          合作伙伴：{item.partner}
+                        </div>
+                      )}
+                      {item.challenge && (
+                        <div style={{ marginBottom: 8 }}>
+                          <div style={{ fontSize: 12, color: '#86868b', marginBottom: 4, fontWeight: 600 }}>挑战</div>
+                          <p style={{ fontSize: 13, color: '#6e6e73', lineHeight: 1.6, margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                            {item.challenge}
+                          </p>
+                        </div>
+                      )}
+                      {item.benefit && (
+                        <div>
+                          <div style={{ fontSize: 12, color: '#86868b', marginBottom: 4, fontWeight: 600 }}>收益</div>
+                          <p style={{ fontSize: 13, color: '#6e6e73', lineHeight: 1.6, margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                            {item.benefit}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+
+          {/* Blogs Section */}
+          {blogs.length > 0 && (            <>
               <div style={{ marginTop: 80, marginBottom: 24 }}>
                 <h3 style={{ color: '#1d1d1f', fontSize: 32, fontWeight: 600, margin: 0 }}>Blogs</h3>
               </div>

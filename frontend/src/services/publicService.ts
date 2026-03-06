@@ -111,6 +111,9 @@ export const publicService = {
   getIndustryBlogs: (industryId: string, limit?: number) =>
     api.get<PublicBlog[]>(`/public/industries/${industryId}/blogs${limit ? `?limit=${limit}` : ''}`),
 
+  getIndustryCustomerCases: (industryId: string) =>
+    api.get<PublicCustomerCase[]>(`/public/industries/${industryId}/customer-cases`),
+
   // News and Blogs
   getNews: (id: string) => api.get<PublicNews>(`/public/news/${id}`),
 

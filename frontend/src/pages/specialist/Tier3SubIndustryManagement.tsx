@@ -237,6 +237,13 @@ const Tier3SubIndustryManagement: React.FC = () => {
       ellipsis: true,
     },
     {
+      title: '优先级',
+      dataIndex: 'priority',
+      key: 'priority',
+      width: 120,
+      render: (priority: number) => priority ? '⭐'.repeat(priority) : '-',
+    },
+    {
       title: '操作',
       key: 'actions',
       width: 150,

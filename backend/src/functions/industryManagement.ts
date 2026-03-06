@@ -1,7 +1,7 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
 import { PutCommand, GetCommand, DeleteCommand, ScanCommand, QueryCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb'
 import { successResponse, errorResponse } from '../utils/response'
-import { getUserFromEvent, requireRole } from '../utils/auth'
+import { getUserFromEvent, requireRole, hasRole } from '../utils/auth'
 import { docClient, TABLE_NAMES } from '../utils/dynamodb'
 import { Industry } from '../types'
 import { 
@@ -45,7 +45,7 @@ export async function listIndustries(event: APIGatewayProxyEvent): Promise<APIGa
     }))
 
     // Specialist can only see their assigned industries
-    if (user!.role === 'specialist') {
+    if (!hasRole(user, 'admin')) {
       const assignedIndustries = user!.assignedIndustries || []
       return successResponse(industries.filter(i => assignedIndustries.includes(i.id)))
     }

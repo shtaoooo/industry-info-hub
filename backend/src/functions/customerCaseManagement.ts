@@ -2,7 +2,7 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
 import { PutCommand, GetCommand, DeleteCommand, ScanCommand, QueryCommand } from '@aws-sdk/lib-dynamodb'
 import { PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
 import { successResponse, errorResponse } from '../utils/response'
-import { getUserFromEvent, requireRole } from '../utils/auth'
+import { getUserFromEvent, requireRole, hasRole } from '../utils/auth'
 import { docClient, TABLE_NAMES } from '../utils/dynamodb'
 import { s3Client, BUCKET_NAME } from '../utils/s3'
 import { Document } from '../types'
@@ -21,7 +21,7 @@ async function listCustomerCases(event: APIGatewayProxyEvent): Promise<APIGatewa
 
     let items: any[] = []
 
-    if (user!.role === 'admin') {
+    if (hasRole(user, 'admin')) {
       // Admin: scan all customer cases
       const result = await docClient.send(
         new ScanCommand({

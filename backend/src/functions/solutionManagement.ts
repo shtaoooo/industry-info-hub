@@ -3,7 +3,7 @@ import { PutCommand, GetCommand, DeleteCommand, ScanCommand } from '@aws-sdk/lib
 import { PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { successResponse, errorResponse } from '../utils/response'
-import { getUserFromEvent, requireRole } from '../utils/auth'
+import { getUserFromEvent, requireRole, hasRole } from '../utils/auth'
 import { docClient, TABLE_NAMES } from '../utils/dynamodb'
 import { s3Client, BUCKET_NAME } from '../utils/s3'
 import { Solution } from '../types'
@@ -42,7 +42,7 @@ export async function listSolutions(event: APIGatewayProxyEvent): Promise<APIGat
       updatedAt: item.updatedAt,
     }))
 
-    if (user!.role === 'specialist') {
+    if (!hasRole(user, 'admin')) {
       const userIndustries = user!.assignedIndustries || []
       return successResponse(
         solutions.filter(

@@ -1,7 +1,7 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
 import { PutCommand, GetCommand, DeleteCommand, QueryCommand, ScanCommand } from '@aws-sdk/lib-dynamodb'
 import { successResponse, errorResponse } from '../utils/response'
-import { getUserFromEvent, requireRole } from '../utils/auth'
+import { getUserFromEvent, requireRole, hasRole } from '../utils/auth'
 import { docClient, TABLE_NAMES } from '../utils/dynamodb'
 import { SubIndustry, Company } from '../types'
 import { randomUUID } from 'crypto'
@@ -109,7 +109,7 @@ export async function listSubIndustries(event: APIGatewayProxyEvent): Promise<AP
     })
 
     if (industryId) {
-      if (user!.role === 'specialist') {
+      if (!hasRole(user, 'admin')) {
         const assignedIndustries = user!.assignedIndustries || []
         if (!assignedIndustries.includes(industryId)) return successResponse([])
       }
@@ -126,35 +126,39 @@ export async function listSubIndustries(event: APIGatewayProxyEvent): Promise<AP
       return successResponse((result.Items || []).map(mapItem))
     }
 
-    // Get all sub-industries for admin/specialist
-    if (user!.role === 'specialist') {
-      const assignedIndustries = user!.assignedIndustries || []
-      const allSubIndustries: SubIndustry[] = []
-
-      for (const indId of assignedIndustries) {
-        const result = await docClient.send(
-          new QueryCommand({
-            TableName: TABLE_NAMES.SUB_INDUSTRIES,
-            IndexName: 'IndustryIndex',
-            KeyConditionExpression: 'industryId = :industryId',
-            ExpressionAttributeValues: { ':industryId': indId },
-            ScanIndexForward: false,
-          })
-        )
-        allSubIndustries.push(...(result.Items || []).map(mapItem))
-      }
-      return successResponse(allSubIndustries)
+    // Admin: scan all
+    if (hasRole(user, 'admin')) {
+      const result = await docClient.send(
+        new ScanCommand({
+          TableName: TABLE_NAMES.SUB_INDUSTRIES,
+          FilterExpression: 'SK = :sk',
+          ExpressionAttributeValues: { ':sk': 'METADATA' },
+        })
+      )
+      return successResponse((result.Items || []).map(mapItem))
     }
 
-    // Admin: scan all
-    const result = await docClient.send(
-      new ScanCommand({
-        TableName: TABLE_NAMES.SUB_INDUSTRIES,
-        FilterExpression: 'SK = :sk',
-        ExpressionAttributeValues: { ':sk': 'METADATA' },
-      })
-    )
-    return successResponse((result.Items || []).map(mapItem))
+    // Specialist: query by assigned industries in parallel
+    {
+      const assignedIndustries = user!.assignedIndustries || []
+      if (assignedIndustries.length === 0) return successResponse([])
+
+      const results = await Promise.all(
+        assignedIndustries.map((indId) =>
+          docClient.send(
+            new QueryCommand({
+              TableName: TABLE_NAMES.SUB_INDUSTRIES,
+              IndexName: 'IndustryIndex',
+              KeyConditionExpression: 'industryId = :industryId',
+              ExpressionAttributeValues: { ':industryId': indId },
+              ScanIndexForward: false,
+            })
+          )
+        )
+      )
+      const allSubIndustries = results.flatMap((r) => (r.Items || []).map(mapItem))
+      return successResponse(allSubIndustries)
+    }
   } catch (error: any) {
     if (error.message === 'Insufficient permissions') return errorResponse('FORBIDDEN', '权限不足', 403)
     console.error('Error listing sub-industries:', error)

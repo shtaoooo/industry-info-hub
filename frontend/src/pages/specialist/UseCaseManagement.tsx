@@ -238,17 +238,7 @@ const UseCaseManagement: React.FC = () => {
         const displayScore = score || 3
         return (
           <div>
-            {Array.from({ length: 5 }, (_, i) => (
-              <span
-                key={i}
-                style={{
-                  color: i < displayScore ? '#ffb800' : '#d2d2d7',
-                  marginRight: 2,
-                }}
-              >
-                ⭐
-              </span>
-            ))}
+            {'⭐'.repeat(displayScore)}
             <span style={{ marginLeft: 4, color: '#6e6e73' }}>({displayScore})</span>
           </div>
         )
