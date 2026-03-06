@@ -341,7 +341,9 @@ export async function getSolutionMarkdown(event: APIGatewayProxyEvent): Promise<
 /**
  * Get customer cases for a use case
  * GET /public/use-cases/{id}/customer-cases
- * PK: id, SK: METADATA
+ * 
+ * Note: Uses Scan because useCaseIds is an array (one case can have multiple use cases)
+ * TODO: Consider using composite data model (separate index items per useCaseId) for better performance
  */
 export async function getCustomerCasesForUseCase(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   try {
@@ -351,13 +353,15 @@ export async function getCustomerCasesForUseCase(event: APIGatewayProxyEvent): P
     const result = await docClient.send(
       new ScanCommand({
         TableName: TABLE_NAMES.CUSTOMER_CASES,
-        FilterExpression: 'SK = :sk',
-        ExpressionAttributeValues: { ':sk': 'METADATA' },
+        FilterExpression: 'SK = :sk AND contains(useCaseIds, :useCaseId)',
+        ExpressionAttributeValues: { 
+          ':sk': 'METADATA',
+          ':useCaseId': useCaseId,
+        },
       })
     )
 
     const customerCases = (result.Items || [])
-      .filter((item) => item.useCaseIds && item.useCaseIds.includes(useCaseId))
       .map((item) => ({
         id: item.id,
         name: item.name,
@@ -370,6 +374,7 @@ export async function getCustomerCasesForUseCase(event: APIGatewayProxyEvent): P
         documents: item.documents || [],
         createdAt: item.createdAt,
       }))
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 
     return successResponse(customerCases)
   } catch (error: any) {
@@ -395,6 +400,48 @@ export async function getCustomerCasesForSolution(event: APIGatewayProxyEvent): 
       })
     )
 
+    const customerCases = (result.Items || [])
+      .map((item) => ({
+        id: item.id,
+        name: item.name,
+        accountId: item.accountId,
+        partner: item.partner,
+        useCaseIds: item.useCaseIds || [],
+        challenge: item.challenge,
+        solution: item.solution,
+        benefit: item.benefit,
+        documents: item.documents || [],
+        createdAt: item.createdAt,
+      }))
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+
+    return successResponse(customerCases)
+  } catch (error: any) {
+    console.error('Error getting customer cases:', error)
+    return errorResponse('INTERNAL_ERROR', '获取客户案例列表失败', 500)
+  }
+}
+
+/**
+ * Get customer cases for an account
+ * GET /public/accounts/{id}/customer-cases
+ * Uses AccountIndex GSI: PK=accountId, SK=createdAt
+ */
+export async function getCustomerCasesForAccount(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+  try {
+    const accountId = event.pathParameters?.id
+    if (!accountId) return errorResponse('VALIDATION_ERROR', '账户ID不能为空', 400)
+
+    const result = await docClient.send(
+      new QueryCommand({
+        TableName: TABLE_NAMES.CUSTOMER_CASES,
+        IndexName: 'AccountIndex',
+        KeyConditionExpression: 'accountId = :accountId',
+        ExpressionAttributeValues: { ':accountId': accountId },
+        ScanIndexForward: false, // Sort by createdAt descending
+      })
+    )
+
     const customerCases = (result.Items || []).map((item) => ({
       id: item.id,
       name: item.name,
@@ -410,8 +457,8 @@ export async function getCustomerCasesForSolution(event: APIGatewayProxyEvent): 
 
     return successResponse(customerCases)
   } catch (error: any) {
-    console.error('Error getting customer cases:', error)
-    return errorResponse('INTERNAL_ERROR', '获取客户案例列表失败', 500)
+    console.error('Error getting customer cases for account:', error)
+    return errorResponse('INTERNAL_ERROR', '获取账户客户案例列表失败', 500)
   }
 }
 
@@ -764,6 +811,9 @@ export async function handler(event: any): Promise<APIGatewayProxyResult> {
     }
     if (method === 'GET' && path.match(/\/public\/customer-cases\/[^/]+\/?$/)) {
       return await getCustomerCaseDetail(event)
+    }
+    if (method === 'GET' && path.match(/\/public\/accounts\/[^/]+\/customer-cases\/?$/)) {
+      return await getCustomerCasesForAccount(event)
     }
 
     return errorResponse('NOT_FOUND', '接口不存在', 404)

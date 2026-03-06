@@ -336,9 +336,43 @@ export async function uploadDocument(event: APIGatewayProxyEvent): Promise<APIGa
 
     if (!fileName || !fileContent) return errorResponse('VALIDATION_ERROR', '文件名和文件内容不能为空', 400)
 
+    // Validate file type
+    const allowedTypes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-powerpoint',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'image/jpeg',
+      'image/png',
+      'image/gif',
+      'text/plain',
+      'text/csv',
+    ]
+
+    if (contentType && !allowedTypes.includes(contentType)) {
+      return errorResponse('VALIDATION_ERROR', '不支持的文件类型', 400)
+    }
+
+    const buffer = Buffer.from(fileContent, 'base64')
+
+    // Validate file size (max 10MB)
+    const maxSize = 10 * 1024 * 1024 // 10MB
+    if (buffer.length > maxSize) {
+      return errorResponse('VALIDATION_ERROR', '文件大小不能超过10MB', 400)
+    }
+
+    // Validate file extension
+    const allowedExtensions = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.jpg', '.jpeg', '.png', '.gif', '.txt', '.csv']
+    const fileExt = fileName.substring(fileName.lastIndexOf('.')).toLowerCase()
+    if (!allowedExtensions.includes(fileExt)) {
+      return errorResponse('VALIDATION_ERROR', '不支持的文件扩展名', 400)
+    }
+
     const documentId = generateId()
     const s3Key = `use-cases/${useCaseId}/${documentId}-${fileName}`
-    const buffer = Buffer.from(fileContent, 'base64')
 
     await s3Client.send(
       new PutObjectCommand({
@@ -346,6 +380,7 @@ export async function uploadDocument(event: APIGatewayProxyEvent): Promise<APIGa
         Key: s3Key,
         Body: buffer,
         ContentType: contentType || 'application/octet-stream',
+        ServerSideEncryption: 'AES256',
       })
     )
 

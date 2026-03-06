@@ -72,12 +72,12 @@ export class IndustryPortalStack extends cdk.Stack {
       sortKey: { name: 'recommendationScore', type: dynamodb.AttributeType.NUMBER },
     });
 
-    // TODO: Add IndustryIndex GSI in next deployment
-    // useCasesTable.addGlobalSecondaryIndex({
-    //   indexName: 'IndustryIndex',
-    //   partitionKey: { name: 'industryId', type: dynamodb.AttributeType.STRING },
-    //   sortKey: { name: 'createdAt', type: dynamodb.AttributeType.STRING },
-    // });
+    // GSI: query use cases by industry
+    useCasesTable.addGlobalSecondaryIndex({
+      indexName: 'IndustryIndex',
+      partitionKey: { name: 'industryId', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'createdAt', type: dynamodb.AttributeType.STRING },
+    });
 
     const solutionsTable = new dynamodb.Table(this, 'SolutionsTable', {
       tableName: 'IndustryPortal-Solutions',
@@ -113,6 +113,20 @@ export class IndustryPortalStack extends cdk.Stack {
       pointInTimeRecovery: true,
       encryption: dynamodb.TableEncryption.AWS_MANAGED,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    // GSI: query customer cases by accountId
+    customerCasesTable.addGlobalSecondaryIndex({
+      indexName: 'AccountIndex',
+      partitionKey: { name: 'accountId', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'createdAt', type: dynamodb.AttributeType.STRING },
+    });
+
+    // GSI: query all customer cases sorted by creation time (for listing)
+    customerCasesTable.addGlobalSecondaryIndex({
+      indexName: 'CreatedAtIndex',
+      partitionKey: { name: 'entityType', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'createdAt', type: dynamodb.AttributeType.STRING },
     });
 
     const usersTable = new dynamodb.Table(this, 'UsersTable', {
@@ -702,6 +716,7 @@ export class IndustryPortalStack extends cdk.Stack {
     addRoute('/public/solutions/{id}/detail-markdown', apigatewayv2.HttpMethod.GET, publicBrowsingFn);
     addRoute('/public/solutions/{id}/customer-cases', apigatewayv2.HttpMethod.GET, publicBrowsingFn);
     addRoute('/public/customer-cases/{id}', apigatewayv2.HttpMethod.GET, publicBrowsingFn);
+    addRoute('/public/accounts/{id}/customer-cases', apigatewayv2.HttpMethod.GET, publicBrowsingFn);
     addRoute('/public/documents/{id}/download', apigatewayv2.HttpMethod.GET, documentDownloadFn);
 
     // Admin routes - News Management

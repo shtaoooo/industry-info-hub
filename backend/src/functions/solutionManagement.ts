@@ -1,5 +1,5 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
-import { PutCommand, GetCommand, DeleteCommand, ScanCommand, QueryCommand } from '@aws-sdk/lib-dynamodb'
+import { PutCommand, GetCommand, DeleteCommand, ScanCommand } from '@aws-sdk/lib-dynamodb'
 import { PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { successResponse, errorResponse } from '../utils/response'
@@ -283,6 +283,13 @@ export async function uploadMarkdown(event: APIGatewayProxyEvent): Promise<APIGa
       return errorResponse('VALIDATION_ERROR', 'Markdown内容不能为空', 400)
     }
 
+    // Validate markdown content size (max 1MB)
+    const maxSize = 1 * 1024 * 1024 // 1MB
+    const contentSize = Buffer.byteLength(markdownContent, 'utf8')
+    if (contentSize > maxSize) {
+      return errorResponse('VALIDATION_ERROR', 'Markdown内容不能超过1MB', 400)
+    }
+
     const s3Key = `solutions/${solutionId}/detail.md`
     await s3Client.send(
       new PutObjectCommand({
@@ -290,6 +297,7 @@ export async function uploadMarkdown(event: APIGatewayProxyEvent): Promise<APIGa
         Key: s3Key,
         Body: markdownContent,
         ContentType: 'text/markdown',
+        ServerSideEncryption: 'AES256',
       })
     )
 

@@ -1,5 +1,5 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
-import { PutCommand, GetCommand, DeleteCommand, ScanCommand, QueryCommand } from '@aws-sdk/lib-dynamodb'
+import { PutCommand, GetCommand, DeleteCommand, QueryCommand } from '@aws-sdk/lib-dynamodb'
 import { PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
 import { successResponse, errorResponse } from '../utils/response'
 import { getUserFromEvent, requireRole } from '../utils/auth'
@@ -11,20 +11,33 @@ import { randomUUID } from 'crypto'
 /**
  * List customer cases
  * GET /specialist/customer-cases
- * PK: id, SK: METADATA
+ * Uses CreatedAtIndex GSI to avoid Scan
+ * Supports pagination via limit and lastEvaluatedKey query parameters
  */
 async function listCustomerCases(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   try {
     const user = getUserFromEvent(event)
     requireRole(user, ['admin', 'specialist'])
 
-    const result = await docClient.send(
-      new ScanCommand({
-        TableName: TABLE_NAMES.CUSTOMER_CASES,
-        FilterExpression: 'SK = :sk',
-        ExpressionAttributeValues: { ':sk': 'METADATA' },
-      })
-    )
+    // Parse pagination parameters
+    const limit = event.queryStringParameters?.limit ? parseInt(event.queryStringParameters.limit, 10) : 50
+    const lastKey = event.queryStringParameters?.lastKey ? JSON.parse(decodeURIComponent(event.queryStringParameters.lastKey)) : undefined
+
+    // Use GSI to query all customer cases efficiently
+    const queryParams: any = {
+      TableName: TABLE_NAMES.CUSTOMER_CASES,
+      IndexName: 'CreatedAtIndex',
+      KeyConditionExpression: 'entityType = :type',
+      ExpressionAttributeValues: { ':type': 'CUSTOMER_CASE' },
+      ScanIndexForward: false, // Sort by createdAt descending
+      Limit: Math.min(limit, 100), // Cap at 100
+    }
+
+    if (lastKey) {
+      queryParams.ExclusiveStartKey = lastKey
+    }
+
+    const result = await docClient.send(new QueryCommand(queryParams))
 
     let items = result.Items || []
 
@@ -33,18 +46,25 @@ async function listCustomerCases(event: APIGatewayProxyEvent): Promise<APIGatewa
       const assignedIndustries = user!.assignedIndustries || []
 
       // Build useCaseId -> industryId map using IndustryIndex GSI
+      // Optimized: Query all assigned industries in parallel
       const useCaseIndustryMap: Record<string, string> = {}
-      for (const industryId of assignedIndustries) {
-        const ucResult = await docClient.send(
+      
+      const queryPromises = assignedIndustries.map((industryId) =>
+        docClient.send(
           new QueryCommand({
             TableName: TABLE_NAMES.USE_CASES,
             IndexName: 'IndustryIndex',
             KeyConditionExpression: 'industryId = :industryId',
             ExpressionAttributeValues: { ':industryId': industryId },
+            ProjectionExpression: 'id, industryId', // Only fetch needed fields
           })
         )
-        for (const uc of ucResult.Items || []) {
-          if (uc.id) useCaseIndustryMap[uc.id] = industryId
+      )
+
+      const results = await Promise.all(queryPromises)
+      for (const result of results) {
+        for (const uc of result.Items || []) {
+          if (uc.id) useCaseIndustryMap[uc.id] = uc.industryId
         }
       }
 
@@ -70,7 +90,11 @@ async function listCustomerCases(event: APIGatewayProxyEvent): Promise<APIGatewa
       createdBy: item.createdBy,
     }))
 
-    return successResponse(cases)
+    return successResponse({
+      items: cases,
+      lastEvaluatedKey: result.LastEvaluatedKey ? encodeURIComponent(JSON.stringify(result.LastEvaluatedKey)) : null,
+      count: cases.length,
+    })
   } catch (error: any) {
     if (error.message === 'Insufficient permissions') return errorResponse('FORBIDDEN', '权限不足', 403)
     console.error('Error listing customer cases:', error)
@@ -251,9 +275,43 @@ async function uploadDocument(event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
     if (!fileName || !fileContent) return errorResponse('VALIDATION_ERROR', '文件名和文件内容不能为空', 400)
 
+    // Validate file type
+    const allowedTypes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-powerpoint',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'image/jpeg',
+      'image/png',
+      'image/gif',
+      'text/plain',
+      'text/csv',
+    ]
+
+    if (contentType && !allowedTypes.includes(contentType)) {
+      return errorResponse('VALIDATION_ERROR', '不支持的文件类型', 400)
+    }
+
+    const buffer = Buffer.from(fileContent, 'base64')
+
+    // Validate file size (max 10MB)
+    const maxSize = 10 * 1024 * 1024 // 10MB
+    if (buffer.length > maxSize) {
+      return errorResponse('VALIDATION_ERROR', '文件大小不能超过10MB', 400)
+    }
+
+    // Validate file extension
+    const allowedExtensions = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.jpg', '.jpeg', '.png', '.gif', '.txt', '.csv']
+    const fileExt = fileName.substring(fileName.lastIndexOf('.')).toLowerCase()
+    if (!allowedExtensions.includes(fileExt)) {
+      return errorResponse('VALIDATION_ERROR', '不支持的文件扩展名', 400)
+    }
+
     const documentId = randomUUID()
     const s3Key = `customer-cases/${customerCaseId}/${documentId}-${fileName}`
-    const buffer = Buffer.from(fileContent, 'base64')
 
     await s3Client.send(
       new PutObjectCommand({
@@ -261,6 +319,7 @@ async function uploadDocument(event: APIGatewayProxyEvent): Promise<APIGatewayPr
         Key: s3Key,
         Body: buffer,
         ContentType: contentType || 'application/octet-stream',
+        ServerSideEncryption: 'AES256',
       })
     )
 
