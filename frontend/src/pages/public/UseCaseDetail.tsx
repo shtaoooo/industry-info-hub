@@ -304,19 +304,11 @@ const UseCaseDetail: React.FC = () => {
                           合作伙伴：{item.partner}
                         </div>
                       )}
-                      {item.challenge && (
-                        <div style={{ marginBottom: 8 }}>
-                          <div style={{ fontSize: 12, color: '#86868b', marginBottom: 4, fontWeight: 600 }}>挑战</div>
-                          <p style={{ fontSize: 13, color: '#6e6e73', lineHeight: 1.6, margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                            {item.challenge}
-                          </p>
-                        </div>
-                      )}
-                      {item.benefit && (
+                      {item.summary && (
                         <div>
-                          <div style={{ fontSize: 12, color: '#86868b', marginBottom: 4, fontWeight: 600 }}>收益</div>
-                          <p style={{ fontSize: 13, color: '#6e6e73', lineHeight: 1.6, margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                            {item.benefit}
+                          <div style={{ fontSize: 12, color: '#86868b', marginBottom: 4, fontWeight: 600 }}>简要描述</div>
+                          <p style={{ fontSize: 13, color: '#6e6e73', lineHeight: 1.6, margin: 0, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                            {item.summary}
                           </p>
                         </div>
                       )}
