@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { List, Button, message, Typography, Space } from 'antd'
-import { DownloadOutlined, FileOutlined } from '@ant-design/icons'
+import { EyeOutlined, FileOutlined } from '@ant-design/icons'
 import { Document } from '../types'
 import { documentService } from '../services/documentService'
 
@@ -12,21 +12,21 @@ interface DocumentDownloadListProps {
 }
 
 export const DocumentDownloadList: React.FC<DocumentDownloadListProps> = ({ documents, title = '相关文档' }) => {
-  const [downloading, setDownloading] = useState<string | null>(null)
+  const [loading, setLoading] = useState<string | null>(null)
 
-  const handleDownload = async (doc: Document) => {
-    setDownloading(doc.id)
+  const handleView = async (doc: Document) => {
+    setLoading(doc.id)
     try {
       const response = await documentService.getDownloadUrl(doc.id, doc.s3Key)
       
-      // Open download URL in new window
-      window.open(response.url, '_blank')
-      message.success('文档下载链接已生成')
+      // Open document in new window/tab
+      window.open(response.url, '_blank', 'noopener,noreferrer')
+      message.success('正在打开文档...')
     } catch (error: any) {
-      console.error('Download error:', error)
-      message.error(error.message || '获取下载链接失败，请稍后重试')
+      console.error('View error:', error)
+      message.error(error.message || '获取文档链接失败，请稍后重试')
     } finally {
-      setDownloading(null)
+      setLoading(null)
     }
   }
 
@@ -51,13 +51,13 @@ export const DocumentDownloadList: React.FC<DocumentDownloadListProps> = ({ docu
           <List.Item
             actions={[
               <Button
-                key="download"
+                key="view"
                 type="link"
-                icon={<DownloadOutlined />}
-                loading={downloading === doc.id}
-                onClick={() => handleDownload(doc)}
+                icon={<EyeOutlined />}
+                loading={loading === doc.id}
+                onClick={() => handleView(doc)}
               >
-                下载
+                查看
               </Button>,
             ]}
           >
