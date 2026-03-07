@@ -14,7 +14,7 @@ const { TextArea } = Input
 const UseCaseDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { user } = useAuth()
+  const { user, hasRole } = useAuth()
   const [useCase, setUseCase] = useState<PublicUseCase | null>(null)
   const [solutions, setSolutions] = useState<PublicSolution[]>([])
   const [blogs, setBlogs] = useState<PublicBlog[]>([])
@@ -27,7 +27,7 @@ const UseCaseDetail: React.FC = () => {
   const [submitting, setSubmitting] = useState(false)
   const casesScrollRef = useRef<HTMLDivElement>(null)
 
-  const canEdit = user && (user.roles?.includes('admin') || user.roles?.includes('specialist'))
+  const canEdit = user && hasRole(['admin', 'specialist'])
 
   useEffect(() => {
     if (id) {
