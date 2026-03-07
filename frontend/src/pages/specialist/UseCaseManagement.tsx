@@ -96,10 +96,8 @@ const UseCaseManagement: React.FC = () => {
           tier2SubIndustryId: parentTier2.id,
           tier3SubIndustryId: useCase.subIndustryId,
           name: useCase.name,
-          businessScenario: useCase.businessScenario || useCase.description,
-          customerPainPoints: useCase.customerPainPoints || '',
-          targetAudience: useCase.targetAudience || '',
-          communicationScript: useCase.communicationScript || '',
+          summary: useCase.summary || useCase.description,
+          detailMarkdown: '', // Will be loaded from S3 if needed
           recommendationScore: useCase.recommendationScore || 3,
         })
       }
@@ -111,10 +109,8 @@ const UseCaseManagement: React.FC = () => {
         tier2SubIndustryId: useCase.subIndustryId,
         tier3SubIndustryId: undefined,
         name: useCase.name,
-        businessScenario: useCase.businessScenario || useCase.description,
-        customerPainPoints: useCase.customerPainPoints || '',
-        targetAudience: useCase.targetAudience || '',
-        communicationScript: useCase.communicationScript || '',
+        summary: useCase.summary || useCase.description,
+        detailMarkdown: '', // Will be loaded from S3 if needed
         recommendationScore: useCase.recommendationScore || 3,
       })
     }
@@ -150,11 +146,8 @@ const UseCaseManagement: React.FC = () => {
         const updateData: UpdateUseCaseRequest = {
           subIndustryId: finalSubIndustryId,
           name: values.name,
-          description: values.businessScenario, // 保持向后兼容
-          businessScenario: values.businessScenario,
-          customerPainPoints: values.customerPainPoints,
-          targetAudience: values.targetAudience,
-          communicationScript: values.communicationScript,
+          summary: values.summary,
+          detailMarkdown: values.detailMarkdown,
           recommendationScore: values.recommendationScore,
         }
         await useCaseService.update(editingUseCase.id, updateData)
@@ -163,11 +156,8 @@ const UseCaseManagement: React.FC = () => {
         const createData: CreateUseCaseRequest = {
           subIndustryId: finalSubIndustryId,
           name: values.name,
-          description: values.businessScenario, // 保持向后兼容
-          businessScenario: values.businessScenario,
-          customerPainPoints: values.customerPainPoints,
-          targetAudience: values.targetAudience,
-          communicationScript: values.communicationScript,
+          summary: values.summary,
+          detailMarkdown: values.detailMarkdown,
           recommendationScore: values.recommendationScore,
         }
         await useCaseService.create(createData)
@@ -374,21 +364,44 @@ const UseCaseManagement: React.FC = () => {
             <Input placeholder="请输入用例名称" />
           </Form.Item>
           <Form.Item
-            name="businessScenario"
-            label="业务场景"
+            name="summary"
+            label="简要描述"
             rules={[
-              { required: true, message: '请输入业务场景' },
-              { max: 1000, message: '业务场景不能超过1000个字符' },
+              { required: true, message: '请输入简要描述' },
+              { max: 500, message: '简要描述不能超过500个字符' },
             ]}
           >
-            <TextArea rows={4} placeholder="请输入业务场景" />
+            <TextArea rows={3} placeholder="请输入简要描述" />
           </Form.Item>
           <Form.Item
-            name="customerPainPoints"
-            label="客户痛点"
-            rules={[{ max: 1000, message: '客户痛点不能超过1000个字符' }]}
+            name="detailMarkdown"
+            label="具体内容"
+            rules={[{ max: 50000, message: '具体内容不能超过50000个字符' }]}
           >
-            <TextArea rows={4} placeholder="请输入客户痛点" />
+            <TextArea 
+              rows={6} 
+              placeholder={`## 📋 业务场景
+
+[业务场景具体内容]
+
+## 🎯 客户痛点
+
+痛点1：[痛点1描述]
+[痛点1具体内容]
+
+痛点2：[痛点2描述]
+[痛点2具体内容]
+
+## 👥 切入人群
+
+- 非常规事业部负责人
+- 压裂工程经理
+- 技术研发团队
+
+## 💬 沟通话术
+
+> 压裂服务的效果直接影响单井产量...`}
+            />
           </Form.Item>
           <Form.Item
             name="recommendationScore"
@@ -403,20 +416,6 @@ const UseCaseManagement: React.FC = () => {
               <Option value={2}>⭐⭐ (2星 - 较少推荐)</Option>
               <Option value={1}>⭐ (1星 - 不推荐)</Option>
             </Select>
-          </Form.Item>
-          <Form.Item
-            name="targetAudience"
-            label="切入人群"
-            rules={[{ max: 500, message: '切入人群不能超过500个字符' }]}
-          >
-            <TextArea rows={3} placeholder="请输入切入人群" />
-          </Form.Item>
-          <Form.Item
-            name="communicationScript"
-            label="沟通话术"
-            rules={[{ max: 500, message: '沟通话术不能超过500个字符' }]}
-          >
-            <TextArea rows={3} placeholder="请输入沟通话术" />
           </Form.Item>
         </Form>
       </Modal>

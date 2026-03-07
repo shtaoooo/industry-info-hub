@@ -31,10 +31,8 @@ export interface PublicUseCase {
   industryId: string
   name: string
   description: string
-  businessScenario?: string
-  customerPainPoints?: string
-  targetAudience?: string
-  communicationScript?: string
+  summary?: string
+  detailMarkdownUrl?: string
   recommendationScore?: number
   documents?: any[]
   createdAt: string

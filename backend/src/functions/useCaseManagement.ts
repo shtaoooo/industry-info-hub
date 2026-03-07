@@ -60,10 +60,7 @@ const mapUseCase = (item: any): UseCase => ({
   industryId: item.industryId,
   name: item.name,
   description: item.description,
-  businessScenario: item.businessScenario,
-  customerPainPoints: item.customerPainPoints,
-  targetAudience: item.targetAudience,
-  communicationScript: item.communicationScript,
+  summary: item.summary || null,
   recommendationScore: item.recommendationScore || 3,
   documents: item.documents || [],
   createdAt: item.createdAt,
@@ -128,16 +125,13 @@ export async function createUseCase(event: APIGatewayProxyEvent): Promise<APIGat
     requireRole(user, ['admin', 'specialist'])
 
     const body = JSON.parse(event.body || '{}')
-    const { subIndustryId, name, description, businessScenario, customerPainPoints, targetAudience, communicationScript, recommendationScore } = body
+    const { subIndustryId, name, description, summary, detailMarkdown, recommendationScore } = body
 
     if (!subIndustryId || typeof subIndustryId !== 'string' || subIndustryId.trim().length === 0) {
       return errorResponse('VALIDATION_ERROR', '子行业ID不能为空', 400, { field: 'subIndustryId', constraint: 'required' })
     }
     if (!name || typeof name !== 'string' || name.trim().length === 0) {
       return errorResponse('VALIDATION_ERROR', '用例名称不能为空', 400, { field: 'name', constraint: 'required' })
-    }
-    if (!description || typeof description !== 'string' || description.trim().length === 0) {
-      return errorResponse('VALIDATION_ERROR', '用例描述不能为空', 400, { field: 'description', constraint: 'required' })
     }
 
     let validatedScore = 3
@@ -155,16 +149,27 @@ export async function createUseCase(event: APIGatewayProxyEvent): Promise<APIGat
     const id = generateId()
     const now = new Date().toISOString()
 
+    // Upload detail markdown to S3 if provided
+    if (detailMarkdown && typeof detailMarkdown === 'string' && detailMarkdown.trim().length > 0) {
+      const s3Key = `docs/usecase/${id}.md`
+      await s3Client.send(
+        new PutObjectCommand({
+          Bucket: BUCKET_NAME,
+          Key: s3Key,
+          Body: Buffer.from(detailMarkdown, 'utf-8'),
+          ContentType: 'text/markdown',
+          ServerSideEncryption: 'AES256',
+        })
+      )
+    }
+
     const useCase: UseCase = {
       id,
       subIndustryId,
       industryId: accessCheck.industryId || '',
       name: name.trim(),
-      description: description.trim(),
-      businessScenario: businessScenario?.trim() || undefined,
-      customerPainPoints: customerPainPoints?.trim() || undefined,
-      targetAudience: targetAudience?.trim() || undefined,
-      communicationScript: communicationScript?.trim() || undefined,
+      description: description?.trim() || summary?.trim() || '', // 保持向后兼容
+      summary: summary?.trim() || null,
       recommendationScore: validatedScore,
       documents: [],
       createdAt: now,
@@ -206,13 +211,10 @@ export async function updateUseCase(event: APIGatewayProxyEvent): Promise<APIGat
     if (!accessCheck.hasAccess) return errorResponse('FORBIDDEN', '您没有权限修改该用例', 403)
 
     const body = JSON.parse(event.body || '{}')
-    const { name, description, businessScenario, customerPainPoints, targetAudience, communicationScript, recommendationScore, subIndustryId: newSubIndustryId } = body
+    const { name, description, summary, detailMarkdown, recommendationScore, subIndustryId: newSubIndustryId } = body
 
     if (name !== undefined && (typeof name !== 'string' || name.trim().length === 0)) {
       return errorResponse('VALIDATION_ERROR', '用例名称不能为空', 400, { field: 'name', constraint: 'required' })
-    }
-    if (description !== undefined && (typeof description !== 'string' || description.trim().length === 0)) {
-      return errorResponse('VALIDATION_ERROR', '用例描述不能为空', 400, { field: 'description', constraint: 'required' })
     }
 
     let validatedScore = existingUseCase.recommendationScore || 3
@@ -238,17 +240,30 @@ export async function updateUseCase(event: APIGatewayProxyEvent): Promise<APIGat
       finalIndustryId = newSubIndustry.industryId
     }
 
+    // Upload detail markdown to S3 if provided
+    if (detailMarkdown !== undefined) {
+      if (detailMarkdown && detailMarkdown.trim().length > 0) {
+        const s3Key = `docs/usecase/${useCaseId}.md`
+        await s3Client.send(
+          new PutObjectCommand({
+            Bucket: BUCKET_NAME,
+            Key: s3Key,
+            Body: Buffer.from(detailMarkdown, 'utf-8'),
+            ContentType: 'text/markdown',
+            ServerSideEncryption: 'AES256',
+          })
+        )
+      }
+    }
+
     const now = new Date().toISOString()
     const updated: UseCase = {
       id: useCaseId,
       subIndustryId: finalSubIndustryId,
       industryId: finalIndustryId,
       name: name !== undefined ? name.trim() : existingUseCase.name,
-      description: description !== undefined ? description.trim() : existingUseCase.description,
-      businessScenario: businessScenario !== undefined ? (businessScenario?.trim() || undefined) : existingUseCase.businessScenario,
-      customerPainPoints: customerPainPoints !== undefined ? (customerPainPoints?.trim() || undefined) : existingUseCase.customerPainPoints,
-      targetAudience: targetAudience !== undefined ? (targetAudience?.trim() || undefined) : existingUseCase.targetAudience,
-      communicationScript: communicationScript !== undefined ? (communicationScript?.trim() || undefined) : existingUseCase.communicationScript,
+      description: description !== undefined ? description.trim() : (summary !== undefined ? summary.trim() : existingUseCase.description),
+      summary: summary !== undefined ? summary : existingUseCase.summary,
       recommendationScore: validatedScore,
       documents: existingUseCase.documents || [],
       createdAt: existingUseCase.createdAt,
@@ -296,6 +311,17 @@ export async function deleteUseCase(event: APIGatewayProxyEvent): Promise<APIGat
       } catch (s3Error) {
         console.error('Error deleting document from S3:', s3Error)
       }
+    }
+
+    // Delete detail markdown file from S3 if exists
+    const s3Key = `docs/usecase/${useCaseId}.md`
+    try {
+      await s3Client.send(new DeleteObjectCommand({ 
+        Bucket: BUCKET_NAME, 
+        Key: s3Key 
+      }))
+    } catch (s3Error) {
+      console.error('Error deleting markdown from S3:', s3Error)
     }
 
     await docClient.send(

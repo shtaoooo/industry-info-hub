@@ -34,10 +34,7 @@ export interface UseCase {
   industryId: string
   name: string
   description: string // 保留用于向后兼容
-  businessScenario?: string // 业务场景
-  customerPainPoints?: string // 客户痛点
-  targetAudience?: string // 切入人群
-  communicationScript?: string // 沟通话术
+  summary?: string // 简要描述
   recommendationScore?: number // 推荐指数 (1-5)
   documents: Document[]
   createdAt: string

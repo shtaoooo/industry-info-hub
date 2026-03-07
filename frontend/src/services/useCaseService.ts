@@ -4,22 +4,18 @@ import { UseCase, Document } from '../types'
 export interface CreateUseCaseRequest {
   subIndustryId: string
   name: string
-  description: string
-  businessScenario?: string
-  customerPainPoints?: string
-  targetAudience?: string
-  communicationScript?: string
+  description?: string // 保持向后兼容
+  summary?: string
+  detailMarkdown?: string
   recommendationScore?: number
 }
 
 export interface UpdateUseCaseRequest {
   subIndustryId?: string
   name?: string
-  description?: string
-  businessScenario?: string
-  customerPainPoints?: string
-  targetAudience?: string
-  communicationScript?: string
+  description?: string // 保持向后兼容
+  summary?: string
+  detailMarkdown?: string
   recommendationScore?: number
 }
 

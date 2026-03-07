@@ -176,10 +176,7 @@ export async function listUseCases(event: APIGatewayProxyEvent): Promise<APIGate
       industryId: uc.industryId,
       name: uc.name,
       description: uc.description,
-      businessScenario: uc.businessScenario,
-      customerPainPoints: uc.customerPainPoints,
-      targetAudience: uc.targetAudience,
-      communicationScript: uc.communicationScript,
+      summary: uc.summary,
       recommendationScore: uc.recommendationScore || 3,
       createdAt: uc.createdAt,
     }))
@@ -211,16 +208,29 @@ export async function getUseCaseDetails(event: APIGatewayProxyEvent): Promise<AP
     if (!result.Item) return errorResponse('NOT_FOUND', '用例不存在', 404)
 
     const item = result.Item
+    
+    // Generate presigned URL for detail markdown (S3 key is derived from ID)
+    let detailMarkdownUrl = null
+    const s3Key = `docs/usecase/${item.id}.md`
+    try {
+      // Check if file exists by attempting to get presigned URL
+      detailMarkdownUrl = await getSignedUrl(
+        s3Client,
+        new GetObjectCommand({ Bucket: BUCKET_NAME, Key: s3Key }),
+        { expiresIn: 3600 }
+      )
+    } catch (s3Error: any) {
+      console.log(`[UseCaseDetail] No markdown file found for use case ${item.id}`)
+    }
+    
     return successResponse({
       id: item.id,
       subIndustryId: item.subIndustryId,
       industryId: item.industryId,
       name: item.name,
       description: item.description,
-      businessScenario: item.businessScenario,
-      customerPainPoints: item.customerPainPoints,
-      targetAudience: item.targetAudience,
-      communicationScript: item.communicationScript,
+      summary: item.summary,
+      detailMarkdownUrl,
       documents: item.documents || [],
       createdAt: item.createdAt,
     })

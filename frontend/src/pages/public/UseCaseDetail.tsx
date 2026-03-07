@@ -1,22 +1,33 @@
 ﻿import React, { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Layout, Spin, message, Button, Empty } from 'antd'
-import { ArrowLeftOutlined, FileTextOutlined, BulbOutlined, UserOutlined, ExclamationCircleOutlined, CommentOutlined, FileOutlined, ReadOutlined, LeftOutlined, RightOutlined, TeamOutlined } from '@ant-design/icons'
+import { Layout, Spin, message, Button, Empty, Modal, Form, Input } from 'antd'
+import { ArrowLeftOutlined, FileTextOutlined, BulbOutlined, EditOutlined, LeftOutlined, RightOutlined, TeamOutlined } from '@ant-design/icons'
 import { publicService, PublicUseCase, PublicSolution, PublicBlog, PublicCustomerCase } from '../../services/publicService'
+import { useCaseService } from '../../services/useCaseService'
 import { DocumentDownloadList } from '../../components/DocumentDownloadList'
 import MarkdownText from '../../components/MarkdownText'
+import { useAuth } from '../../contexts/AuthContext'
 
 const { Content } = Layout
+const { TextArea } = Input
 
 const UseCaseDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [useCase, setUseCase] = useState<PublicUseCase | null>(null)
   const [solutions, setSolutions] = useState<PublicSolution[]>([])
   const [blogs, setBlogs] = useState<PublicBlog[]>([])
   const [customerCases, setCustomerCases] = useState<PublicCustomerCase[]>([])
   const [loading, setLoading] = useState(true)
+  const [detailMarkdown, setDetailMarkdown] = useState<string>('')
+  const [markdownLoading, setMarkdownLoading] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
+  const [editForm] = Form.useForm()
+  const [submitting, setSubmitting] = useState(false)
   const casesScrollRef = useRef<HTMLDivElement>(null)
+
+  const canEdit = user && (user.roles?.includes('admin') || user.roles?.includes('specialist'))
 
   useEffect(() => {
     if (id) {
@@ -38,11 +49,60 @@ const UseCaseDetail: React.FC = () => {
       setSolutions(solutionsData)
       setBlogs(blogsData)
       setCustomerCases(customerCasesData)
+      
+      // Load markdown content if available
+      if (useCaseData.detailMarkdownUrl) {
+        loadMarkdownContent(useCaseData.detailMarkdownUrl)
+      }
     } catch (error: any) {
       console.error('Failed to load use case data:', error)
       message.error('加载用例信息失败')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadMarkdownContent = async (url: string) => {
+    setMarkdownLoading(true)
+    try {
+      const response = await fetch(url)
+      if (response.ok) {
+        const text = await response.text()
+        setDetailMarkdown(text)
+      }
+    } catch (error) {
+      console.error('Failed to load markdown:', error)
+    } finally {
+      setMarkdownLoading(false)
+    }
+  }
+
+  const handleDoubleClick = () => {
+    if (!canEdit || !useCase) return
+    editForm.setFieldsValue({
+      summary: useCase.summary || '',
+      detailMarkdown: detailMarkdown,
+    })
+    setIsEditing(true)
+  }
+
+  const handleSaveEdit = async () => {
+    if (!id) return
+    try {
+      const values = await editForm.validateFields()
+      setSubmitting(true)
+      await useCaseService.update(id, {
+        summary: values.summary,
+        detailMarkdown: values.detailMarkdown,
+      })
+      message.success('更新成功')
+      setIsEditing(false)
+      await loadUseCaseData()
+    } catch (error: any) {
+      if (error.errorFields) return
+      message.error(error.message || '更新失败')
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -106,122 +166,89 @@ const UseCaseDetail: React.FC = () => {
             {useCase.name}
           </h1>
 
-          {/* 场景介绍卡片 */}
-          <div className="apple-card" style={{ padding: 32, marginBottom: 24 }}>
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: 20 }}>
-              <div style={{ 
-                width: 40, 
-                height: 40, 
-                borderRadius: 10, 
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginRight: 12
-              }}>
-                <FileOutlined style={{ fontSize: 20, color: '#ffffff' }} />
+          {/* 简要描述 */}
+          {useCase.summary && (
+            <div className="apple-card" style={{ padding: 32, marginBottom: 24 }}>
+              <div style={{ display: 'flex', alignItems: 'center', marginBottom: 20 }}>
+                <div style={{ 
+                  width: 40, 
+                  height: 40, 
+                  borderRadius: 10, 
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginRight: 12
+                }}>
+                  <FileTextOutlined style={{ fontSize: 20, color: '#ffffff' }} />
+                </div>
+                <h3 style={{ margin: 0, fontSize: 22, fontWeight: 600 }}>简要描述</h3>
               </div>
-              <h3 style={{ margin: 0, fontSize: 22, fontWeight: 600 }}>场景介绍</h3>
+              <p style={{ 
+                fontSize: 16, 
+                lineHeight: 1.8, 
+                margin: 0, 
+                color: '#1d1d1f',
+                paddingLeft: 52
+              }}>
+                {useCase.summary}
+              </p>
             </div>
-            <MarkdownText style={{ 
-              fontSize: 16, 
-              lineHeight: 1.8, 
-              margin: 0, 
-              color: '#1d1d1f',
-              paddingLeft: 52
-            }}>
-              {useCase.businessScenario || useCase.description}
-            </MarkdownText>
-          </div>
+          )}
 
-          {/* 客户痛点卡片 */}
-          <div className="apple-card" style={{ padding: 32, marginBottom: 24 }}>
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: 20 }}>
-              <div style={{ 
-                width: 40, 
-                height: 40, 
-                borderRadius: 10, 
-                background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginRight: 12
-              }}>
-                <ExclamationCircleOutlined style={{ fontSize: 20, color: '#ffffff' }} />
+          {/* 具体内容 */}
+          <div 
+            className="apple-card" 
+            style={{ padding: 32, marginBottom: 24, cursor: canEdit ? 'pointer' : 'default' }}
+            onDoubleClick={handleDoubleClick}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'center' }}>
+                <div style={{ 
+                  width: 40, 
+                  height: 40, 
+                  borderRadius: 10, 
+                  background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginRight: 12
+                }}>
+                  <BulbOutlined style={{ fontSize: 20, color: '#ffffff' }} />
+                </div>
+                <h3 style={{ margin: 0, fontSize: 22, fontWeight: 600 }}>具体内容</h3>
               </div>
-              <h3 style={{ margin: 0, fontSize: 22, fontWeight: 600 }}>客户痛点</h3>
+              {canEdit && (
+                <Button 
+                  type="link" 
+                  icon={<EditOutlined />} 
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleDoubleClick()
+                  }}
+                >
+                  编辑
+                </Button>
+              )}
             </div>
-            <MarkdownText style={{ 
-              paddingLeft: 52,
-              fontSize: 16, 
-              lineHeight: 1.8, 
-              color: '#1d1d1f',
-            }} fallback={<span style={{ color: '#86868b', fontStyle: 'italic', paddingLeft: 52, display: 'block' }}>暂无数据</span>}>
-              {useCase.customerPainPoints}
-            </MarkdownText>
-          </div>
-
-          {/* 切入人群卡片 */}
-          <div className="apple-card" style={{ padding: 32, marginBottom: 24 }}>
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: 20 }}>
-              <div style={{ 
-                width: 40, 
-                height: 40, 
-                borderRadius: 10, 
-                background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginRight: 12
-              }}>
-                <UserOutlined style={{ fontSize: 20, color: '#ffffff' }} />
+            {markdownLoading ? (
+              <div style={{ textAlign: 'center', padding: 40 }}>
+                <Spin />
               </div>
-              <h3 style={{ margin: 0, fontSize: 22, fontWeight: 600 }}>切入人群</h3>
-            </div>
-            <MarkdownText style={{ 
-              paddingLeft: 52,
-              fontSize: 16, 
-              lineHeight: 1.8, 
-              color: '#1d1d1f',
-            }} fallback={<span style={{ color: '#86868b', fontStyle: 'italic', paddingLeft: 52, display: 'block' }}>暂无数据</span>}>
-              {useCase.targetAudience}
-            </MarkdownText>
-          </div>
-
-          {/* 沟通话术 - 引用框样式 */}
-          <div className="apple-card" style={{ padding: 32, marginBottom: 24 }}>
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: 20 }}>
-              <div style={{ 
-                width: 40, 
-                height: 40, 
-                borderRadius: 10, 
-                background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginRight: 12
-              }}>
-                <CommentOutlined style={{ fontSize: 20, color: '#ffffff' }} />
-              </div>
-              <h3 style={{ margin: 0, fontSize: 22, fontWeight: 600 }}>沟通话术</h3>
-            </div>
-            <div style={{ 
-              marginLeft: 52,
-              padding: '20px 24px',
-              background: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
-              borderRadius: 12,
-              borderLeft: '4px solid #fa709a',
-              boxShadow: '0 2px 8px rgba(250, 112, 154, 0.1)'
-            }}>
+            ) : detailMarkdown ? (
               <MarkdownText style={{ 
+                paddingLeft: 52,
                 fontSize: 16, 
                 lineHeight: 1.8, 
                 color: '#1d1d1f',
-                fontStyle: 'italic'
-              }} fallback={<span style={{ color: '#86868b' }}>暂无数据</span>}>
-                {useCase.communicationScript}
+              }}>
+                {detailMarkdown}
               </MarkdownText>
-            </div>
+            ) : (
+              <span style={{ color: '#86868b', fontStyle: 'italic', paddingLeft: 52, display: 'block' }}>
+                暂无详细内容
+              </span>
+            )}
           </div>
 
           {/* 相关文档卡片 */}
@@ -485,6 +512,61 @@ const UseCaseDetail: React.FC = () => {
           )}
         </div>
       </Content>
+
+      {/* Edit Modal */}
+      <Modal
+        title="编辑用例内容"
+        open={isEditing}
+        onOk={handleSaveEdit}
+        onCancel={() => setIsEditing(false)}
+        confirmLoading={submitting}
+        okText="保存"
+        cancelText="取消"
+        width={800}
+      >
+        <Form form={editForm} layout="vertical">
+          <Form.Item
+            name="summary"
+            label="简要描述"
+            rules={[
+              { required: true, message: '请输入简要描述' },
+              { max: 500, message: '简要描述不能超过500个字符' },
+            ]}
+          >
+            <TextArea rows={3} placeholder="请输入简要描述" />
+          </Form.Item>
+          <Form.Item
+            name="detailMarkdown"
+            label="具体内容"
+            rules={[{ max: 50000, message: '具体内容不能超过50000个字符' }]}
+          >
+            <TextArea 
+              rows={12} 
+              placeholder={`## 📋 业务场景
+
+[业务场景具体内容]
+
+## 🎯 客户痛点
+
+痛点1：[痛点1描述]
+[痛点1具体内容]
+
+痛点2：[痛点2描述]
+[痛点2具体内容]
+
+## 👥 切入人群
+
+- 非常规事业部负责人
+- 压裂工程经理
+- 技术研发团队
+
+## 💬 沟通话术
+
+> 压裂服务的效果直接影响单井产量...`}
+            />
+          </Form.Item>
+        </Form>
+      </Modal>
     </Layout>
   )
 }
