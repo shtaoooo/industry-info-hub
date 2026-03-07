@@ -12,9 +12,12 @@ import {
   Typography,
   Card,
   Tag,
+  Upload,
+  List,
 } from 'antd'
-import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
-import { UseCase, SubIndustry, Industry } from '../../types'
+import { PlusOutlined, EditOutlined, DeleteOutlined, UploadOutlined, FileOutlined } from '@ant-design/icons'
+import type { UploadFile } from 'antd/es/upload/interface'
+import { UseCase, SubIndustry, Industry, Document } from '../../types'
 import { useCaseService, CreateUseCaseRequest, UpdateUseCaseRequest } from '../../services/useCaseService'
 import { subIndustryService } from '../../services/subIndustryService'
 import { industryService } from '../../services/industryService'
@@ -34,6 +37,11 @@ const UseCaseManagement: React.FC = () => {
   const [form] = Form.useForm()
   const [selectedTier2, setSelectedTier2] = useState<SubIndustry | null>(null)
   const [tier3Options, setTier3Options] = useState<SubIndustry[]>([])
+  const [uploadModalVisible, setUploadModalVisible] = useState(false)
+  const [documentsModalVisible, setDocumentsModalVisible] = useState(false)
+  const [selectedUseCase, setSelectedUseCase] = useState<UseCase | null>(null)
+  const [uploading, setUploading] = useState(false)
+  const [fileList, setFileList] = useState<UploadFile[]>([])
 
   const fetchUseCases = useCallback(async () => {
     setLoading(true)
@@ -76,14 +84,58 @@ const UseCaseManagement: React.FC = () => {
     form.resetFields()
     setSelectedTier2(null)
     setTier3Options([])
+    // Set default markdown template for new use case
+    form.setFieldsValue({
+      detailMarkdown: `## 📋 业务场景
+
+[业务场景具体内容]
+
+## 🎯 客户痛点
+
+痛点1：[痛点1描述]
+[痛点1具体内容]
+
+痛点2：[痛点2描述]
+[痛点2具体内容]
+
+痛点3：[痛点3描述]
+[痛点3具体内容]
+
+## 👥 切入人群
+
+- 角色1
+- 角色2
+- 角色3
+
+## 💬 沟通话术
+
+> [话术具体内容]`
+    })
     setModalVisible(true)
   }
 
-  const handleEdit = (useCase: UseCase) => {
+  const handleEdit = async (useCase: UseCase) => {
     setEditingUseCase(useCase)
     
     // Find the sub-industry for this use case
     const subIndustry = subIndustries.find(si => si.id === useCase.subIndustryId)
+    
+    // Load markdown content from S3 if available
+    let markdownContent = ''
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_ENDPOINT}/public/use-cases/${useCase.id}`)
+      if (response.ok) {
+        const useCaseDetail = await response.json()
+        if (useCaseDetail.detailMarkdownUrl) {
+          const mdResponse = await fetch(useCaseDetail.detailMarkdownUrl)
+          if (mdResponse.ok) {
+            markdownContent = await mdResponse.text()
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load markdown content:', error)
+    }
     
     // If it's a Tier3, find its parent and set up the cascading selects
     if (subIndustry?.level === 'Tier3' && subIndustry.parentSubIndustryId) {
@@ -97,7 +149,7 @@ const UseCaseManagement: React.FC = () => {
           tier3SubIndustryId: useCase.subIndustryId,
           name: useCase.name,
           summary: useCase.summary || useCase.description,
-          detailMarkdown: '', // Will be loaded from S3 if needed
+          detailMarkdown: markdownContent,
           recommendationScore: useCase.recommendationScore || 3,
         })
       }
@@ -110,7 +162,7 @@ const UseCaseManagement: React.FC = () => {
         tier3SubIndustryId: undefined,
         name: useCase.name,
         summary: useCase.summary || useCase.description,
-        detailMarkdown: '', // Will be loaded from S3 if needed
+        detailMarkdown: markdownContent,
         recommendationScore: useCase.recommendationScore || 3,
       })
     }
@@ -188,6 +240,79 @@ const UseCaseManagement: React.FC = () => {
     }
   }
 
+  const handleUploadDocument = (useCase: UseCase) => {
+    setSelectedUseCase(useCase)
+    setFileList([])
+    setUploadModalVisible(true)
+  }
+
+  const handleViewDocuments = (useCase: UseCase) => {
+    setSelectedUseCase(useCase)
+    setDocumentsModalVisible(true)
+  }
+
+  const handleUploadSubmit = async () => {
+    if (!selectedUseCase || fileList.length === 0) {
+      message.warning('请选择要上传的文件')
+      return
+    }
+
+    setUploading(true)
+    try {
+      const file = fileList[0]
+      const reader = new FileReader()
+      
+      reader.onload = async (e) => {
+        try {
+          const base64 = e.target?.result as string
+          const base64Content = base64.split(',')[1]
+          
+          await useCaseService.uploadDocument(selectedUseCase.id, {
+            fileName: file.name,
+            fileContent: base64Content,
+            contentType: file.type || 'application/pdf',
+          })
+          
+          message.success('文档上传成功')
+          setUploadModalVisible(false)
+          setFileList([])
+          await fetchUseCases()
+        } catch (error: any) {
+          message.error(error.message || '上传失败')
+        } finally {
+          setUploading(false)
+        }
+      }
+      
+      reader.onerror = () => {
+        message.error('文件读取失败')
+        setUploading(false)
+      }
+      
+      reader.readAsDataURL(file.originFileObj as Blob)
+    } catch (error: any) {
+      message.error(error.message || '上传失败')
+      setUploading(false)
+    }
+  }
+
+  const handleDeleteDocument = async (docId: string) => {
+    if (!selectedUseCase) return
+    
+    try {
+      await useCaseService.deleteDocument(selectedUseCase.id, docId)
+      message.success('文档删除成功')
+      await fetchUseCases()
+      // Update selected use case
+      const updated = useCases.find(uc => uc.id === selectedUseCase.id)
+      if (updated) {
+        setSelectedUseCase(updated)
+      }
+    } catch (error: any) {
+      message.error(error.message || '删除失败')
+    }
+  }
+
   const getSubIndustryName = (subIndustryId: string) => {
     const subIndustry = subIndustries.find((si) => si.id === subIndustryId)
     return subIndustry?.name || subIndustryId
@@ -235,18 +360,25 @@ const UseCaseManagement: React.FC = () => {
       },
     },
     {
-      title: '切入人群',
-      dataIndex: 'targetAudience',
-      key: 'targetAudience',
-      width: 200,
-      render: (text: string) => text || '-',
-    },
-    {
       title: '文档数量',
       dataIndex: 'documents',
       key: 'documents',
       width: 100,
-      render: (documents: any[]) => documents?.length || 0,
+      render: (documents: Document[], record: UseCase) => {
+        const count = documents?.length || 0
+        if (count > 0) {
+          return (
+            <Button 
+              type="link" 
+              onClick={() => handleViewDocuments(record)}
+              style={{ padding: 0 }}
+            >
+              {count}
+            </Button>
+          )
+        }
+        return count
+      },
     },
     {
       title: '创建时间',
@@ -258,12 +390,15 @@ const UseCaseManagement: React.FC = () => {
     {
       title: '操作',
       key: 'actions',
-      width: 150,
+      width: 200,
       fixed: 'right' as const,
       render: (_: unknown, record: UseCase) => (
         <Space>
           <Button type="link" icon={<EditOutlined />} onClick={() => handleEdit(record)}>
             编辑
+          </Button>
+          <Button type="link" icon={<UploadOutlined />} onClick={() => handleUploadDocument(record)}>
+            上传文档
           </Button>
           <Popconfirm
             title="确定要删除此用例吗？"
@@ -418,6 +553,92 @@ const UseCaseManagement: React.FC = () => {
             </Select>
           </Form.Item>
         </Form>
+      </Modal>
+
+      {/* Upload Document Modal */}
+      <Modal
+        title="上传文档"
+        open={uploadModalVisible}
+        onOk={handleUploadSubmit}
+        onCancel={() => {
+          setUploadModalVisible(false)
+          setFileList([])
+        }}
+        confirmLoading={uploading}
+        okText="上传"
+        cancelText="取消"
+      >
+        <p style={{ marginBottom: 16 }}>
+          为用例 <strong>{selectedUseCase?.name}</strong> 上传PDF文档
+        </p>
+        <Upload
+          accept=".pdf"
+          maxCount={1}
+          fileList={fileList}
+          beforeUpload={(file) => {
+            const isPDF = file.type === 'application/pdf'
+            if (!isPDF) {
+              message.error('只能上传PDF文件')
+              return false
+            }
+            const isLt10M = file.size / 1024 / 1024 < 10
+            if (!isLt10M) {
+              message.error('文件大小不能超过10MB')
+              return false
+            }
+            setFileList([file as UploadFile])
+            return false
+          }}
+          onRemove={() => {
+            setFileList([])
+          }}
+        >
+          <Button icon={<UploadOutlined />}>选择PDF文件</Button>
+        </Upload>
+      </Modal>
+
+      {/* View Documents Modal */}
+      <Modal
+        title="文档列表"
+        open={documentsModalVisible}
+        onCancel={() => setDocumentsModalVisible(false)}
+        footer={[
+          <Button key="close" onClick={() => setDocumentsModalVisible(false)}>
+            关闭
+          </Button>
+        ]}
+        width={600}
+      >
+        <p style={{ marginBottom: 16 }}>
+          用例：<strong>{selectedUseCase?.name}</strong>
+        </p>
+        <List
+          dataSource={selectedUseCase?.documents || []}
+          renderItem={(doc: Document) => (
+            <List.Item
+              actions={[
+                <Popconfirm
+                  key="delete"
+                  title="确定要删除此文档吗？"
+                  onConfirm={() => handleDeleteDocument(doc.id)}
+                  okText="确定"
+                  cancelText="取消"
+                >
+                  <Button type="link" danger size="small">
+                    删除
+                  </Button>
+                </Popconfirm>
+              ]}
+            >
+              <List.Item.Meta
+                avatar={<FileOutlined style={{ fontSize: 24, color: '#1890ff' }} />}
+                title={doc.name}
+                description={`上传时间: ${new Date(doc.uploadedAt).toLocaleString('zh-CN')}`}
+              />
+            </List.Item>
+          )}
+          locale={{ emptyText: '暂无文档' }}
+        />
       </Modal>
     </Card>
   )
