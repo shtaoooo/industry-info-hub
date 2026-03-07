@@ -81,14 +81,33 @@ const CustomerCaseManagement: React.FC = () => {
     setModalVisible(true)
   }
 
-  const handleEdit = (record: CustomerCase) => {
+  const handleEdit = async (record: CustomerCase) => {
     setEditingCase(record)
+    
+    // Load markdown content from S3 if available
+    let markdownContent = ''
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_ENDPOINT}/public/customer-cases/${record.id}`)
+      if (response.ok) {
+        const caseDetail = await response.json()
+        if (caseDetail.detailMarkdownUrl) {
+          const mdResponse = await fetch(caseDetail.detailMarkdownUrl)
+          if (mdResponse.ok) {
+            markdownContent = await mdResponse.text()
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load markdown content:', error)
+    }
+    
     form.setFieldsValue({
       name: record.name,
       accountId: record.accountId || undefined,
       partner: record.partner || undefined,
       useCaseIds: record.useCaseIds || [],
       summary: record.summary || undefined,
+      detailMarkdown: markdownContent,
     })
     setModalVisible(true)
   }
