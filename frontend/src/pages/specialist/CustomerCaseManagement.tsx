@@ -252,11 +252,11 @@ const CustomerCaseManagement: React.FC = () => {
       title: '简要描述',
       dataIndex: 'summary',
       key: 'summary',
-      width: 240,
+      width: 300,
       render: (v?: string) => (
         <div style={{
           display: '-webkit-box',
-          WebkitLineClamp: 2,
+          WebkitLineClamp: 3,
           WebkitBoxOrient: 'vertical',
           overflow: 'hidden',
           lineHeight: '1.5',
