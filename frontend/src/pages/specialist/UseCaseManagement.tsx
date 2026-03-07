@@ -259,7 +259,16 @@ const UseCaseManagement: React.FC = () => {
 
     setUploading(true)
     try {
-      const file = fileList[0]
+      const uploadFile = fileList[0]
+      // Get the actual File object
+      const file = uploadFile.originFileObj || uploadFile as any
+      
+      if (!file) {
+        message.error('无法读取文件')
+        setUploading(false)
+        return
+      }
+      
       const reader = new FileReader()
       
       reader.onload = async (e) => {
@@ -268,9 +277,9 @@ const UseCaseManagement: React.FC = () => {
           const base64Content = base64.split(',')[1]
           
           await useCaseService.uploadDocument(selectedUseCase.id, {
-            fileName: file.name,
+            fileName: uploadFile.name,
             fileContent: base64Content,
-            contentType: file.type || 'application/pdf',
+            contentType: uploadFile.type || 'application/pdf',
           })
           
           message.success('文档上传成功')
@@ -289,7 +298,7 @@ const UseCaseManagement: React.FC = () => {
         setUploading(false)
       }
       
-      reader.readAsDataURL(file.originFileObj as Blob)
+      reader.readAsDataURL(file)
     } catch (error: any) {
       message.error(error.message || '上传失败')
       setUploading(false)
