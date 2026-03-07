@@ -185,7 +185,23 @@ const BlogsManagement: React.FC = () => {
           <span title={getUseCaseNames(ids)}>{ids.length} 个用例</span>
         ) : '-',
     },
-    { title: '摘要', dataIndex: 'summary', key: 'summary', ellipsis: true },
+    {
+      title: '摘要',
+      dataIndex: 'summary',
+      key: 'summary',
+      width: 200,
+      render: (text: string) => (
+        <div style={{
+          display: '-webkit-box',
+          WebkitLineClamp: 3,
+          WebkitBoxOrient: 'vertical',
+          overflow: 'hidden',
+          lineHeight: '1.5',
+        }}>
+          {text || '-'}
+        </div>
+      ),
+    },
     { title: '作者', dataIndex: 'author', key: 'author', width: 100 },
     {
       title: '发布时间',

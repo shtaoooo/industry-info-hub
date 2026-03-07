@@ -234,7 +234,18 @@ const Tier3SubIndustryManagement: React.FC = () => {
       title: '定义',
       dataIndex: 'definition',
       key: 'definition',
-      ellipsis: true,
+      width: 200,
+      render: (text: string) => (
+        <div style={{
+          display: '-webkit-box',
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: 'vertical',
+          overflow: 'hidden',
+          lineHeight: '1.5',
+        }}>
+          {text || '-'}
+        </div>
+      ),
     },
     {
       title: '优先级',

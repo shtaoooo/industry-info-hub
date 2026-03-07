@@ -12,6 +12,7 @@ import {
   Typography,
   Card,
   Divider,
+  List,
 } from 'antd'
 import { PlusOutlined, EditOutlined, DeleteOutlined, FileOutlined } from '@ant-design/icons'
 import { CustomerCase, UseCase } from '../../types'
@@ -33,6 +34,7 @@ const CustomerCaseManagement: React.FC = () => {
   const [loading, setLoading] = useState(false)
   const [modalVisible, setModalVisible] = useState(false)
   const [documentModalVisible, setDocumentModalVisible] = useState(false)
+  const [documentsListModalVisible, setDocumentsListModalVisible] = useState(false)
   const [editingCase, setEditingCase] = useState<CustomerCase | null>(null)
   const [selectedCase, setSelectedCase] = useState<CustomerCase | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -115,6 +117,11 @@ const CustomerCaseManagement: React.FC = () => {
   const handleManageDocuments = (record: CustomerCase) => {
     setSelectedCase(record)
     setDocumentModalVisible(true)
+  }
+
+  const handleViewDocuments = (record: CustomerCase) => {
+    setSelectedCase(record)
+    setDocumentsListModalVisible(true)
   }
 
   const handleAddAccount = async () => {
@@ -245,15 +252,39 @@ const CustomerCaseManagement: React.FC = () => {
       title: '简要描述',
       dataIndex: 'summary',
       key: 'summary',
-      ellipsis: true,
-      render: (v?: string) => v || '-',
+      width: 240,
+      render: (v?: string) => (
+        <div style={{
+          display: '-webkit-box',
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: 'vertical',
+          overflow: 'hidden',
+          lineHeight: '1.5',
+        }}>
+          {v || '-'}
+        </div>
+      ),
     },
     {
       title: '文档',
       dataIndex: 'documents',
       key: 'documents',
       width: 80,
-      render: (documents: any[]) => documents?.length || 0,
+      render: (documents: any[], record: CustomerCase) => {
+        const count = documents?.length || 0
+        if (count > 0) {
+          return (
+            <Button 
+              type="link" 
+              onClick={() => handleViewDocuments(record)}
+              style={{ padding: 0 }}
+            >
+              {count}
+            </Button>
+          )
+        }
+        return count
+      },
     },
     {
       title: '操作',
@@ -266,7 +297,7 @@ const CustomerCaseManagement: React.FC = () => {
             编辑
           </Button>
           <Button type="link" icon={<FileOutlined />} onClick={() => handleManageDocuments(record)}>
-            文档
+            上传文档
           </Button>
           <Popconfirm
             title="确定要删除此客户案例吗？"
@@ -414,6 +445,42 @@ const CustomerCaseManagement: React.FC = () => {
             }}
           />
         )}
+      </Modal>
+
+      {/* View Documents List Modal */}
+      <Modal
+        title="文档列表"
+        open={documentsListModalVisible}
+        onCancel={() => {
+          setDocumentsListModalVisible(false)
+          setSelectedCase(null)
+        }}
+        footer={[
+          <Button key="close" onClick={() => {
+            setDocumentsListModalVisible(false)
+            setSelectedCase(null)
+          }}>
+            关闭
+          </Button>,
+        ]}
+        width={600}
+      >
+        <p style={{ marginBottom: 16 }}>
+          客户案例：<strong>{selectedCase?.name}</strong>
+        </p>
+        <List
+          dataSource={selectedCase?.documents || []}
+          renderItem={(doc: any) => (
+            <List.Item>
+              <List.Item.Meta
+                avatar={<FileOutlined style={{ fontSize: 24, color: '#1890ff' }} />}
+                title={doc.name}
+                description={`上传时间: ${new Date(doc.uploadedAt).toLocaleString('zh-CN')}`}
+              />
+            </List.Item>
+          )}
+          locale={{ emptyText: '暂无文档' }}
+        />
       </Modal>
     </Card>
   )
