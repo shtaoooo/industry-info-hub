@@ -143,24 +143,8 @@ const SubIndustryDetail: React.FC = () => {
                       marginBottom: 16,
                     }}
                   >
-                    <MarkdownText>{useCase.businessScenario || useCase.description}</MarkdownText>
+                    <MarkdownText>{useCase.summary || useCase.description}</MarkdownText>
                   </div>
-                  {useCase.targetAudience && (
-                    <>
-                      <div style={{ 
-                        borderTop: '1px solid #d2d2d7', 
-                        margin: '16px 0',
-                      }} />
-                      <div style={{
-                        fontSize: 14,
-                        color: '#6e6e73',
-                        lineHeight: '1.5',
-                      }}>
-                        <span style={{ fontWeight: 600, color: '#1d1d1f' }}>切入人群：</span>
-                        <MarkdownText className="md-text-compact" style={{ display: 'inline' }}>{useCase.targetAudience}</MarkdownText>
-                      </div>
-                    </>
-                  )}
                 </div>
               ))}
             </div>

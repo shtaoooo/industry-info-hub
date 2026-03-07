@@ -1,7 +1,7 @@
 ﻿import React, { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Layout, Spin, message, Button, Empty, Modal, Form, Input } from 'antd'
-import { ArrowLeftOutlined, FileTextOutlined, BulbOutlined, EditOutlined, LeftOutlined, RightOutlined, TeamOutlined } from '@ant-design/icons'
+import { ArrowLeftOutlined, FileTextOutlined, BulbOutlined, EditOutlined, LeftOutlined, RightOutlined, TeamOutlined, ReadOutlined } from '@ant-design/icons'
 import { publicService, PublicUseCase, PublicSolution, PublicBlog, PublicCustomerCase } from '../../services/publicService'
 import { useCaseService } from '../../services/useCaseService'
 import { DocumentDownloadList } from '../../components/DocumentDownloadList'
